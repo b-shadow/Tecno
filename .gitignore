@@ -1,0 +1,100 @@
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.production.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+!backend/.env.production.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+!frontend/.env.production.example
+
+# Dependencies and local toolchains
+node_modules/
+vendor/
+.tools/
+backend/vendor/
+frontend/node_modules/
+
+# Builds and generated assets
+dist/
+dist-ssr/
+frontend/dist/
+backend/public/build/
+backend/public/hot
+backend/public/storage
+backend/public/fonts-manifest.dev.json
+
+# Logs and runtime output
+*.log
+logs/
+.logs/
+backend/storage/logs/*.log
+backend/storage/pail/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Laravel runtime/cache artifacts
+backend/storage/*.key
+backend/storage/framework/cache/data/*
+backend/storage/framework/sessions/*
+backend/storage/framework/testing/*
+backend/storage/framework/views/*
+!backend/storage/**/.gitignore
+backend/bootstrap/cache/*.php
+backend/database/*.sqlite
+backend/.phpunit.result.cache
+backend/.phpunit.cache/
+
+# Tests hidden for delivery
+backend/tests/
+backend/phpunit.xml
+frontend/**/*.spec.*
+frontend/**/*.test.*
+
+# AI/editor assistant files
+CLAUDE.md
+AGENTS.md
+**/CLAUDE.md
+**/AGENTS.md
+docs/informacion/Prompt_*.md
+docs/
+.codex/
+backend/.codex/
+frontend/.codex/
+.claude/
+backend/.claude/
+frontend/.claude/
+.cursor/
+backend/.cursor/
+frontend/.cursor/
+.windsurf/
+.continue/
+.aider*
+*.chat.md
+
+# IDE and OS files
+.idea/
+.vscode/
+.zed/
+.nova/
+.DS_Store
+Thumbs.db
+*.sw?
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Misc local files
+auth.json
+_ide_helper.php
+Homestead.json
+Homestead.yaml
+qa-screenshots-*/
