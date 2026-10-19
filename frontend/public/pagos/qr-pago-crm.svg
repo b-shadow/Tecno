@@ -1,0 +1,13 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="720" height="720" viewBox="0 0 720 720" role="img" aria-label="QR de pago CRM Educativo">
+  <rect width="720" height="720" rx="34" fill="#ffffff"/>
+  <rect x="28" y="28" width="664" height="664" rx="24" fill="#f8fafc" stroke="#d7e2ee" stroke-width="8"/>
+  <g fill="#001b5f">
+    <path d="M76 76h164v164H76zM480 76h164v164H480zM76 480h164v164H76z"/>
+    <path d="M110 110h96v96h-96zM514 110h96v96h-96zM110 514h96v96h-96z" fill="#fff"/>
+    <path d="M134 134h48v48h-48zM538 134h48v48h-48zM134 538h48v48h-48z"/>
+    <path d="M292 76h44v44h-44zM380 76h44v44h-44zM292 164h88v44h-88zM424 164h44v44h-44zM292 252h44v44h-44zM380 252h132v44H380zM556 252h88v44h-88zM252 340h44v44h-44zM340 340h44v44h-44zM424 340h44v44h-44zM512 340h132v44H512zM252 428h132v44H252zM424 428h44v44h-44zM556 428h44v44h-44zM292 516h44v44h-44zM380 516h132v44H380zM556 516h88v44h-88zM292 604h88v44h-88zM424 604h44v44h-44zM512 604h132v44H512z"/>
+  </g>
+  <rect x="274" y="292" width="172" height="98" rx="20" fill="#10b981"/>
+  <text x="360" y="336" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#ffffff">CRM</text>
+  <text x="360" y="366" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#ffffff">Educativo</text>
+</svg>
