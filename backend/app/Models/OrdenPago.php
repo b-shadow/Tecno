@@ -7,8 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
-#[Fillable(['chat_conversacion_id', 'interes_id', 'prospecto_id', 'vendedor_id', 'subtotal', 'descuento_total', 'total', 'estado', 'fecha_generacion'])]
+#[Fillable(['interes_id', 'vendedor_id', 'subtotal', 'descuento_total', 'total', 'estado', 'fecha_generacion'])]
 class OrdenPago extends Model
 {
     protected $table = 'ordenes_pago';
@@ -28,9 +29,9 @@ class OrdenPago extends Model
         return $this->belongsTo(Interes::class);
     }
 
-    public function prospecto(): BelongsTo
+    public function prospecto(): HasOneThrough
     {
-        return $this->belongsTo(Prospecto::class);
+        return $this->hasOneThrough(Prospecto::class, Interes::class, 'id', 'id', 'interes_id', 'prospecto_id');
     }
 
     public function vendedor(): BelongsTo
@@ -40,7 +41,7 @@ class OrdenPago extends Model
 
     public function items(): HasMany
     {
-        return $this->hasMany(OrdenPagoItem::class);
+        return $this->hasMany(SolicitudCompra::class);
     }
 
     public function descuentos(): HasMany

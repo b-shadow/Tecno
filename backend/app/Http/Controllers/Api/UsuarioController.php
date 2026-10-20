@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Usuario;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
@@ -13,7 +14,13 @@ class UsuarioController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $this->authorizeAdministrador($request);
+        // El coordinador necesita la lista de vendedores para asignar y filtrar reportes.
+        $esCoordinadorViendoVendedores = $request->attributes->get('auth_usuario')?->rol === 'coordinador'
+            && $request->query('rol') === 'vendedor';
+
+        if (! $esCoordinadorViendoVendedores) {
+            $this->authorizeAdministrador($request);
+        }
 
         $usuarios = Usuario::query()
             ->when($request->query('buscar'), function ($query, string $buscar) {
@@ -58,7 +65,7 @@ class UsuarioController extends Controller
             unset($data['password']);
         }
 
-        $usuario->update($data);
+        $this->actualizarUsuario($usuario, $data);
 
         return response()->json([
             'mensaje' => 'Usuario actualizado correctamente.',
@@ -74,11 +81,7 @@ class UsuarioController extends Controller
             'estado' => ['required', Rule::in(Usuario::ESTADOS)],
         ]);
 
-        $usuario->update(['estado' => $data['estado']]);
-
-        if ($data['estado'] === 'inactivo') {
-            $usuario->tokens()->delete();
-        }
+        $this->actualizarUsuario($usuario, $data);
 
         return response()->json([
             'mensaje' => 'Estado actualizado correctamente.',
@@ -88,6 +91,8 @@ class UsuarioController extends Controller
 
     private function validatedData(Request $request, ?Usuario $usuario = null): array
     {
+        $request->merge(['correo' => mb_strtolower(trim((string) $request->input('correo')))]);
+
         return $request->validate([
             'nombre' => ['required', 'string', 'max:120'],
             'apellido' => ['required', 'string', 'max:120'],
@@ -98,8 +103,8 @@ class UsuarioController extends Controller
                 Rule::unique('usuarios', 'correo')->ignore($usuario?->id),
             ],
             'telefono' => ['nullable', 'string', 'max:40'],
-            'password' => [$usuario ? 'nullable' : 'required', 'string', 'min:8'],
-            'rol' => ['required', Rule::in(Usuario::ROLES)],
+            'password' => [$usuario ? 'nullable' : 'required', 'string', 'min:8', 'regex:/(?=.*[A-Za-z])(?=.*\d)/'],
+            'rol' => ['required', Rule::exists('roles', 'nombre')],
             'estado' => ['required', Rule::in(Usuario::ESTADOS)],
         ]);
     }
@@ -109,5 +114,29 @@ class UsuarioController extends Controller
         $usuario = $request->attributes->get('auth_usuario');
 
         abort_if($usuario?->rol !== 'administrador', 403, 'Solo el administrador puede gestionar usuarios.');
+    }
+
+    private function actualizarUsuario(Usuario $usuario, array $data): void
+    {
+        DB::transaction(function () use ($usuario, $data) {
+            // Serializa cambios de acceso para conservar un administrador incluso con solicitudes simultaneas.
+            Usuario::query()->where('rol', 'administrador')->orderBy('id')->lockForUpdate()->get(['id']);
+            $usuario->refresh();
+            $this->preservarAdministrador($usuario, $data);
+            $revocar = ! empty($data['password']) || ($data['estado'] ?? $usuario->estado) === 'inactivo'
+                || ($data['rol'] ?? $usuario->rol) !== $usuario->rol;
+            $usuario->update($data);
+            if ($revocar) {
+                $usuario->tokens()->delete();
+            }
+        });
+    }
+
+    private function preservarAdministrador(Usuario $usuario, array $data): void
+    {
+        $retiraAcceso = ($data['estado'] ?? $usuario->estado) !== 'activo' || ($data['rol'] ?? $usuario->rol) !== 'administrador';
+        abort_if($usuario->rol === 'administrador' && $usuario->estado === 'activo' && $retiraAcceso
+            && ! Usuario::query()->where('rol', 'administrador')->where('estado', 'activo')->where('id', '!=', $usuario->id)->exists(),
+            422, 'Debe conservar al menos un administrador activo.');
     }
 }

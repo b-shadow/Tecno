@@ -4,10 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
-#[Fillable(['nombre', 'apellido', 'documento', 'correo', 'telefono', 'profesion', 'ubicacion', 'estado', 'vendedor_id', 'fecha_registro'])]
+#[Fillable(['nombre', 'apellido', 'documento', 'correo', 'telefono', 'profesion', 'ubicacion', 'estado', 'fecha_registro'])]
 class Prospecto extends Model
 {
     public const ESTADOS = ['Nuevo', 'Contactado', 'Interesado', 'En proceso', 'Convertido', 'Perdido'];
@@ -17,29 +17,24 @@ class Prospecto extends Model
         return ['fecha_registro' => 'datetime'];
     }
 
-    public function vendedor(): BelongsTo
-    {
-        return $this->belongsTo(Usuario::class, 'vendedor_id');
-    }
-
     public function intereses(): HasMany
     {
         return $this->hasMany(Interes::class);
     }
 
-    public function solicitudesCompra(): HasMany
+    public function ordenesPago(): HasManyThrough
     {
-        return $this->hasMany(SolicitudCompra::class);
+        return $this->hasManyThrough(OrdenPago::class, Interes::class);
     }
 
-    public function interacciones(): HasMany
+    public function interacciones(): HasManyThrough
     {
-        return $this->hasMany(Interaccion::class);
+        return $this->hasManyThrough(Interaccion::class, Interes::class);
     }
 
-    public function recordatorios(): HasMany
+    public function recordatorios(): HasManyThrough
     {
-        return $this->hasMany(Recordatorio::class);
+        return $this->hasManyThrough(Recordatorio::class, Interes::class);
     }
 
 }

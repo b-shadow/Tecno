@@ -9,7 +9,6 @@ use App\Models\Interes;
 use App\Models\OrdenPago;
 use App\Models\Pago;
 use App\Models\Prospecto;
-use App\Models\SolicitudCompra;
 use App\Models\Usuario;
 use App\Services\CatalogoExternoDemo;
 use Illuminate\Http\JsonResponse;
@@ -18,9 +17,7 @@ use Illuminate\Support\Facades\DB;
 
 class ReporteController extends Controller
 {
-    public function __construct(private readonly CatalogoExternoDemo $catalogo)
-    {
-    }
+    public function __construct(private readonly CatalogoExternoDemo $catalogo) {}
 
     public function dashboard(Request $request): JsonResponse
     {
@@ -28,7 +25,7 @@ class ReporteController extends Controller
         $desde = now()->subDays(6)->startOfDay();
 
         $inscripciones = InscripcionComercial::query()
-            ->with('prospecto', 'solicitudCompra.comision.vendedor', 'solicitudCompra.ordenItem.ordenPago.vendedor')
+            ->with('solicitudCompra.ordenPago.prospecto', 'solicitudCompra.comision.vendedor', 'solicitudCompra.ordenPago.vendedor')
             ->when($usuario?->rol === 'vendedor', fn ($query) => $query->whereHas('solicitudCompra.comision', fn ($relation) => $relation->where('vendedor_id', $usuario->id)))
             ->get();
 
@@ -217,7 +214,8 @@ class ReporteController extends Controller
 
     private function reporteProspectos(array $filters): JsonResponse
     {
-        $query = $this->applyProspectoFilters(Prospecto::query()->withCount(['intereses']), $filters)
+        $query = $this->applyProspectoFilters(Prospecto::query()->withCount(['intereses' => fn ($query) => $query
+            ->when($filters['vendedor_id'] ?? null, fn ($query, $id) => $query->where('vendedor_id', $id))]), $filters)
             ->when($filters['buscar'] ?? null, fn ($query, $buscar) => $this->buscarProspecto($query, $buscar))
             ->orderByDesc('fecha_registro');
 
@@ -242,7 +240,7 @@ class ReporteController extends Controller
 
     private function reporteIntereses(array $filters): JsonResponse
     {
-        $query = $this->applyInteresFilters(Interes::query()->with('prospecto', 'vendedor'), $filters)
+        $query = $this->applyInteresFilters(Interes::query()->with('prospecto', 'vendedor')->withCount('interacciones'), $filters)
             ->when($filters['estado'] ?? null, fn ($query, $estado) => $query->where('estado', $estado))
             ->when($filters['vendedor_id'] ?? null, fn ($query, $vendedorId) => $query->where('vendedor_id', $vendedorId))
             ->when($filters['buscar'] ?? null, fn ($query, $buscar) => $query->where(function ($subquery) use ($buscar): void {
@@ -257,6 +255,7 @@ class ReporteController extends Controller
             ['key' => 'modulo', 'label' => 'Modulo'],
             ['key' => 'programa', 'label' => 'Programa'],
             ['key' => 'vendedor', 'label' => 'Vendedor'],
+            ['key' => 'contactos', 'label' => 'Contactos'],
             ['key' => 'estado', 'label' => 'Estado'],
             ['key' => 'fecha', 'label' => 'Fecha'],
         ], $query->get()->map(fn (Interes $interes) => [
@@ -264,6 +263,7 @@ class ReporteController extends Controller
             'modulo' => $interes->modulo_nombre,
             'programa' => $interes->programa_nombre,
             'vendedor' => $this->nombreUsuario($interes->vendedor) ?: 'Sin vendedor',
+            'contactos' => $interes->interacciones_count,
             'estado' => $interes->estado,
             'fecha' => optional($interes->created_at)->format('d/m/Y H:i'),
         ])->values());
@@ -272,7 +272,6 @@ class ReporteController extends Controller
     private function reportePagos(array $filters): JsonResponse
     {
         $query = $this->applyPagoFilters(Pago::query()->with([
-            'solicitudCompra.prospecto',
             'ordenPago.prospecto',
             'ordenPago.vendedor',
             'ordenPago.items',
@@ -289,9 +288,9 @@ class ReporteController extends Controller
             ['key' => 'estado', 'label' => 'Estado'],
             ['key' => 'fecha', 'label' => 'Fecha'],
         ], $query->get()->map(fn (Pago $pago) => [
-            'prospecto' => $this->nombreProspecto($pago->ordenPago?->prospecto ?: $pago->solicitudCompra?->prospecto),
+            'prospecto' => $this->nombreProspecto($pago->ordenPago->prospecto),
             'vendedor' => $this->nombreUsuario($pago->ordenPago?->vendedor) ?: 'Sin vendedor',
-            'modulos' => $pago->ordenPago ? $pago->ordenPago->items->pluck('modulo_nombre')->join(', ') : $pago->solicitudCompra?->modulo_nombre,
+            'modulos' => $pago->ordenPago->items->pluck('modulo_nombre')->join(', '),
             'monto' => number_format((float) $pago->monto, 2).' Bs',
             'estado' => $pago->estado,
             'fecha' => optional($pago->fecha_generacion)->format('d/m/Y H:i'),
@@ -300,9 +299,9 @@ class ReporteController extends Controller
 
     private function reporteAlumnos(array $filters): JsonResponse
     {
-        $query = $this->applyInscripcionFilters(InscripcionComercial::query()->with('prospecto', 'solicitudCompra.ordenItem.ordenPago.vendedor'), $filters)
+        $query = $this->applyInscripcionFilters(InscripcionComercial::query()->with('solicitudCompra.ordenPago.prospecto', 'solicitudCompra.ordenPago.vendedor'), $filters)
             ->when($filters['estado'] ?? null, fn ($query, $estado) => $query->where('estado', $estado))
-            ->when($filters['vendedor_id'] ?? null, fn ($query, $vendedorId) => $query->whereHas('solicitudCompra.ordenItem.ordenPago', fn ($relation) => $relation->where('vendedor_id', $vendedorId)))
+            ->when($filters['vendedor_id'] ?? null, fn ($query, $vendedorId) => $query->whereHas('solicitudCompra.ordenPago', fn ($relation) => $relation->where('vendedor_id', $vendedorId)))
             ->latest('fecha_confirmacion');
 
         return $this->reportResponse('Alumnos inscritos', [
@@ -314,9 +313,9 @@ class ReporteController extends Controller
             ['key' => 'estado', 'label' => 'Estado'],
             ['key' => 'fecha', 'label' => 'Inscripcion'],
         ], $query->get()->map(fn (InscripcionComercial $inscripcion) => [
-            'alumno' => $this->nombreProspecto($inscripcion->prospecto),
-            'ci' => $inscripcion->prospecto?->documento,
-            'correo' => $inscripcion->prospecto?->correo,
+            'alumno' => $this->nombreProspecto($inscripcion->alumno()),
+            'ci' => $inscripcion->alumno()?->documento,
+            'correo' => $inscripcion->alumno()?->correo,
             'programa' => $inscripcion->solicitudCompra?->programa_nombre,
             'modulo' => $inscripcion->solicitudCompra?->modulo_nombre,
             'estado' => $inscripcion->estado,
@@ -326,7 +325,7 @@ class ReporteController extends Controller
 
     private function reporteComisiones(array $filters): JsonResponse
     {
-        $query = $this->applyComisionFilters(Comision::query()->with('vendedor', 'venta.prospecto'), $filters)
+        $query = $this->applyComisionFilters(Comision::query()->with('vendedor', 'venta.ordenPago.prospecto'), $filters)
             ->when($filters['estado'] ?? null, fn ($query, $estado) => $query->where('estado', $estado))
             ->when($filters['vendedor_id'] ?? null, fn ($query, $vendedorId) => $query->where('vendedor_id', $vendedorId))
             ->latest();
@@ -341,9 +340,9 @@ class ReporteController extends Controller
             ['key' => 'fecha_pago', 'label' => 'Fecha recibida'],
         ], $query->get()->map(fn (Comision $comision) => [
             'vendedor' => $this->nombreUsuario($comision->vendedor),
-            'prospecto' => $this->nombreProspecto($comision->venta?->prospecto),
+            'prospecto' => $this->nombreProspecto($comision->venta?->ordenPago?->prospecto),
             'curso' => $comision->venta?->modulo_nombre,
-            'porcentaje' => number_format((float) $comision->porcentaje, 0).'%',
+            'porcentaje' => number_format((float) $comision->porcentaje, 2).'%',
             'monto' => number_format((float) $comision->monto, 2).' Bs',
             'estado' => $comision->estado,
             'fecha_pago' => $comision->fecha_pago ? $comision->fecha_pago->format('d/m/Y H:i') : 'Pendiente',
@@ -355,20 +354,30 @@ class ReporteController extends Controller
         $query = Usuario::query()
             ->where('rol', 'vendedor')
             ->when($filters['vendedor_id'] ?? null, fn ($query, $vendedorId) => $query->where('id', $vendedorId))
-            ->withCount(['interesesAsignados', 'comisiones'])
+            ->withCount([
+                'interesesAsignados',
+                'interesesAsignados as contactados_count' => fn ($query) => $query->has('interacciones'),
+                'interesesAsignados as concretados_count' => fn ($query) => $query->where('estado', 'Convertido'),
+                'comisiones',
+            ])
             ->withSum('comisiones as comision_total', 'monto');
 
         return $this->reportResponse('Vendedores', [
             ['key' => 'vendedor', 'label' => 'Vendedor'],
             ['key' => 'correo', 'label' => 'Correo'],
-            ['key' => 'intereses', 'label' => 'Intereses'],
+            ['key' => 'intereses', 'label' => 'Asignados'],
+            ['key' => 'contactados', 'label' => 'Contactados'],
+            ['key' => 'concretados', 'label' => 'Concretados'],
             ['key' => 'cursos_vendidos', 'label' => 'Cursos vendidos'],
             ['key' => 'comision_total', 'label' => 'Comision total'],
             ['key' => 'estado', 'label' => 'Estado'],
         ], $query->get()->map(fn (Usuario $vendedor) => [
+            'vendedor_id' => $vendedor->id,
             'vendedor' => $this->nombreUsuario($vendedor),
             'correo' => $vendedor->correo,
             'intereses' => $vendedor->intereses_asignados_count,
+            'contactados' => $vendedor->contactados_count,
+            'concretados' => $vendedor->concretados_count,
             'cursos_vendidos' => $vendedor->comisiones_count,
             'comision_total' => number_format((float) ($vendedor->comision_total ?? 0), 2).' Bs',
             'estado' => $vendedor->estado,
@@ -409,18 +418,19 @@ class ReporteController extends Controller
     private function applyProspectoFilters($query, array $filters)
     {
         return $query
+            ->when($filters['vendedor_id'] ?? null, fn ($query, $id) => $query->whereHas('intereses', fn ($query) => $query->where('vendedor_id', $id)))
             ->when($filters['fecha_desde'] ?? null, fn ($query, $date) => $query->whereDate('fecha_registro', '>=', $date))
             ->when($filters['fecha_hasta'] ?? null, fn ($query, $date) => $query->whereDate('fecha_registro', '<=', $date))
             ->when($filters['estado'] ?? null, fn ($query, $estado) => $query->where('estado', $estado))
             ->when($filters['modulo_id'] ?? null, fn ($query, $moduloId) => $query->where(function ($subquery) use ($moduloId): void {
                 $subquery
                     ->whereHas('intereses', fn ($relation) => $relation->where('external_modulo_id', $moduloId))
-                    ->orWhereHas('solicitudesCompra', fn ($relation) => $relation->where('external_modulo_id', $moduloId));
+                    ->orWhereHas('ordenesPago.items', fn ($relation) => $relation->where('external_modulo_id', $moduloId));
             }))
             ->when($filters['programa_id'] ?? null, fn ($query, $programaId) => $query->where(function ($subquery) use ($programaId): void {
                 $subquery
                     ->whereHas('intereses', fn ($relation) => $relation->where('programa_nombre', $programaId))
-                    ->orWhereHas('solicitudesCompra', fn ($relation) => $relation->where('programa_nombre', $programaId));
+                    ->orWhereHas('ordenesPago.items', fn ($relation) => $relation->where('programa_nombre', $programaId));
             }));
     }
 
@@ -429,25 +439,8 @@ class ReporteController extends Controller
         return $query
             ->when($filters['fecha_desde'] ?? null, fn ($query, $date) => $query->whereDate('fecha_generacion', '>=', $date))
             ->when($filters['fecha_hasta'] ?? null, fn ($query, $date) => $query->whereDate('fecha_generacion', '<=', $date))
-            ->when($filters['modulo_id'] ?? null, fn ($query, $moduloId) => $query->where(function ($subquery) use ($moduloId): void {
-                $subquery
-                    ->whereHas('solicitudCompra', fn ($relation) => $relation->where('external_modulo_id', $moduloId))
-                    ->orWhereHas('ordenPago.items', fn ($relation) => $relation->where('external_modulo_id', $moduloId));
-            }))
-            ->when($filters['programa_id'] ?? null, fn ($query, $programaId) => $query->where(function ($subquery) use ($programaId): void {
-                $subquery
-                    ->whereHas('solicitudCompra', fn ($relation) => $relation->where('programa_nombre', $programaId))
-                    ->orWhereHas('ordenPago.items', fn ($relation) => $relation->where('programa_nombre', $programaId));
-            }));
-    }
-
-    private function applySolicitudFilters($query, array $filters)
-    {
-        return $query
-            ->when($filters['fecha_desde'] ?? null, fn ($query, $date) => $query->whereDate('fecha', '>=', $date))
-            ->when($filters['fecha_hasta'] ?? null, fn ($query, $date) => $query->whereDate('fecha', '<=', $date))
-            ->when($filters['modulo_id'] ?? null, fn ($query, $moduloId) => $query->where('external_modulo_id', $moduloId))
-            ->when($filters['programa_id'] ?? null, fn ($query, $programaId) => $query->where('programa_nombre', $programaId));
+            ->when($filters['modulo_id'] ?? null, fn ($query, $moduloId) => $query->whereHas('ordenPago.items', fn ($relation) => $relation->where('external_modulo_id', $moduloId)))
+            ->when($filters['programa_id'] ?? null, fn ($query, $programaId) => $query->whereHas('ordenPago.items', fn ($relation) => $relation->where('programa_nombre', $programaId)));
     }
 
     private function applyInscripcionFilters($query, array $filters)

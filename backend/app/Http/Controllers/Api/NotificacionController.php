@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Notificacion;
+use App\Models\Prospecto;
 use App\Models\Usuario;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ class NotificacionController extends Controller
 {
     public function enviarCorreo(Request $request): JsonResponse
     {
+        $usuario = $request->attributes->get('auth_usuario');
         $data = $request->validate([
             'usuario_id' => ['nullable', 'exists:usuarios,id'],
             'destinatario' => ['nullable', 'email'],
@@ -28,6 +30,12 @@ class NotificacionController extends Controller
             throw ValidationException::withMessages([
                 'destinatario' => 'Debe indicar un correo destinatario o un usuario con correo registrado.',
             ]);
+        }
+        if ($usuario->rol === 'vendedor') {
+            $esPropio = $usuarioDestino?->id === $usuario->id || mb_strtolower($destinatario) === mb_strtolower($usuario->correo);
+            $esProspectoAsignado = Prospecto::query()->whereRaw('lower(correo) = ?', [mb_strtolower($destinatario)])
+                ->whereHas('intereses', fn ($query) => $query->where('vendedor_id', $usuario->id))->exists();
+            abort_if(! $esPropio && ! $esProspectoAsignado, 403, 'Solo puede notificar a sus prospectos asignados o a su propia cuenta.');
         }
 
         $estado = 'enviada';

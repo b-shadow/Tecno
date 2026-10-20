@@ -55,6 +55,11 @@ class CatalogoExternoDemo
             ->values();
     }
 
+    public function ofertasDePrograma(string $programaId): Collection
+    {
+        return $this->ofertas()->where('programa.id', $programaId)->values();
+    }
+
     public function buscarOferta(?string $anuncioId = null, ?string $moduloId = null): ?array
     {
         return $this->ofertas()
@@ -69,7 +74,7 @@ class CatalogoExternoDemo
                 'codigo' => 'desarrollo-web',
                 'nombre' => 'Desarrollo de Aplicaciones Web',
                 'descripcion' => 'Formacion integral para construir aplicaciones web modernas.',
-                'imagen' => '/catalogo-demo/programa-desarrollo-web.png',
+                'imagen' => asset('catalogo-demo/programa-desarrollo-web.png'),
                 'modulos' => [
                     $this->modulo('Fundamentos de Desarrollo Web', 420, 'fundamentos-desarrollo-web', 'Aprende HTML, CSS, JavaScript base y arquitectura web.'),
                     $this->modulo('Desarrollo Frontend', 780, 'desarrollo-frontend', 'Construye interfaces modernas, responsivas y orientadas a componentes.'),
@@ -82,7 +87,7 @@ class CatalogoExternoDemo
                 'codigo' => 'ia-aplicada',
                 'nombre' => 'Inteligencia Artificial Aplicada',
                 'descripcion' => 'Ruta practica para crear soluciones con IA y datos.',
-                'imagen' => '/catalogo-demo/programa-ia-aplicada.svg',
+                'imagen' => asset('catalogo-demo/programa-ia-aplicada.svg'),
                 'modulos' => [
                     $this->modulo('Fundamentos de Inteligencia Artificial', 600, 'fundamentos-ia', 'Comprende conceptos, casos de uso y limites de la IA.'),
                     $this->modulo('Programacion con Python', 720, 'python-ia', 'Domina Python aplicado a automatizacion, datos e IA.'),
@@ -95,7 +100,7 @@ class CatalogoExternoDemo
                 'codigo' => 'ciberseguridad',
                 'nombre' => 'Ciberseguridad',
                 'descripcion' => 'Proteccion tecnica de redes, sistemas y aplicaciones.',
-                'imagen' => '/catalogo-demo/programa-ciberseguridad.svg',
+                'imagen' => asset('catalogo-demo/programa-ciberseguridad.svg'),
                 'modulos' => [
                     $this->modulo('Fundamentos de Ciberseguridad', 500, 'fundamentos-ciberseguridad', 'Identifica amenazas, controles y principios de seguridad.'),
                     $this->modulo('Seguridad de Redes', 840, 'seguridad-redes', 'Protege comunicaciones, topologias y servicios de red.'),
@@ -108,7 +113,7 @@ class CatalogoExternoDemo
                 'codigo' => 'redes-servidores',
                 'nombre' => 'Redes y Administracion de Servidores',
                 'descripcion' => 'Operacion de infraestructura, servidores y contenedores.',
-                'imagen' => '/catalogo-demo/programa-redes-servidores.svg',
+                'imagen' => asset('catalogo-demo/programa-redes-servidores.svg'),
                 'modulos' => [
                     $this->modulo('Fundamentos de Redes', 460, 'fundamentos-redes', 'Comprende modelos de red, direccionamiento y servicios esenciales.'),
                     $this->modulo('Configuracion de Redes', 740, 'configuracion-redes', 'Configura equipos, segmentos, rutas y servicios de conectividad.'),
@@ -121,7 +126,7 @@ class CatalogoExternoDemo
                 'codigo' => 'datos-bi',
                 'nombre' => 'Analisis de Datos y Business Intelligence',
                 'descripcion' => 'Analitica, visualizacion e inteligencia de negocio.',
-                'imagen' => '/catalogo-demo/programa-datos-bi.svg',
+                'imagen' => asset('catalogo-demo/programa-datos-bi.svg'),
                 'modulos' => [
                     $this->modulo('Fundamentos de Bases de Datos', 520, 'fundamentos-bases-datos', 'Aprende conceptos de datos relacionales para analisis.'),
                     $this->modulo('SQL para Analisis de Datos', 700, 'sql-analisis-datos', 'Consulta, transforma y resume informacion con SQL.'),
@@ -141,7 +146,7 @@ class CatalogoExternoDemo
             'nombre' => $nombre,
             'precio' => $precio,
             'duracion' => $duraciones[crc32($slug) % count($duraciones)],
-            'imagen' => "/catalogo-demo/modulo-{$slug}.svg",
+            'imagen' => asset("catalogo-demo/modulo-{$slug}.svg"),
             'descripcion' => $descripcion,
         ];
     }

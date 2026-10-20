@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Interes;
+use App\Models\Usuario;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class InteresController extends Controller
@@ -16,16 +18,7 @@ class InteresController extends Controller
 
         $intereses = Interes::query()
             ->with('prospecto', 'vendedor', 'interacciones.usuario', 'recordatorios.usuario', 'ordenesPago.items', 'ordenesPago.descuentos.descuento', 'ordenesPago.pago.comprobantes')
-            ->when($usuario->rol === 'vendedor', function ($query) use ($usuario, $request) {
-                if ($request->query('bandeja') === 'nuevos') {
-                    $query->whereNull('vendedor_id');
-                    return;
-                }
-
-                $query->where(function ($subquery) use ($usuario) {
-                    $subquery->where('vendedor_id', $usuario->id)->orWhereNull('vendedor_id');
-                });
-            })
+            ->when($usuario->rol === 'vendedor', fn ($query) => $query->where('vendedor_id', $usuario->id))
             ->when($request->query('estado'), fn ($query, string $estado) => $query->where('estado', $estado))
             ->when($request->query('buscar'), function ($query, string $buscar) {
                 $query->where(function ($subquery) use ($buscar) {
@@ -39,7 +32,7 @@ class InteresController extends Controller
                         });
                 });
             })
-            ->orderByRaw("case when vendedor_id is null then 0 else 1 end")
+            ->orderByRaw('case when vendedor_id is null then 0 else 1 end')
             ->latest('ultima_actividad_en')
             ->latest('created_at')
             ->get();
@@ -49,30 +42,102 @@ class InteresController extends Controller
 
     public function show(Request $request, Interes $interes): JsonResponse
     {
-        $this->authorizeInteres($request, $interes, allowUnassigned: true);
+        $this->authorizeInteres($request, $interes);
 
         return response()->json([
             'interes' => $interes->load('prospecto', 'vendedor', 'interacciones.usuario', 'recordatorios.usuario', 'ordenesPago.items', 'ordenesPago.descuentos.descuento', 'ordenesPago.pago.comprobantes'),
         ]);
     }
 
-    public function tomar(Request $request, Interes $interes): JsonResponse
+    /**
+     * Asigna o reasigna un interes. El historial (interacciones con su usuario_id) no se toca;
+     * se deja constancia de la reasignacion y las actividades pendientes pasan al nuevo vendedor.
+     */
+    public function asignar(Request $request, Interes $interes): JsonResponse
     {
-        $usuario = $request->attributes->get('auth_usuario');
+        $this->authorizeCoordinacion($request);
 
-        abort_if($usuario->rol !== 'vendedor', 403, 'Solo un vendedor puede tomar seguimiento.');
-        abort_if($interes->vendedor_id && $interes->vendedor_id !== $usuario->id, 403, 'Este interes ya fue tomado por otro vendedor.');
-
-        $interes->update([
-            'vendedor_id' => $usuario->id,
-            'estado' => $interes->estado === 'Nuevo' ? 'Contactado' : $interes->estado,
-            'fecha_asignacion' => $interes->fecha_asignacion ?? now(),
-            'ultima_actividad_en' => now(),
+        $data = $request->validate([
+            'vendedor_id' => ['required', Rule::exists('usuarios', 'id')->where('rol', 'vendedor')->where('estado', 'activo')],
         ]);
 
-        $interes->prospecto->update(['estado' => 'Contactado']);
+        $this->asignarA($interes, Usuario::query()->findOrFail($data['vendedor_id']), $request->attributes->get('auth_usuario'));
 
-        return response()->json(['interes' => $interes->fresh()->load('prospecto', 'vendedor', 'interacciones.usuario', 'recordatorios.usuario', 'ordenesPago.pago')]);
+        return response()->json(['interes' => $interes->fresh()->load('prospecto', 'vendedor')]);
+    }
+
+    /**
+     * Distribucion equitativa (RF2.3): cada prospecto sin vendedor va al vendedor activo con menos
+     * intereses abiertos; todos los intereses de un mismo prospecto quedan con el mismo vendedor.
+     */
+    public function distribuir(Request $request): JsonResponse
+    {
+        $this->authorizeCoordinacion($request);
+        $coordinador = $request->attributes->get('auth_usuario');
+
+        $vendedores = Usuario::query()
+            ->where('rol', 'vendedor')
+            ->where('estado', 'activo')
+            ->withCount(['interesesAsignados as abiertos' => fn ($query) => $query->whereNotIn('estado', ['Convertido', 'Perdido'])])
+            ->get();
+
+        abort_if($vendedores->isEmpty(), 422, 'No hay vendedores activos para distribuir.');
+
+        $carga = $vendedores->pluck('abiertos', 'id')->all();
+        $pendientes = Interes::query()->whereNull('vendedor_id')->orderBy('created_at')->get()->groupBy('prospecto_id');
+
+        DB::transaction(function () use ($pendientes, $vendedores, $coordinador, &$carga): void {
+            foreach ($pendientes as $prospectoId => $intereses) {
+                $yaAsignado = Interes::query()->where('prospecto_id', $prospectoId)->whereNotNull('vendedor_id')
+                    ->whereIn('vendedor_id', array_keys($carga))->value('vendedor_id');
+                $vendedorId = $yaAsignado ?? array_keys($carga, min($carga))[0];
+                $vendedor = $vendedores->firstWhere('id', $vendedorId);
+
+                foreach ($intereses as $interes) {
+                    $this->asignarA($interes, $vendedor, $coordinador);
+                    $carga[$vendedorId]++;
+                }
+            }
+        });
+
+        return response()->json([
+            'mensaje' => 'Interesados distribuidos equitativamente.',
+            'asignados' => $pendientes->flatten()->count(),
+        ]);
+    }
+
+    private function asignarA(Interes $interes, Usuario $vendedor, Usuario $coordinador): void
+    {
+        $anterior = $interes->vendedor;
+
+        if ($anterior?->id === $vendedor->id) {
+            return;
+        }
+
+        $interes->update([
+            'vendedor_id' => $vendedor->id,
+            'fecha_asignacion' => $interes->fecha_asignacion ?? now(),
+        ]);
+
+        $interes->recordatorios()->whereIn('estado', ['Pendiente', 'Atrasada'])->update(['usuario_id' => $vendedor->id]);
+
+        if (! $anterior) {
+            return;
+        }
+
+        $interes->interacciones()->create([
+            'usuario_id' => $coordinador->id,
+            'tipo' => 'Nota comercial',
+            'descripcion' => "Reasignado de {$anterior->nombre} {$anterior->apellido} a {$vendedor->nombre} {$vendedor->apellido} por {$coordinador->nombre} {$coordinador->apellido}.",
+            'resultado' => 'Reasignacion con historial completo',
+            'fecha' => now(),
+        ]);
+    }
+
+    private function authorizeCoordinacion(Request $request): void
+    {
+        $usuario = $request->attributes->get('auth_usuario');
+        abort_if(! in_array($usuario?->rol, ['administrador', 'coordinador'], true), 403, 'Solo coordinacion puede asignar interesados.');
     }
 
     public function cambiarEstado(Request $request, Interes $interes): JsonResponse
@@ -81,8 +146,10 @@ class InteresController extends Controller
 
         $data = $request->validate([
             'estado' => ['required', Rule::in(Interes::ESTADOS)],
-            'observacion' => ['nullable', 'string'],
+            'observacion' => ['required_if:estado,Perdido', 'nullable', 'string', 'max:2000'],
         ]);
+
+        abort_if($data['estado'] === 'Convertido' && $interes->estado !== 'Convertido', 422, 'La conversion se realiza al aprobar el pago y confirmar la inscripcion.');
 
         $interes->update([
             'estado' => $data['estado'],
@@ -97,7 +164,7 @@ class InteresController extends Controller
         return response()->json(['interes' => $interes->fresh()->load('prospecto', 'vendedor')]);
     }
 
-    private function authorizeInteres(Request $request, Interes $interes, bool $allowUnassigned = false): void
+    private function authorizeInteres(Request $request, Interes $interes): void
     {
         $usuario = $request->attributes->get('auth_usuario');
 
@@ -106,6 +173,6 @@ class InteresController extends Controller
         }
 
         abort_if($usuario?->rol !== 'vendedor', 403, 'No tiene permisos comerciales.');
-        abort_if($interes->vendedor_id !== $usuario->id && ! ($allowUnassigned && ! $interes->vendedor_id), 403, 'Interes asignado a otro vendedor.');
+        abort_if($interes->vendedor_id !== $usuario->id, 403, 'Interes asignado a otro vendedor.');
     }
 }

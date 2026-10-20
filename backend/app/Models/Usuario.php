@@ -21,11 +21,6 @@ class Usuario extends Model
         return $this->hasMany(ApiToken::class);
     }
 
-    public function prospectosAsignados(): HasMany
-    {
-        return $this->hasMany(Prospecto::class, 'vendedor_id');
-    }
-
     public function interesesAsignados(): HasMany
     {
         return $this->hasMany(Interes::class, 'vendedor_id');

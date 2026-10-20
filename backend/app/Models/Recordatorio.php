@@ -5,8 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
-#[Fillable(['prospecto_id', 'interes_id', 'usuario_id', 'fecha_programada', 'fecha_realizada', 'descripcion', 'estado'])]
+#[Fillable(['interes_id', 'usuario_id', 'fecha_programada', 'fecha_realizada', 'descripcion', 'estado'])]
 class Recordatorio extends Model
 {
     public const ESTADOS = ['Pendiente', 'Realizada', 'Atrasada', 'Cancelado'];
@@ -21,9 +22,9 @@ class Recordatorio extends Model
         ];
     }
 
-    public function prospecto(): BelongsTo
+    public function prospecto(): HasOneThrough
     {
-        return $this->belongsTo(Prospecto::class);
+        return $this->hasOneThrough(Prospecto::class, Interes::class, 'id', 'id', 'interes_id', 'prospecto_id');
     }
 
     public function interes(): BelongsTo

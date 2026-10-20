@@ -23,7 +23,7 @@ class SystemController extends Controller
             'system' => 'CRM Comercial Educativo',
             'status' => 'ok',
             'database' => $database,
-            'architecture' => 'MVC API + frontend Vue',
+            'architecture' => 'MVC-MVVM: Laravel + Inertia + Vue, API REST',
             'domains' => [
                 'Seguridad y acceso',
                 'Gestion academica comercial',

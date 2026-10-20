@@ -5,15 +5,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Comision;
 use App\Models\InscripcionComercial;
-use App\Models\Interes;
 use App\Models\Interaccion;
+use App\Models\Interes;
 use App\Models\Prospecto;
 use App\Models\Recordatorio;
-use App\Models\SolicitudCompra;
 use App\Models\Usuario;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class SeguimientoController extends Controller
@@ -25,43 +25,38 @@ class SeguimientoController extends Controller
         $this->authorizeProspecto($request, $prospecto);
 
         return response()->json([
-            'interacciones' => $prospecto->interacciones()->with('usuario')->latest('fecha')->get(),
+            'interacciones' => $prospecto->interacciones()
+                ->when($request->attributes->get('auth_usuario')->rol === 'vendedor', fn ($query) => $query->whereHas('interes', fn ($query) => $query->where('vendedor_id', $request->attributes->get('auth_usuario')->id)))
+                ->with('usuario')->latest('interacciones.fecha')->get(),
         ]);
     }
 
     public function registrarInteraccion(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'prospecto_id' => ['nullable', 'exists:prospectos,id', 'required_without:interes_id'],
-            'interes_id' => ['nullable', 'exists:intereses,id'],
+            'interes_id' => ['required', 'exists:intereses,id'],
             'tipo' => ['required', Rule::in(Interaccion::TIPOS)],
             'descripcion' => ['required', 'string'],
             'resultado' => ['nullable', 'string'],
-            'fecha' => ['nullable', 'date'],
             'proximo_contacto' => ['nullable', 'date'],
         ]);
 
-        $interes = isset($data['interes_id']) ? Interes::query()->with('prospecto')->findOrFail($data['interes_id']) : null;
-        $prospecto = $interes?->prospecto ?? Prospecto::query()->findOrFail($data['prospecto_id']);
-        $this->authorizeProspecto($request, $prospecto);
+        $interes = Interes::query()->with('prospecto')->findOrFail($data['interes_id']);
+        $this->authorizeInteres($request, $interes);
         $proximoContacto = $data['proximo_contacto'] ?? null;
         unset($data['proximo_contacto']);
 
         $interaccion = Interaccion::query()->create([
             ...$data,
-            'prospecto_id' => $prospecto->id,
-            'interes_id' => $interes?->id,
             'usuario_id' => $request->attributes->get('auth_usuario')->id,
-            'fecha' => $data['fecha'] ?? now(),
+            'fecha' => now(),
         ]);
 
-        if ($interes) {
-            $interes->update([
-                'estado' => $interes->estado === 'Nuevo' ? 'Contactado' : $interes->estado,
-                'ultima_actividad_en' => now(),
-                'proximo_contacto' => $proximoContacto ?? $interes->proximo_contacto,
-            ]);
-        }
+        $interes->update([
+            'estado' => $interes->estado === 'Nuevo' ? 'Contactado' : $interes->estado,
+            'ultima_actividad_en' => now(),
+            'proximo_contacto' => $proximoContacto ?? $interes->proximo_contacto,
+        ]);
 
         return response()->json(['interaccion' => $interaccion->load('usuario')], 201);
     }
@@ -73,7 +68,7 @@ class SeguimientoController extends Controller
 
         $recordatorios = Recordatorio::query()
             ->with('prospecto', 'interes.vendedor', 'usuario')
-            ->when($usuario->rol === 'vendedor', fn ($query) => $query->where('usuario_id', $usuario->id))
+            ->when($usuario->rol === 'vendedor', fn ($query) => $query->whereHas('interes', fn ($query) => $query->where('vendedor_id', $usuario->id)))
             ->when($request->query('estado'), fn ($query, string $estado) => $query->where('estado', $estado))
             ->when($request->query('fecha'), fn ($query, string $fecha) => $query->whereDate('fecha_programada', $fecha))
             ->orderBy('fecha_programada')
@@ -85,92 +80,67 @@ class SeguimientoController extends Controller
     public function crearRecordatorio(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'prospecto_id' => ['nullable', 'exists:prospectos,id', 'required_without:interes_id'],
-            'interes_id' => ['nullable', 'exists:intereses,id'],
+            'interes_id' => ['required', 'exists:intereses,id'],
             'fecha_programada' => ['required', 'date'],
             'descripcion' => ['required', 'string'],
         ]);
 
-        $interes = isset($data['interes_id']) ? Interes::query()->with('prospecto')->findOrFail($data['interes_id']) : null;
-        $prospecto = $interes?->prospecto ?? Prospecto::query()->findOrFail($data['prospecto_id']);
-        $this->authorizeProspecto($request, $prospecto);
+        $interes = Interes::query()->with('prospecto')->findOrFail($data['interes_id']);
+        $this->authorizeInteres($request, $interes);
         $fechaProgramada = $this->parseBusinessDateTime($data['fecha_programada']);
 
         $recordatorio = Recordatorio::query()->create([
             ...$data,
             'fecha_programada' => $fechaProgramada,
-            'prospecto_id' => $prospecto->id,
-            'interes_id' => $interes?->id,
-            'usuario_id' => $request->attributes->get('auth_usuario')->id,
+            'usuario_id' => $interes->vendedor_id ?? $request->attributes->get('auth_usuario')->id,
             'estado' => 'Pendiente',
         ]);
 
-        $interes?->update(['proximo_contacto' => $fechaProgramada]);
+        $interes->update(['proximo_contacto' => $fechaProgramada]);
 
         return response()->json(['recordatorio' => $recordatorio->load('prospecto', 'interes', 'usuario')], 201);
     }
 
     public function completarRecordatorio(Request $request, Recordatorio $recordatorio): JsonResponse
     {
-        $this->authorizeProspecto($request, $recordatorio->prospecto);
+        return DB::transaction(function () use ($request, $recordatorio): JsonResponse {
+            $recordatorio = Recordatorio::query()->lockForUpdate()->findOrFail($recordatorio->id);
+            $this->authorizeInteres($request, $recordatorio->interes);
+            abort_if(! in_array($recordatorio->estado, ['Pendiente', 'Atrasada'], true), 422, 'La actividad ya fue realizada o cancelada.');
 
-        $recordatorio->update([
-            'estado' => 'Realizada',
-            'fecha_realizada' => now(),
-        ]);
+            $data = $request->validate(['resultado' => ['required', 'string']]);
 
-        return response()->json(['recordatorio' => $recordatorio->fresh()->load('prospecto', 'interes', 'usuario')]);
+            $recordatorio->update([
+                'estado' => 'Realizada',
+                'fecha_realizada' => now(),
+            ]);
+
+            $programada = $recordatorio->fecha_programada->timezone(self::BUSINESS_TIMEZONE)->format('d/m/Y H:i');
+            Interaccion::query()->create([
+                'interes_id' => $recordatorio->interes_id,
+                'usuario_id' => $request->attributes->get('auth_usuario')->id,
+                'tipo' => 'Nota comercial',
+                'descripcion' => "Actividad agendada para {$programada}: {$recordatorio->descripcion}",
+                'resultado' => $data['resultado'],
+                'fecha' => now(),
+            ]);
+            $recordatorio->interes?->update(['ultima_actividad_en' => now()]);
+
+            return response()->json(['recordatorio' => $recordatorio->fresh()->load('prospecto', 'interes', 'usuario')]);
+        });
     }
 
     public function cancelarRecordatorio(Request $request, Recordatorio $recordatorio): JsonResponse
     {
-        $this->authorizeProspecto($request, $recordatorio->prospecto);
+        return DB::transaction(function () use ($request, $recordatorio): JsonResponse {
+            $recordatorio = Recordatorio::query()->lockForUpdate()->findOrFail($recordatorio->id);
+            $this->authorizeInteres($request, $recordatorio->interes);
+            abort_if(! in_array($recordatorio->estado, ['Pendiente', 'Atrasada'], true), 422, 'La actividad ya fue realizada o cancelada.');
 
-        $recordatorio->update(['estado' => 'Cancelado']);
+            $recordatorio->update(['estado' => 'Cancelado']);
 
-        return response()->json(['recordatorio' => $recordatorio->fresh()->load('prospecto', 'interes', 'usuario')]);
-    }
-
-    public function confirmarInscripcion(Request $request): JsonResponse
-    {
-        $this->authorizeCoordinacion($request);
-
-        $data = $request->validate([
-            'solicitud_compra_id' => ['required', 'exists:solicitudes_compra,id'],
-        ]);
-
-        $solicitud = SolicitudCompra::query()->with('prospecto', 'pago')->findOrFail($data['solicitud_compra_id']);
-
-        if (! $solicitud->pago || $solicitud->pago->estado !== 'Pago aprobado') {
-            return response()->json(['mensaje' => 'Solo pagos aprobados permiten confirmar inscripcion.'], 422);
-        }
-
-        $inscripcion = InscripcionComercial::query()->firstOrCreate([
-            'solicitud_compra_id' => $solicitud->id,
-        ], [
-            'prospecto_id' => $solicitud->prospecto_id,
-            'fecha_confirmacion' => now(),
-            'estado' => 'Confirmada',
-        ]);
-
-        $solicitud->prospecto->update(['estado' => 'Convertido']);
-
-        $comision = null;
-        if ($solicitud->prospecto->vendedor_id) {
-            $comision = Comision::query()->firstOrCreate([
-                'venta_id' => $solicitud->id,
-            ], [
-                'vendedor_id' => $solicitud->prospecto->vendedor_id,
-                'porcentaje' => 2,
-                'monto' => round(((float) $solicitud->precio_acordado) * 0.02, 2),
-                'estado' => 'Pendiente',
-            ]);
-        }
-
-        return response()->json([
-            'inscripcion' => $inscripcion->load('prospecto', 'solicitudCompra'),
-            'comision' => $comision?->load('vendedor', 'venta'),
-        ]);
+            return response()->json(['recordatorio' => $recordatorio->fresh()->load('prospecto', 'interes', 'usuario')]);
+        });
     }
 
     public function comisiones(Request $request): JsonResponse
@@ -178,7 +148,7 @@ class SeguimientoController extends Controller
         $usuario = $request->attributes->get('auth_usuario');
 
         $comisiones = Comision::query()
-            ->with('vendedor', 'venta.prospecto')
+            ->with('vendedor', 'venta.ordenPago.prospecto')
             ->when($usuario->rol === 'vendedor', fn ($query) => $query->where('vendedor_id', $usuario->id))
             ->orderByDesc('created_at')
             ->get();
@@ -225,13 +195,36 @@ class SeguimientoController extends Controller
         return response()->json(['mensaje' => 'Comisiones marcadas como recibidas.']);
     }
 
+    public function configuracionComision(): JsonResponse
+    {
+        return response()->json(['porcentaje' => Comision::porcentajeVigente()]);
+    }
+
+    public function actualizarConfiguracionComision(Request $request): JsonResponse
+    {
+        $this->authorizeCoordinacion($request);
+
+        $data = $request->validate(['porcentaje' => ['required', 'numeric', 'min:0', 'max:100']]);
+
+        DB::table('configuraciones')->updateOrInsert(
+            ['clave' => 'comision_porcentaje'],
+            [
+                'valor' => (string) $data['porcentaje'],
+                'actualizado_por' => $request->attributes->get('auth_usuario')->id,
+                'updated_at' => now(),
+            ],
+        );
+
+        return response()->json(['porcentaje' => Comision::porcentajeVigente()]);
+    }
+
     public function inscripciones(Request $request): JsonResponse
     {
         $this->authorizeCoordinacion($request);
 
         return response()->json([
             'inscripciones' => InscripcionComercial::query()
-                ->with('prospecto', 'solicitudCompra.pago', 'solicitudCompra.ordenItem.ordenPago.pago')
+                ->with('solicitudCompra.ordenPago.prospecto', 'solicitudCompra.ordenPago.pago')
                 ->latest()
                 ->get(),
         ]);
@@ -243,7 +236,7 @@ class SeguimientoController extends Controller
         $tieneInteresAsignado = $prospecto->intereses()->where('vendedor_id', $usuario?->id)->exists();
 
         abort_if(
-            $usuario?->rol === 'vendedor' && $prospecto->vendedor_id !== $usuario->id && ! $tieneInteresAsignado,
+            $usuario?->rol === 'vendedor' && ! $tieneInteresAsignado,
             403,
             'Prospecto no asignado.'
         );
@@ -253,6 +246,12 @@ class SeguimientoController extends Controller
     {
         $usuario = $request->attributes->get('auth_usuario');
         abort_if(! in_array($usuario?->rol, ['administrador', 'coordinador'], true), 403, 'No tiene permisos de coordinacion.');
+    }
+
+    private function authorizeInteres(Request $request, Interes $interes): void
+    {
+        $usuario = $request->attributes->get('auth_usuario');
+        abort_if($usuario->rol === 'vendedor' && $interes->vendedor_id !== $usuario->id, 403, 'Interes asignado a otro vendedor.');
     }
 
     private function actualizarRecordatoriosAtrasados(): void
@@ -265,6 +264,7 @@ class SeguimientoController extends Controller
 
     private function parseBusinessDateTime(string $value): CarbonImmutable
     {
-        return CarbonImmutable::parse($value, self::BUSINESS_TIMEZONE)->utc();
+        // Las columnas timestamp se guardan en la zona de la aplicacion; Eloquent serializa a UTC.
+        return CarbonImmutable::parse($value, self::BUSINESS_TIMEZONE)->setTimezone(config('app.timezone'));
     }
 }
