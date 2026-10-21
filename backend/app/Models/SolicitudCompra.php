@@ -2,47 +2,35 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable([
-    'orden_pago_id',
-    'external_anuncio_id',
-    'external_modulo_id',
-    'programa_nombre',
-    'modulo_nombre',
-    'modulo_descripcion',
-    'anuncio_titulo',
-    'precio_acordado',
-    'estado',
-    'fecha',
-])]
 class SolicitudCompra extends Model
 {
     protected $table = 'solicitudes_compra';
 
+    protected $primaryKey = 'nro_solicitud';
+
+    protected $guarded = [];
+
     protected function casts(): array
     {
-        return [
-            'fecha' => 'datetime',
-            'precio_acordado' => 'decimal:2',
-        ];
+        return ['fecha' => 'datetime', 'precio_acordado' => 'decimal:2'];
     }
 
     public function ordenPago(): BelongsTo
     {
-        return $this->belongsTo(OrdenPago::class);
+        return $this->belongsTo(OrdenPago::class, 'nro_orden', 'nro_orden');
     }
 
-    public function inscripcionComercial(): HasOne
+    public function inscripcion(): HasOne
     {
-        return $this->hasOne(InscripcionComercial::class);
+        return $this->hasOne(InscripcionComercial::class, 'nro_solicitud', 'nro_solicitud');
     }
 
     public function comision(): HasOne
     {
-        return $this->hasOne(Comision::class);
+        return $this->hasOne(Comision::class, 'nro_solicitud', 'nro_solicitud');
     }
 }

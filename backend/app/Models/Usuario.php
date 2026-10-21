@@ -2,43 +2,54 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['nombre', 'apellido', 'correo', 'telefono', 'password', 'rol', 'estado'])]
-#[Hidden(['password'])]
 class Usuario extends Model
 {
+    protected $table = 'usuarios';
+
+    protected $primaryKey = 'correo';
+
+    protected $keyType = 'string';
+
+    public $incrementing = false;
+
+    protected $guarded = [];
+
     public const ROLES = ['administrador', 'coordinador', 'vendedor'];
+
     public const ESTADOS = ['activo', 'inactivo'];
 
-    protected $table = 'usuarios';
+    protected $hidden = ['password'];
+
+    protected $appends = ['foto_url'];
+
+    protected function casts(): array
+    {
+        return ['fecha_inicio' => 'date:Y-m-d', 'fecha_fin' => 'date:Y-m-d'];
+    }
+
+    /** Credencial vigente (clase 03): activa y dentro de fecha_inicio..fecha_fin. */
+    public function vigente(): bool
+    {
+        $hoy = now()->toDateString();
+
+        return $this->estado === 'activo' && $this->fecha_inicio->toDateString() <= $hoy && $this->fecha_fin->toDateString() >= $hoy;
+    }
+
+    public function getFotoUrlAttribute(): ?string
+    {
+        return $this->foto ? url('/api/fotos/'.rawurlencode($this->foto)) : null;
+    }
 
     public function tokens(): HasMany
     {
-        return $this->hasMany(ApiToken::class);
+        return $this->hasMany(ApiToken::class, 'usuario_correo', 'correo');
     }
 
-    public function interesesAsignados(): HasMany
+    public function programasACargo(): HasMany
     {
-        return $this->hasMany(Interes::class, 'vendedor_id');
+        return $this->hasMany(ProgramaResponsable::class, 'coordinador_correo', 'correo');
     }
-
-    public function comisiones(): HasMany
-    {
-        return $this->hasMany(Comision::class, 'vendedor_id');
-    }
-
-    public function interaccionesRegistradas(): HasMany
-    {
-        return $this->hasMany(Interaccion::class, 'usuario_id');
-    }
-
-    public function recordatorios(): HasMany
-    {
-        return $this->hasMany(Recordatorio::class, 'usuario_id');
-    }
-
 }

@@ -2,13 +2,19 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['nombre', 'codigo', 'porcentaje', 'estado'])]
 class Descuento extends Model
 {
     protected $table = 'descuentos';
+
+    protected $primaryKey = 'codigo';
+
+    protected $keyType = 'string';
+
+    public $incrementing = false;
+
+    protected $guarded = [];
 
     protected function casts(): array
     {
