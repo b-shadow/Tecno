@@ -3,383 +3,301 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\CatalogoCache;
 use App\Models\Interes;
 use App\Models\Prospecto;
-use App\Services\CatalogoExternoDemo;
+use App\Services\Acceso;
+use App\Services\Alcance;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
+/** CU2 (registro de interés desde el catálogo) y CU3 (RF2.1 alta manual o CSV, RF2.2 interés del catálogo). */
 class ProspectoController extends Controller
 {
-    public function __construct(private readonly CatalogoExternoDemo $catalogo) {}
+    /** Origen del lead (RF2.1), los mismos que acepta el P1. */
+    public const ORIGENES = ['Facebook', 'Instagram', 'TikTok', 'WhatsApp', 'Referido', 'Web', 'Correo', 'Feria', 'Otro'];
 
+    private const CAMPOS_CSV = ['documento', 'nombre', 'apellido', 'telefono', 'correo', 'origen'];
+
+    /** Formulario público del catálogo: un interés por módulo, o por cada módulo si elige el programa completo. */
     public function registrarInteres(Request $request): JsonResponse
     {
         $request->merge(['correo' => mb_strtolower(trim((string) $request->input('correo')))]);
         $data = $request->validate([
-            'anuncio_id' => ['nullable', 'string'],
-            'modulo_id' => ['nullable', 'string'],
-            'programa_id' => ['nullable', 'string', 'required_without_all:anuncio_id,modulo_id'],
-            'nombre' => ['required', 'string', 'max:120'],
-            'apellido' => ['required', 'string', 'max:120'],
-            'documento' => ['required', 'string', 'max:60'],
-            'correo' => ['required', 'email', 'max:160'],
-            'telefono' => ['required', 'string', 'max:40'],
-            'profesion' => ['required', 'string', 'max:120'],
-            'ubicacion' => ['required', 'string', 'max:160'],
-        ]);
+            'modulo_codigo' => ['nullable', 'string', 'required_without:programa_codigo'],
+            'programa_codigo' => ['nullable', 'string'],
+        ] + $this->reglasPersona(), [], $this->atributos());
 
-        // Interes por programa completo: un interes por cada modulo del programa.
-        $ofertas = ! empty($data['programa_id']) && empty($data['modulo_id']) && empty($data['anuncio_id'])
-            ? $this->catalogo->ofertasDePrograma($data['programa_id'])
-            : collect([$this->resolveOferta($data)]);
-
-        if ($ofertas->isEmpty()) {
-            throw ValidationException::withMessages(['programa_id' => 'Debe seleccionar un programa disponible.']);
-        }
+        $modulos = $this->modulosSolicitados($data);
 
         try {
-            [$prospecto, $interes, $created] = DB::transaction(function () use ($data, $ofertas) {
-                $prospecto = Prospecto::query()
-                    ->where('documento', $data['documento'])
-                    ->orWhereRaw('lower(correo) = ?', [$data['correo']])
-                    ->lockForUpdate()
-                    ->first();
+            $creado = DB::transaction(function () use ($data, $modulos) {
+                $prospecto = Prospecto::query()->lockForUpdate()->find($data['documento'])
+                    ?? Prospecto::query()->whereRaw('lower(correo) = ?', [$data['correo']])->lockForUpdate()->first();
+                $creado = ! $prospecto;
 
-                $created = false;
-
-                if (! $prospecto) {
-                    $prospecto = Prospecto::query()->create([
-                        'nombre' => $data['nombre'],
-                        'apellido' => $data['apellido'],
-                        'documento' => $data['documento'],
-                        'correo' => $data['correo'],
-                        'telefono' => $data['telefono'],
-                        'profesion' => $data['profesion'],
-                        'ubicacion' => $data['ubicacion'],
-                        'estado' => 'Nuevo',
-                        'fecha_registro' => now(),
-                    ]);
-                    $created = true;
+                if ($creado) {
+                    $prospecto = Prospecto::query()->create($this->soloPersona($data) + ['origen' => 'Web', 'estado' => 'Nuevo', 'fecha_registro' => now()]);
                 } elseif ($prospecto->documento !== $data['documento'] || strcasecmp($prospecto->correo, $data['correo']) !== 0) {
-                    throw ValidationException::withMessages(['correo' => 'No se pudo registrar el interes con esos datos. Contacta a coordinacion.']);
+                    throw ValidationException::withMessages(['correo' => 'Ese correo o carnet ya está registrado con otros datos. Comuníquese con coordinación.']);
                 }
 
-                $intereses = $ofertas->map(function (array $oferta) use ($prospecto) {
-                    $modulo = $oferta['modulo'];
-                    $interes = Interes::query()->firstOrCreate([
-                        'prospecto_id' => $prospecto->id,
-                        'external_modulo_id' => $modulo['external_modulo_id'],
-                    ], [
-                        'external_anuncio_id' => $oferta['external_anuncio_id'],
-                        'programa_nombre' => $modulo['programa']['nombre'],
-                        'modulo_nombre' => $modulo['nombre'],
-                        'modulo_descripcion' => $modulo['descripcion'],
-                        'precio' => $oferta['precio'],
-                        'estado' => 'Nuevo',
-                        'fecha' => now(),
-                    ]);
+                $this->crearIntereses($prospecto, $modulos);
 
-                    return $interes;
-                });
-
-                return [$prospecto, $intereses->first(), $created];
+                return $creado;
             });
         } catch (UniqueConstraintViolationException) {
-            throw ValidationException::withMessages(['correo' => 'El registro ya esta siendo procesado. Intenta nuevamente.']);
+            throw ValidationException::withMessages(['correo' => 'Su registro se está procesando. Intente nuevamente en unos segundos.']);
         }
 
         return response()->json([
-            'mensaje' => 'Interes registrado correctamente. Un vendedor tomara seguimiento y se comunicara por WhatsApp.',
-            'nuevo_prospecto' => $created,
-        ], $created ? 201 : 200);
+            'mensaje' => 'Interés registrado correctamente.',
+            'detalle' => 'Un asesor se comunicará con usted por WhatsApp.',
+            'nuevo_prospecto' => $creado,
+        ], $creado ? 201 : 200);
     }
 
     public function index(Request $request): JsonResponse
     {
         $usuario = $request->attributes->get('auth_usuario');
+        $buscar = trim((string) $request->query('buscar', ''));
 
-        $query = Prospecto::query()
-            ->with(['intereses' => fn ($query) => $query
-                ->when($usuario->rol === 'vendedor', fn ($query) => $query->where('vendedor_id', $usuario->id))
-                ->with('vendedor', 'ordenesPago.pago')])
-            ->when($usuario->rol === 'vendedor', fn ($query) => $query->whereHas('intereses', fn ($subquery) => $subquery->where('vendedor_id', $usuario->id)))
-            ->when($request->query('buscar'), function ($query, string $buscar) {
-                $query->where(function ($subquery) use ($buscar) {
-                    $subquery->where('nombre', 'ilike', "%{$buscar}%")
-                        ->orWhere('apellido', 'ilike', "%{$buscar}%")
-                        ->orWhere('correo', 'ilike', "%{$buscar}%")
-                        ->orWhere('documento', 'ilike', "%{$buscar}%")
-                        ->orWhere('telefono', 'ilike', "%{$buscar}%");
-                });
-            })
-            ->when($request->query('estado'), fn ($query, string $estado) => $query->where('estado', $estado))
-            ->orderByDesc('fecha_registro');
+        $prospectos = Alcance::prospectos(Prospecto::query(), $usuario)
+            ->with(['intereses' => fn ($q) => Alcance::intereses($q, $usuario)->with('vendedor:correo,nombre,apellido')])
+            ->when($buscar !== '', fn ($q) => $q->where(fn ($s) => $s
+                ->where('nombre', 'ilike', "%{$buscar}%")->orWhere('apellido', 'ilike', "%{$buscar}%")
+                ->orWhere('correo', 'ilike', "%{$buscar}%")->orWhere('documento', 'ilike', "%{$buscar}%")
+                ->orWhere('telefono', 'ilike', "%{$buscar}%")))
+            ->when($request->query('origen'), fn ($q, $origen) => $q->where('origen', $origen))
+            ->orderByDesc('fecha_registro')
+            ->get();
 
-        return response()->json(['prospectos' => $query->get()]);
+        return response()->json(['prospectos' => $prospectos, 'origenes' => self::ORIGENES]);
     }
 
+    /** RF2.1 alta manual, con su primer interés opcional. La crea quien puede repartir prospectos. */
     public function store(Request $request): JsonResponse
     {
-        $this->authorizeComercial($request);
+        $this->autorizarAlta($request);
+        $request->merge(['correo' => mb_strtolower(trim((string) $request->input('correo')))]);
+        $data = $request->validate($this->reglasPersona() + [
+            'documento' => ['required', 'string', 'max:20', 'regex:/^[0-9A-Za-z-]+$/', 'unique:prospectos,documento'],
+            'correo' => ['required', 'email', 'max:160', Rule::unique('prospectos', 'correo')],
+            'origen' => ['required', Rule::in(self::ORIGENES)],
+            'modulo_codigo' => ['nullable', 'string'],
+            'programa_codigo' => ['nullable', 'string'],
+        ], [], $this->atributos());
 
-        $data = $this->validarProspecto($request);
-        $data['fecha_registro'] = now();
+        $prospecto = DB::transaction(function () use ($data) {
+            $prospecto = Prospecto::query()->create($this->soloPersona($data) + ['origen' => $data['origen'], 'estado' => 'Nuevo', 'fecha_registro' => now()]);
+            if (! empty($data['modulo_codigo']) || ! empty($data['programa_codigo'])) {
+                $this->crearIntereses($prospecto, $this->modulosSolicitados($data));
+            }
 
-        $prospecto = Prospecto::query()->create($data);
+            return $prospecto;
+        });
 
-        return response()->json(['prospecto' => $prospecto->load('intereses.vendedor')], 201);
+        return response()->json(['mensaje' => 'Prospecto registrado correctamente.', 'prospecto' => $prospecto->load('intereses')], 201);
     }
 
     public function update(Request $request, Prospecto $prospecto): JsonResponse
     {
-        $this->authorizeProspecto($request, $prospecto);
-
-        $prospecto->update($this->validarProspecto($request, $prospecto));
-
         $usuario = $request->attributes->get('auth_usuario');
-
-        return response()->json(['prospecto' => $prospecto->fresh()->load([
-            'intereses' => fn ($query) => $query
-                ->when($usuario->rol === 'vendedor', fn ($query) => $query->where('vendedor_id', $usuario->id))
-                ->with('vendedor'),
-        ])]);
-    }
-
-    public function cambiarEstado(Request $request, Prospecto $prospecto): JsonResponse
-    {
-        $this->authorizeProspecto($request, $prospecto);
+        abort_unless(Alcance::prospectos(Prospecto::query()->whereKey($prospecto->documento), $usuario)->exists(), 403, 'Este prospecto no está dentro de su cartera.');
+        $request->merge(['correo' => mb_strtolower(trim((string) $request->input('correo')))]);
 
         $data = $request->validate([
-            'estado' => ['required', Rule::in(Prospecto::ESTADOS)],
-        ]);
+            'correo' => ['required', 'email', 'max:160', Rule::unique('prospectos', 'correo')->ignore($prospecto->documento, 'documento')],
+            'origen' => ['required', Rule::in(self::ORIGENES)],
+        ] + collect($this->reglasPersona())->except(['documento', 'correo'])->all(), [], $this->atributos());
 
-        abort_if($data['estado'] === 'Convertido' && $prospecto->estado !== 'Convertido', 422, 'La conversion se realiza al aprobar el pago.');
-        $prospecto->update(['estado' => $data['estado']]);
+        $prospecto->update($data);
 
-        return response()->json(['prospecto' => $prospecto->fresh()]);
+        return response()->json(['mensaje' => 'Datos del prospecto actualizados.', 'prospecto' => $prospecto->fresh()]);
     }
 
-    public function crearInteres(Request $request): JsonResponse
+    /** RF2.2: nuevo interés de un prospecto existente (módulo independiente o programa completo). */
+    public function crearInteres(Request $request, Prospecto $prospecto): JsonResponse
     {
+        $usuario = $request->attributes->get('auth_usuario');
+        abort_unless($usuario->rol !== 'vendedor' || Alcance::prospectos(Prospecto::query()->whereKey($prospecto->documento), $usuario)->exists(), 403, 'Este prospecto no está dentro de su cartera.');
         $data = $request->validate([
-            'prospecto_id' => ['required', 'exists:prospectos,id'],
-            'modulo_id' => ['required', 'string'],
-        ]);
+            'modulo_codigo' => ['nullable', 'string', 'required_without:programa_codigo'],
+            'programa_codigo' => ['nullable', 'string'],
+        ], [], $this->atributos());
 
-        $prospecto = Prospecto::query()->findOrFail($data['prospecto_id']);
-        $this->authorizeProspecto($request, $prospecto);
-        $oferta = $this->resolveOferta($data);
-        $modulo = $oferta['modulo'];
+        $nuevos = DB::transaction(function () use ($prospecto, $data, $usuario) {
+            $vendedor = $usuario->rol === 'vendedor' ? $usuario->correo : null;
 
-        $interes = Interes::query()->firstOrCreate([
-            'prospecto_id' => $prospecto->id,
-            'external_modulo_id' => $modulo['external_modulo_id'],
-        ], [
-            'external_anuncio_id' => $oferta['external_anuncio_id'],
-            'programa_nombre' => $modulo['programa']['nombre'],
-            'modulo_nombre' => $modulo['nombre'],
-            'modulo_descripcion' => $modulo['descripcion'],
-            'precio' => $oferta['precio'],
-            'estado' => 'Nuevo',
-            'fecha' => now(),
-        ]);
+            return $this->crearIntereses($prospecto, $this->modulosSolicitados($data), $vendedor);
+        });
 
-        return response()->json(['interes' => $interes->load('prospecto', 'vendedor')], 201);
+        return response()->json(['mensaje' => 'Interés registrado.', 'intereses' => $nuevos], 201);
     }
 
-    public function intereses(Prospecto $prospecto, Request $request): JsonResponse
-    {
-        $this->authorizeProspecto($request, $prospecto);
-
-        return response()->json(['intereses' => $prospecto->intereses()
-            ->when($request->attributes->get('auth_usuario')->rol === 'vendedor', fn ($query) => $query->where('vendedor_id', $request->attributes->get('auth_usuario')->id))
-            ->with('vendedor', 'ordenesPago.pago')->latest()->get()]);
-    }
-
+    /** RF2.1 carga masiva. Todo o nada: si una fila tiene errores no se carga ninguna. */
     public function importarCSV(Request $request): JsonResponse
     {
-        $this->authorizeComercial($request);
+        $this->autorizarAlta($request);
+        $data = $request->validate(['csv' => ['required', 'string', 'max:2097152']], [], ['csv' => 'archivo CSV']);
 
-        $data = $request->validate([
-            'csv' => ['required', 'string', 'max:2097152'],
-        ]);
+        $filas = $this->leerCsv($data['csv']);
+        $cabecera = array_shift($filas) ?? [];
+        $faltan = array_values(array_diff(self::CAMPOS_CSV, $cabecera));
 
-        $stream = fopen('php://temp', 'r+');
-        fwrite($stream, $data['csv']);
-        rewind($stream);
-        $rawHeader = array_map(fn ($value) => trim((string) $value), fgetcsv($stream, 0, ',', '"', '') ?: []);
-        $lines = [];
-        while (($values = fgetcsv($stream, 0, ',', '"', '')) !== false) {
-            $lines[] = $values;
-        }
-        fclose($stream);
-        $header = array_map(fn (string $column) => $this->normalizarColumnaCSV($column), $rawHeader);
-        $required = ['nombre', 'apellido', 'documento', 'telefono', 'profesion', 'ubicacion', 'correo'];
-        $errores = [];
-
-        $missing = array_values(array_diff($required, $header));
-        if (count($header) !== count(array_unique($header))) {
-            throw ValidationException::withMessages(['csv' => 'El CSV contiene columnas duplicadas.']);
-        }
-        if ($missing) {
+        if ($faltan) {
             return response()->json([
-                'mensaje' => 'El CSV no contiene todas las columnas requeridas.',
-                'columnas_requeridas' => $required,
-                'columnas_faltantes' => $missing,
-                'errores' => array_map(fn (string $column) => ['columna' => $column, 'error' => 'Columna requerida ausente'], $missing),
+                'mensaje' => 'Al archivo le faltan columnas obligatorias: '.implode(', ', $faltan).'.',
+                'columnas_requeridas' => self::CAMPOS_CSV,
+                'errores' => array_map(fn ($c) => ['columna' => $c, 'error' => 'Columna obligatoria ausente'], $faltan),
             ], 422);
         }
+        if (count($cabecera) !== count(array_unique($cabecera))) {
+            throw ValidationException::withMessages(['csv' => 'El archivo tiene columnas repetidas.']);
+        }
 
-        $rows = [];
-
-        foreach ($lines as $index => $line) {
-            if ($line === [null]) {
+        $errores = [];
+        $registros = [];
+        foreach ($filas as $i => $valores) {
+            $linea = $i + 2;
+            if ($valores === [null] || $valores === ['']) {
                 continue;
             }
-
-            $values = array_map(fn ($value) => trim((string) $value), $line);
-            $row = count($header) === count($values) ? array_combine($header, $values) : false;
-
-            if (! $row) {
-                $errores[] = ['fila' => $index + 2, 'error' => 'Formato invalido'];
+            if (count($valores) !== count($cabecera)) {
+                $errores[] = ['fila' => $linea, 'error' => 'La fila no tiene la misma cantidad de columnas que la cabecera'];
 
                 continue;
             }
-            $row = array_map('trim', $row);
-            $row['correo'] = mb_strtolower($row['correo']);
-            foreach (['nombre' => 120, 'apellido' => 120, 'documento' => 60, 'telefono' => 40, 'profesion' => 120, 'ubicacion' => 160, 'correo' => 160] as $column => $limit) {
-                if (mb_strlen($row[$column] ?? '') > $limit) {
-                    $errores[] = ['fila' => $index + 2, 'columna' => $column, 'error' => "Maximo {$limit} caracteres"];
-                }
-            }
+            $fila = array_combine($cabecera, array_map(fn ($v) => trim((string) $v), $valores));
+            $fila['correo'] = mb_strtolower($fila['correo']);
+            $fila['origen'] = collect(self::ORIGENES)->first(fn ($o) => strcasecmp($o, $fila['origen']) === 0) ?? $fila['origen'];
 
-            foreach ($required as $column) {
-                if (trim((string) ($row[$column] ?? '')) === '') {
-                    $errores[] = ['fila' => $index + 2, 'columna' => $column, 'error' => 'Campo requerido vacio'];
-                }
+            $validador = validator($fila, $this->reglasPersona() + ['origen' => ['required', Rule::in(self::ORIGENES)]], [], $this->atributos());
+            foreach ($validador->errors()->messages() as $columna => $mensajes) {
+                $errores[] = ['fila' => $linea, 'columna' => $columna, 'error' => $mensajes[0]];
             }
-
-            if (! filter_var($row['correo'] ?? '', FILTER_VALIDATE_EMAIL)) {
-                $errores[] = ['fila' => $index + 2, 'columna' => 'correo', 'error' => 'Correo invalido'];
+            if (Prospecto::query()->whereKey($fila['documento'])->orWhereRaw('lower(correo) = ?', [$fila['correo']])->exists()) {
+                $errores[] = ['fila' => $linea, 'error' => 'El carnet o el correo ya están registrados'];
             }
-
-            if (Prospecto::query()->where('documento', $row['documento'])->orWhere('correo', $row['correo'])->exists()) {
-                $errores[] = ['fila' => $index + 2, 'error' => 'Documento o correo duplicado'];
-            }
-
-            $rows[] = $row;
+            $registros[] = $fila;
         }
 
-        if (! $rows) {
-            $errores[] = ['fila' => 2, 'error' => 'El CSV no contiene registros'];
+        if (! $registros) {
+            $errores[] = ['fila' => 2, 'error' => 'El archivo no contiene registros'];
         }
-
-        foreach (collect($rows)->pluck('documento')->filter()->duplicates()->values() as $documento) {
-            $errores[] = ['columna' => 'documento', 'error' => "Documento duplicado en el archivo: {$documento}"];
-        }
-
-        foreach (collect($rows)->pluck('correo')->filter()->duplicates()->values() as $correo) {
-            $errores[] = ['columna' => 'correo', 'error' => "Correo duplicado en el archivo: {$correo}"];
+        foreach (['documento' => 'Carnet', 'correo' => 'Correo'] as $campo => $nombre) {
+            foreach (collect($registros)->pluck($campo)->filter()->duplicates()->unique() as $repetido) {
+                $errores[] = ['columna' => $campo, 'error' => "{$nombre} repetido dentro del archivo: {$repetido}"];
+            }
         }
 
         if ($errores) {
-            return response()->json([
-                'mensaje' => 'El CSV contiene errores. No se cargo ningun prospecto.',
-                'columnas_requeridas' => $required,
-                'errores' => $errores,
-            ], 422);
+            return response()->json(['mensaje' => 'El archivo tiene errores; no se cargó ningún prospecto.', 'columnas_requeridas' => self::CAMPOS_CSV, 'errores' => $errores], 422);
         }
 
-        $creados = DB::transaction(function () use ($rows): int {
-            foreach ($rows as $row) {
-                Prospecto::query()->create([
-                    'nombre' => $row['nombre'],
-                    'apellido' => $row['apellido'],
-                    'documento' => $row['documento'],
-                    'correo' => $row['correo'],
-                    'telefono' => $row['telefono'],
-                    'profesion' => $row['profesion'],
-                    'ubicacion' => $row['ubicacion'],
-                    'estado' => 'Nuevo',
-                    'fecha_registro' => now(),
-                ]);
+        DB::transaction(function () use ($registros) {
+            foreach ($registros as $fila) {
+                Prospecto::query()->create($this->soloPersona($fila) + ['origen' => $fila['origen'], 'estado' => 'Nuevo', 'fecha_registro' => now()]);
             }
-
-            return count($rows);
         });
 
-        return response()->json(['creados' => $creados, 'errores' => $errores]);
+        return response()->json(['mensaje' => count($registros).' prospecto(s) cargados.', 'creados' => count($registros), 'errores' => []]);
     }
 
-    private function normalizarColumnaCSV(string $column): string
+    /** @return Collection<int, CatalogoCache> */
+    private function modulosSolicitados(array $data): Collection
     {
-        $column = preg_replace('/^\xEF\xBB\xBF/', '', $column);
-        $normalized = Str::ascii(Str::lower(trim($column)));
+        $modulos = CatalogoCache::query()->where('estado', 'abierto')
+            ->when(! empty($data['modulo_codigo']), fn ($q) => $q->whereKey($data['modulo_codigo']))
+            ->when(empty($data['modulo_codigo']), fn ($q) => $q->where('programa_codigo', $data['programa_codigo'] ?? ''))
+            ->with('programa')
+            ->get();
 
-        return match ($normalized) {
-            'nombres' => 'nombre',
-            'apellidos' => 'apellido',
-            'ci', 'documento_identidad' => 'documento',
-            default => $normalized,
-        };
-    }
-
-    private function resolveOferta(array $data): array
-    {
-        $oferta = $this->catalogo->buscarOferta(
-            anuncioId: $data['anuncio_id'] ?? null,
-            moduloId: $data['modulo_id'] ?? null,
-        );
-
-        if (! $oferta) {
-            throw ValidationException::withMessages(['modulo_id' => 'Debe seleccionar un modulo disponible.']);
+        if ($modulos->isEmpty()) {
+            throw ValidationException::withMessages(['modulo_codigo' => 'Seleccione un programa o módulo con inscripciones abiertas.']);
         }
 
-        if (! empty($data['anuncio_id']) && ! empty($data['modulo_id']) && $data['modulo_id'] !== $oferta['external_modulo_id']) {
-            throw ValidationException::withMessages(['modulo_id' => 'El modulo no corresponde al anuncio seleccionado.']);
+        return $modulos;
+    }
+
+    private function crearIntereses(Prospecto $prospecto, Collection $modulos, ?string $vendedor = null): Collection
+    {
+        // Todas las tarjetas de un prospecto quedan con el mismo vendedor (si ya tiene uno).
+        $vendedor ??= $prospecto->intereses()->whereNotNull('vendedor_correo')->value('vendedor_correo');
+
+        return $modulos->map(fn (CatalogoCache $m) => Interes::query()->firstOrCreate(
+            ['documento' => $prospecto->documento, 'modulo_codigo' => $m->codigo],
+            [
+                'anuncio_codigo' => $m->anuncio_codigo,
+                'programa_nombre' => $m->programa->nombre,
+                'modulo_nombre' => $m->nombre,
+                'modulo_descripcion' => $m->descripcion,
+                'precio' => $m->precio,
+                'estado' => 'Nuevo',
+                'fecha' => now(),
+                'vendedor_correo' => $vendedor,
+                'fecha_asignacion' => $vendedor ? now() : null,
+            ],
+        ));
+    }
+
+    private function reglasPersona(): array
+    {
+        return [
+            'documento' => ['required', 'string', 'max:20', 'regex:/^[0-9A-Za-z-]+$/'],
+            'nombre' => ['required', 'string', 'max:120', "regex:/^[\\pL\\s'.-]+$/u"],
+            'apellido' => ['required', 'string', 'max:120', "regex:/^[\\pL\\s'.-]+$/u"],
+            'correo' => ['required', 'email', 'max:160'],
+            'telefono' => ['required', 'string', 'regex:/^\\+?[0-9 ]{7,20}$/'],
+            'profesion' => ['nullable', 'string', 'max:120'],
+            'ubicacion' => ['nullable', 'string', 'max:160'],
+        ];
+    }
+
+    private function soloPersona(array $data): array
+    {
+        return collect($data)->only(['documento', 'nombre', 'apellido', 'correo', 'telefono', 'profesion', 'ubicacion'])
+            ->map(fn ($v) => is_string($v) ? trim($v) : $v)->all();
+    }
+
+    private function atributos(): array
+    {
+        return ['documento' => 'carnet de identidad', 'telefono' => 'teléfono', 'profesion' => 'profesión', 'ubicacion' => 'ciudad',
+            'modulo_codigo' => 'módulo', 'programa_codigo' => 'programa', 'origen' => 'origen del contacto'];
+    }
+
+    private function leerCsv(string $texto): array
+    {
+        $texto = preg_replace('/^\xEF\xBB\xBF/', '', $texto);
+        $separador = substr_count(strtok($texto, "\n") ?: '', ';') > substr_count(strtok($texto, "\n") ?: '', ',') ? ';' : ',';
+        $stream = fopen('php://temp', 'r+');
+        fwrite($stream, $texto);
+        rewind($stream);
+        $filas = [];
+        while (($valores = fgetcsv($stream, 0, $separador, '"', '')) !== false) {
+            $filas[] = $valores;
+        }
+        fclose($stream);
+
+        if ($filas) {
+            $filas[0] = array_map(fn ($c) => match ($c = Str::ascii(Str::lower(trim((string) $c)))) {
+                'nombres' => 'nombre', 'apellidos' => 'apellido', 'ci', 'carnet' => 'documento', 'celular' => 'telefono', 'email' => 'correo',
+                default => $c,
+            }, $filas[0]);
         }
 
-        return $oferta;
+        return $filas;
     }
 
-    private function validarProspecto(Request $request, ?Prospecto $prospecto = null): array
+    private function autorizarAlta(Request $request): void
     {
-        abort_if($request->input('estado') === 'Convertido' && $prospecto?->estado !== 'Convertido', 422, 'La conversion se realiza al aprobar el pago.');
-        $request->merge(['correo' => mb_strtolower(trim((string) $request->input('correo')))]);
-
-        return $request->validate([
-            'nombre' => ['required', 'string', 'max:120'],
-            'apellido' => ['required', 'string', 'max:120'],
-            'documento' => ['required', 'string', 'max:60', Rule::unique('prospectos', 'documento')->ignore($prospecto?->id)],
-            'correo' => ['required', 'email', 'max:160', Rule::unique('prospectos', 'correo')->ignore($prospecto?->id)],
-            'telefono' => ['required', 'string', 'max:40'],
-            'profesion' => ['required', 'string', 'max:120'],
-            'ubicacion' => ['required', 'string', 'max:160'],
-            'estado' => ['required', Rule::in(Prospecto::ESTADOS)],
-        ]);
-    }
-
-    private function authorizeComercial(Request $request): void
-    {
-        $usuario = $request->attributes->get('auth_usuario');
-        abort_if(! in_array($usuario?->rol, ['administrador', 'coordinador'], true), 403, 'No tiene permisos comerciales.');
-    }
-
-    private function authorizeProspecto(Request $request, Prospecto $prospecto): void
-    {
-        $usuario = $request->attributes->get('auth_usuario');
-        $tieneInteresAsignado = $prospecto->intereses()->where('vendedor_id', $usuario?->id)->exists();
-
-        abort_if(
-            $usuario?->rol === 'vendedor' && ! $tieneInteresAsignado,
-            403,
-            'Prospecto no asignado.'
-        );
+        // Registrar o importar prospectos lo hace quien puede repartirlos (matriz: interesados, modificación).
+        abort_unless(Acceso::permite($request->attributes->get('auth_usuario'), 'interesados', 'modificacion'), 403, 'Solo coordinación registra e importa prospectos.');
     }
 }

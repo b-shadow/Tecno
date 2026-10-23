@@ -3,85 +3,86 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\CatalogoCache;
+use App\Models\Programa;
 use App\Services\CatalogoExternoDemo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
+/**
+ * CU2 (consumir oferta) y RNF2 (cliente API del catálogo del Grupo 06).
+ * La oferta vigente es la réplica local `catalogo_cache` + `programas`; `CatalogoExternoDemo` simula la API externa
+ * (imágenes, duración, área) hasta que el Grupo 06 publique la real, y `sincronizar` la vuelve a copiar.
+ */
 class CatalogoController extends Controller
 {
-    public function __construct(private readonly CatalogoExternoDemo $catalogo)
+    public function __construct(private readonly CatalogoExternoDemo $externo)
     {
     }
 
-    public function anuncios(Request $request): JsonResponse
+    /** Programas con sus módulos abiertos (RF2.2: programa completo o módulo independiente). */
+    public function programas(Request $request): JsonResponse
     {
-        $this->authorizeCatalogo($request);
+        $buscar = trim((string) $request->query('buscar', ''));
+        $media = $this->externo->ofertas()->keyBy('external_modulo_id');
+        $programasExternos = $this->externo->ofertas()->pluck('programa', 'programa.id');
 
-        return response()->json([
-            'anuncios' => $this->filtrarOfertas($request)->values(),
-        ]);
-    }
+        $programas = Programa::query()
+            ->with(['modulos' => fn ($q) => $q->where('estado', 'abierto')->orderByRaw('length(codigo), codigo')])
+            ->orderBy('nombre')
+            ->get()
+            ->map(function (Programa $programa) use ($media, $programasExternos, $buscar) {
+                $modulos = $programa->modulos
+                    ->filter(fn ($m) => $buscar === '' || str_contains(mb_strtolower($programa->nombre.' '.$m->nombre.' '.$m->descripcion), mb_strtolower($buscar)))
+                    ->map(fn (CatalogoCache $m) => [
+                        'codigo' => $m->codigo,
+                        'anuncio_codigo' => $m->anuncio_codigo,
+                        'nombre' => $m->nombre,
+                        'descripcion' => $m->descripcion,
+                        'precio' => (float) $m->precio,
+                        'duracion' => $media[$m->codigo]['modulo']['duracion'] ?? null,
+                        'imagen' => $media[$m->codigo]['imagen'] ?? null,
+                    ])->values();
 
-    public function ofertas(Request $request): JsonResponse
-    {
-        return response()->json([
-            'ofertas' => $this->filtrarOfertas($request)
-                ->where('estado', 'publicado')
-                ->values(),
-        ]);
-    }
-
-    public function oferta(string $anuncioId): JsonResponse
-    {
-        $oferta = $this->catalogo->buscarOferta(anuncioId: $anuncioId);
-
-        abort_if(! $oferta || $oferta['estado'] !== 'publicado', 404);
-
-        return response()->json(['oferta' => $oferta]);
-    }
-
-    private function filtrarOfertas(Request $request)
-    {
-        $buscar = mb_strtolower(trim((string) $request->query('buscar', '')));
-        $programaId = (string) $request->query('programa_id', '');
-        $moduloId = (string) $request->query('modulo_id', '');
-        $estado = (string) $request->query('estado', '');
-
-        return $this->catalogo->ofertas()
-            ->filter(function (array $oferta) use ($buscar, $programaId, $moduloId, $estado): bool {
-                if ($programaId !== '' && $oferta['programa']['id'] !== $programaId) {
-                    return false;
-                }
-
-                if ($moduloId !== '' && $oferta['external_modulo_id'] !== $moduloId) {
-                    return false;
-                }
-
-                if ($estado !== '' && $oferta['estado'] !== $estado) {
-                    return false;
-                }
-
-                if ($buscar === '') {
-                    return true;
-                }
-
-                $texto = mb_strtolower(implode(' ', [
-                    $oferta['titulo'],
-                    $oferta['descripcion'],
-                    $oferta['programa']['nombre'],
-                    $oferta['modulo']['nombre'],
-                ]));
-
-                return str_contains($texto, $buscar);
+                return [
+                    'codigo' => $programa->codigo,
+                    'nombre' => $programa->nombre,
+                    'descripcion' => $programasExternos[$programa->codigo]['descripcion'] ?? null,
+                    'area' => $programasExternos[$programa->codigo]['area'] ?? 'Otros programas',
+                    'imagen' => $programasExternos[$programa->codigo]['imagen'] ?? null,
+                    'precio_total' => round($modulos->sum('precio'), 2),
+                    'modulos' => $modulos,
+                ];
             })
-            ->sortByDesc('created_at')
+            ->filter(fn ($p) => $p['modulos']->isNotEmpty())
             ->values();
+
+        return response()->json(['programas' => $programas]);
     }
 
-    private function authorizeCatalogo(Request $request): void
+    /** Copia la oferta de la API externa a la réplica local (solo quien gestiona la oferta). */
+    public function sincronizar(): JsonResponse
     {
-        $usuario = $request->attributes->get('auth_usuario');
+        $ofertas = $this->externo->ofertas();
 
-        abort_if(! in_array($usuario?->rol, ['administrador', 'coordinador'], true), 403, 'No tiene permisos para consultar anuncios.');
+        DB::transaction(function () use ($ofertas) {
+            foreach ($ofertas->pluck('programa')->unique('id') as $p) {
+                Programa::query()->updateOrCreate(['codigo' => $p['id']], ['nombre' => $p['nombre']]);
+            }
+            foreach ($ofertas as $o) {
+                CatalogoCache::query()->updateOrCreate(['codigo' => $o['external_modulo_id']], [
+                    'anuncio_codigo' => $o['external_anuncio_id'],
+                    'programa_codigo' => $o['programa']['id'],
+                    'nombre' => $o['modulo']['nombre'],
+                    'descripcion' => $o['descripcion'],
+                    'precio' => $o['precio'],
+                    'estado' => 'abierto',
+                    'sincronizado_en' => now(),
+                ]);
+            }
+        });
+
+        return response()->json(['mensaje' => 'Catálogo sincronizado: '.$ofertas->count().' módulos.']);
     }
 }
