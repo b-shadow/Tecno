@@ -3,7 +3,7 @@ services:
     image: postgres:18-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: crm_educativo
+      POSTGRES_DB: db_grupo05sa
       POSTGRES_USER: crm_user
       POSTGRES_PASSWORD: crm_password
     ports:
@@ -11,12 +11,12 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U crm_user -d crm_educativo"]
+      test: ["CMD-SHELL", "pg_isready -U crm_user -d db_grupo05sa"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Laravel (API + paginas Inertia). No pisa un .env existente; php -S con el router de Laravel
+  # Laravel (API REST + paginas React). No pisa un .env existente; php -S con el router de Laravel
   # respeta las variables de entorno del contenedor (artisan serve no se las pasa al proceso hijo).
   app:
     build:
@@ -31,7 +31,7 @@ services:
       - DB_CONNECTION=pgsql
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_DATABASE=crm_educativo
+      - DB_DATABASE=db_grupo05sa
       - DB_USERNAME=crm_user
       - DB_PASSWORD=crm_password
     depends_on:
@@ -46,11 +46,11 @@ services:
       && ([ -f .env ] || cp .env.example .env)
       && composer install --no-interaction
       && (grep -q '^APP_KEY=base64' .env || php artisan key:generate --force)
-      && php artisan migrate --force
+      && php artisan crm:preparar-bd && php artisan migrate --force
       && cd public
       && php -S 0.0.0.0:8001 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"
 
-  # Vite en modo desarrollo para las paginas Vue (laravel-vite-plugin escribe public/hot).
+  # Vite en modo desarrollo para las paginas React (laravel-vite-plugin escribe public/hot).
   vite:
     image: node:22-alpine
     restart: unless-stopped

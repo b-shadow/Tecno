@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['usuario_id', 'prospecto_id', 'inscripcion_comercial_id', 'fecha_exportacion', 'estado', 'respuesta'])]
 class Exportacion extends Model
 {
     protected $table = 'exportaciones';
+
+    protected $primaryKey = 'nro_exportacion';
+
+    protected $guarded = [];
 
     protected function casts(): array
     {
@@ -18,11 +20,6 @@ class Exportacion extends Model
 
     public function usuario(): BelongsTo
     {
-        return $this->belongsTo(Usuario::class);
-    }
-
-    public function prospecto(): BelongsTo
-    {
-        return $this->belongsTo(Prospecto::class);
+        return $this->belongsTo(Usuario::class, 'usuario_correo', 'correo');
     }
 }

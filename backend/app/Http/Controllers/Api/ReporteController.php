@@ -3,582 +3,202 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Comision;
-use App\Models\InscripcionComercial;
 use App\Models\Interes;
-use App\Models\OrdenPago;
-use App\Models\Pago;
-use App\Models\Prospecto;
 use App\Models\Usuario;
-use App\Services\CatalogoExternoDemo;
+use App\Services\Acceso;
+use App\Services\Alcance;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * CU8 y enunciado 8. Clase del docente: "reporte es un listado, estadística es la representación porcentual".
+ * Todo se calcula dentro del alcance del rol (RF1.2 / RF1.3).
+ */
 class ReporteController extends Controller
 {
-    public function __construct(private readonly CatalogoExternoDemo $catalogo) {}
-
+    /** Panel analítico: indicadores y series del negocio, y flujo de accesos del sitio. */
     public function dashboard(Request $request): JsonResponse
     {
         $usuario = $request->attributes->get('auth_usuario');
-        $desde = now()->subDays(6)->startOfDay();
+        $dias = collect(range(13, 0))->map(fn ($n) => now()->subDays($n)->toDateString());
+        $tarjetas = $this->tarjetas($usuario);
 
-        $inscripciones = InscripcionComercial::query()
-            ->with('solicitudCompra.ordenPago.prospecto', 'solicitudCompra.comision.vendedor', 'solicitudCompra.ordenPago.vendedor')
-            ->when($usuario?->rol === 'vendedor', fn ($query) => $query->whereHas('solicitudCompra.comision', fn ($relation) => $relation->where('vendedor_id', $usuario->id)))
-            ->get();
+        $ventas = (clone $tarjetas)
+            ->join('ordenes_pago as o', 'o.nro_tarjeta', '=', 'i.nro_tarjeta')
+            ->join('cuotas as c', 'c.nro_orden', '=', 'o.nro_orden')
+            ->where('c.estado', 'Pago aprobado');
 
-        $pagos = Pago::query()
-            ->with('ordenPago.vendedor')
-            ->when($usuario?->rol === 'vendedor', fn ($query) => $query->whereHas('ordenPago', fn ($relation) => $relation->where('vendedor_id', $usuario->id)))
-            ->get();
-
-        $intereses = Interes::query()
-            ->when($usuario?->rol === 'vendedor', fn ($query) => $query->where('vendedor_id', $usuario->id))
-            ->get();
-
-        $comisiones = Comision::query()
-            ->with('vendedor')
-            ->when($usuario?->rol === 'vendedor', fn ($query) => $query->where('vendedor_id', $usuario->id))
-            ->get();
-
-        $inscripcionesSemana = $inscripciones->filter(fn (InscripcionComercial $inscripcion) => $inscripcion->fecha_confirmacion && $inscripcion->fecha_confirmacion->gte($desde));
-        $pagosAprobadosSemana = $pagos->filter(fn (Pago $pago) => $pago->estado === 'Pago aprobado' && $pago->fecha_validacion && $pago->fecha_validacion->gte($desde));
-
-        return response()->json([
-            'kpis' => [
-                'cursos_semana' => $inscripcionesSemana->count(),
-                'ingresos_semana' => (float) $pagosAprobadosSemana->sum('monto'),
-                'pagos_revision' => $pagos->where('estado', 'En revision')->count(),
-                'chats_abiertos' => $intereses->whereIn('estado', ['Nuevo', 'Contactado', 'Interesado', 'Pago enviado', 'En revision'])->count(),
-                'comisiones_pendientes' => (float) $comisiones->where('estado', 'Pendiente')->sum('monto'),
-                'alumnos_total' => $inscripciones->count(),
-            ],
-            'series' => [
-                'cursos_por_dia' => $this->serieUltimosDias($inscripciones, 'fecha_confirmacion'),
-                'ingresos_por_dia' => $this->serieUltimosDias($pagos->where('estado', 'Pago aprobado'), 'fecha_validacion', 'monto'),
-                'pagos_por_estado' => $this->conteoEstados($pagos, Pago::ESTADOS),
-                'prospectos_por_estado' => $this->prospectosPorEstado($usuario),
-                'modulos_mas_vendidos' => $this->rankingModulos($inscripciones),
-                'vendedores_por_cursos' => $this->rankingVendedores($comisiones),
-                'comisiones_por_vendedor' => $this->rankingComisionesPorVendedor($comisiones),
-                'pagos_pendientes_por_vendedor' => $this->rankingPagosPendientesPorVendedor($pagos),
-            ],
-        ]);
-    }
-
-    public function administrativo(Request $request): JsonResponse
-    {
-        $this->authorizeRoles($request, ['administrador']);
-
-        $filters = $request->validate([
-            'fecha_desde' => ['nullable', 'date'],
-            'fecha_hasta' => ['nullable', 'date', 'after_or_equal:fecha_desde'],
-            'programa_id' => ['nullable', 'string'],
-            'modulo_id' => ['nullable', 'string'],
-            'estado' => ['nullable', 'string', 'max:80'],
-        ]);
-
-        $catalogo = $this->catalogo->ofertas();
-        $ventas = $this->applyPagoFilters(Pago::query()->where('estado', 'Pago aprobado'), $filters);
-        $prospectos = $this->applyProspectoFilters(Prospecto::query(), $filters);
-        $convertidos = (clone $prospectos)->where('estado', 'Convertido')->count();
-        $totalProspectos = (clone $prospectos)->count();
-        $pagosPendientes = $this->applyPagoFilters(Pago::query()->whereIn('estado', ['Pendiente de pago', 'En revision']), $filters);
-        $inscripciones = $this->applyInscripcionFilters(InscripcionComercial::query(), $filters);
-        $ordenesAprobadas = $this->applyOrdenFilters(OrdenPago::query()->whereHas('pago', fn ($query) => $query->where('estado', 'Pago aprobado')), $filters);
-
-        return response()->json([
+        $respuesta = [
             'indicadores' => [
-                'programas_publicados' => $catalogo->pluck('programa.nombre')->unique()->count(),
-                'modulos_publicados' => $catalogo->pluck('external_modulo_id')->unique()->count(),
-                'prospectos_registrados' => $totalProspectos,
-                'cursos_vendidos' => (clone $inscripciones)->count(),
-                'ventas_realizadas' => (clone $ordenesAprobadas)->count() ?: (clone $ventas)->count(),
-                'pagos_aprobados' => (clone $ventas)->count(),
-                'ingresos_generados' => (float) (clone $ventas)->sum('monto'),
-                'conversion_comercial' => $totalProspectos > 0 ? round(($convertidos / $totalProspectos) * 100, 2) : 0,
-                'comisiones_generadas' => (float) $this->applyComisionFilters(Comision::query(), $filters)->sum('monto'),
-                'pagos_pendientes' => (clone $pagosPendientes)->count(),
-                'chats_asignados' => $this->applyInteresFilters(Interes::query()->whereNotNull('vendedor_id'), $filters)->count(),
+                'tarjetas_abiertas' => (clone $tarjetas)->whereNotIn('i.estado', ['Convertido', 'Perdido'])->count(),
+                'sin_asignar' => (clone $tarjetas)->whereNull('i.vendedor_correo')->count(),
+                'convertidos' => (clone $tarjetas)->where('i.estado', 'Convertido')->count(),
+                'perdidos' => (clone $tarjetas)->where('i.estado', 'Perdido')->count(),
+                'ingresos_mes' => (float) (clone $ventas)->where('c.fecha_pago', '>=', now()->startOfMonth())->sum('c.monto'),
+                'cuotas_en_revision' => (clone $tarjetas)->join('ordenes_pago as o', 'o.nro_tarjeta', '=', 'i.nro_tarjeta')
+                    ->join('cuotas as c', 'c.nro_orden', '=', 'o.nro_orden')->where('c.estado', 'En revision')->count(),
+                'cuotas_vencidas' => (clone $tarjetas)->join('ordenes_pago as o', 'o.nro_tarjeta', '=', 'i.nro_tarjeta')
+                    ->join('cuotas as c', 'c.nro_orden', '=', 'o.nro_orden')->whereIn('c.estado', ['Pendiente de pago', 'Pago rechazado'])
+                    ->where('c.fecha_vencimiento', '<', now()->toDateString())->count(),
+                'actividades_hoy' => DB::table('recordatorios as r')->joinSub((clone $tarjetas)->select('i.nro_tarjeta'), 't', 't.nro_tarjeta', '=', 'r.nro_tarjeta')
+                    ->whereIn('r.estado', ['Pendiente', 'Atrasada'])->whereDate('r.fecha_programada', now()->toDateString())->count(),
             ],
-            'modulos_mas_vendidos' => $this->modulosMasVendidos($filters),
-            'rendimiento_vendedores' => Usuario::query()
-                ->where('rol', 'vendedor')
-                ->withCount(['interesesAsignados', 'comisiones'])
-                ->withSum('comisiones as comision_total', 'monto')
-                ->get(),
-        ]);
+            'embudo' => $this->porcentajes((clone $tarjetas)->groupBy('i.estado')->selectRaw('i.estado as etiqueta, count(*) as total')->pluck('total', 'etiqueta'), Interes::ESTADOS),
+            'ingresos_por_dia' => $this->serie($dias, (clone $ventas)->where('c.fecha_pago', '>=', $dias->first())
+                ->groupByRaw('c.fecha_pago::date')->selectRaw('c.fecha_pago::date as dia, sum(c.monto) as total')->pluck('total', 'dia')),
+            'ventas_por_programa' => $this->porcentajes((clone $tarjetas)->where('i.estado', 'Convertido')->groupBy('i.programa_nombre')
+                ->selectRaw('i.programa_nombre as etiqueta, count(*) as total')->pluck('total', 'etiqueta')),
+            'visitas_por_pagina' => DB::table('recursos')->orderByDesc('visitas')->limit(8)->get(['nombre', 'visitas']),
+        ];
+
+        // El flujo de inicios de sesión es información de auditoría: solo para quien ve la bitácora.
+        if (Acceso::permite($usuario, 'bitacora')) {
+            $logins = DB::table('bitacora')->whereIn('evento', ['login_exitoso', 'login_fallido'])->where('fecha', '>=', $dias->first())
+                ->groupByRaw('fecha::date, evento')->selectRaw('fecha::date as dia, evento, count(*) as total')->get();
+            $respuesta['accesos'] = [
+                'exitosos' => $this->serie($dias, $logins->where('evento', 'login_exitoso')->pluck('total', 'dia')),
+                'fallidos' => $this->serie($dias, $logins->where('evento', 'login_fallido')->pluck('total', 'dia')),
+                'denegados_semana' => DB::table('bitacora')->where('evento', 'acceso_denegado')->where('fecha', '>=', now()->subDays(7))->count(),
+            ];
+        }
+
+        return response()->json($respuesta);
     }
 
-    public function comercial(Request $request): JsonResponse
-    {
-        $this->authorizeRoles($request, ['administrador', 'coordinador']);
-
-        $filters = $request->validate([
-            'fecha_desde' => ['nullable', 'date'],
-            'fecha_hasta' => ['nullable', 'date', 'after_or_equal:fecha_desde'],
-            'programa_id' => ['nullable', 'string'],
-            'modulo_id' => ['nullable', 'string'],
-            'estado' => ['nullable', 'string', 'max:80'],
-        ]);
-
-        $prospectos = $this->applyProspectoFilters(Prospecto::query(), $filters);
-        $totalProspectos = (clone $prospectos)->count();
-        $convertidos = (clone $prospectos)->where('estado', 'Convertido')->count();
-        $intereses = $this->applyInteresFilters(Interes::query(), $filters);
-        $interesesAsignados = (clone $intereses)->whereNotNull('vendedor_id')->count();
-
-        return response()->json([
-            'indicadores' => [
-                'prospectos_nuevos' => (clone $prospectos)->where('estado', 'Nuevo')->count(),
-                'prospectos_contactados' => (clone $prospectos)->where('estado', 'Contactado')->count(),
-                'prospectos_convertidos' => $convertidos,
-                'prospectos_perdidos' => (clone $prospectos)->where('estado', 'Perdido')->count(),
-                'tasa_conversion' => $totalProspectos > 0 ? round(($convertidos / $totalProspectos) * 100, 2) : 0,
-                'conversaciones_abiertas' => (clone $intereses)->whereIn('estado', ['Nuevo', 'Contactado', 'Interesado', 'Pago enviado', 'En revision'])->count(),
-                'conversaciones_asignadas' => $interesesAsignados,
-                'intereses_registrados' => (clone $intereses)->count(),
-            ],
-            'estados' => (clone $prospectos)
-                ->select('estado', DB::raw('count(*) as total'))
-                ->groupBy('estado')
-                ->orderBy('estado')
-                ->get(),
-            'seguimientos' => [
-                'interacciones' => DB::table('interacciones')->count(),
-                'recordatorios_pendientes' => DB::table('recordatorios')->where('estado', 'Pendiente')->count(),
-                'ventas_confirmadas' => InscripcionComercial::query()->count(),
-                'ordenes_pago' => OrdenPago::query()->count(),
-            ],
-            'vendedores' => Usuario::query()
-                ->where('rol', 'vendedor')
-                ->withCount(['interesesAsignados', 'interaccionesRegistradas', 'recordatorios', 'comisiones'])
-                ->withSum('comisiones as comision_total', 'monto')
-                ->get(),
-        ]);
-    }
-
-    public function estadisticasVendedor(Request $request): JsonResponse
+    /** Estadísticas porcentuales (CU8, CU5). */
+    public function estadisticas(Request $request): JsonResponse
     {
         $usuario = $request->attributes->get('auth_usuario');
-        $vendedorId = $usuario->rol === 'vendedor' ? $usuario->id : $request->query('vendedor_id', $usuario->id);
+        $tarjetas = $this->filtrar($this->tarjetas($usuario), $request);
+
+        $porVendedor = (clone $tarjetas)->join('usuarios as v', 'v.correo', '=', 'i.vendedor_correo')
+            ->groupBy('v.correo', 'v.nombre', 'v.apellido')
+            ->selectRaw("v.nombre || ' ' || v.apellido as vendedor, count(*) as total, count(*) filter (where i.estado = 'Convertido') as convertidos, count(*) filter (where i.estado = 'Perdido') as perdidos")
+            ->get()
+            ->map(fn ($f) => (array) $f + ['tasa_conversion' => $f->total ? round($f->convertidos * 100 / $f->total, 1) : 0]);
 
         return response()->json([
-            'estadisticas' => [
-                'conversaciones_asignadas' => Interes::query()->where('vendedor_id', $vendedorId)->count(),
-                'prospectos_atendidos' => Interes::query()->where('vendedor_id', $vendedorId)->distinct('prospecto_id')->count('prospecto_id'),
-                'interacciones_realizadas' => DB::table('interacciones')->where('usuario_id', $vendedorId)->count(),
-                'ventas_logradas' => Comision::query()->where('vendedor_id', $vendedorId)->count(),
-                'comisiones_generadas' => (float) Comision::query()->where('vendedor_id', $vendedorId)->sum('monto'),
-                'comisiones_pendientes' => (float) Comision::query()->where('vendedor_id', $vendedorId)->where('estado', 'Pendiente')->sum('monto'),
-                'pendientes_actuales' => DB::table('recordatorios')->where('usuario_id', $vendedorId)->where('estado', 'Pendiente')->count(),
-            ],
+            'embudo' => $this->porcentajes((clone $tarjetas)->groupBy('i.estado')->selectRaw('i.estado as etiqueta, count(*) as total')->pluck('total', 'etiqueta'), Interes::ESTADOS),
+            'perdidas_por_categoria' => $this->porcentajes((clone $tarjetas)->join('motivos_perdida as m', 'm.nombre', '=', 'i.motivo_perdida')
+                ->groupBy('m.categoria')->selectRaw('m.categoria as etiqueta, count(*) as total')->pluck('total', 'etiqueta')),
+            'perdidas_por_motivo' => $this->porcentajes((clone $tarjetas)->whereNotNull('i.motivo_perdida')
+                ->groupBy('i.motivo_perdida')->selectRaw('i.motivo_perdida as etiqueta, count(*) as total')->pluck('total', 'etiqueta')),
+            'origen_de_leads' => $this->porcentajes((clone $tarjetas)->join('prospectos as p', 'p.documento', '=', 'i.documento')
+                ->groupBy('p.origen')->selectRaw('p.origen as etiqueta, count(distinct p.documento) as total')->pluck('total', 'etiqueta')),
+            'conversion_por_vendedor' => $porVendedor,
         ]);
     }
 
+    /** Reportes (listados) con filtros. El vendedor siempre ve solo lo suyo. */
     public function listado(Request $request): JsonResponse
     {
         $usuario = $request->attributes->get('auth_usuario');
-        $filters = $request->validate([
-            'tipo' => ['required', 'in:prospectos,intereses,pagos,alumnos,comisiones,vendedores'],
-            'fecha_desde' => ['nullable', 'date'],
-            'fecha_hasta' => ['nullable', 'date', 'after_or_equal:fecha_desde'],
-            'programa_id' => ['nullable', 'string'],
-            'modulo_id' => ['nullable', 'string'],
-            'estado' => ['nullable', 'string', 'max:80'],
-            'vendedor_id' => ['nullable', 'integer', 'exists:usuarios,id'],
-            'buscar' => ['nullable', 'string', 'max:160'],
+        $request->validate([
+            'tipo' => ['required', 'in:tarjetas,pagos,matriculas,comisiones,perdidas,vendedores'],
+            'desde' => ['nullable', 'date'],
+            'hasta' => ['nullable', 'date', 'after_or_equal:desde'],
+            'vendedor' => ['nullable', 'email'],
+            'programa' => ['nullable', 'string', 'max:255'],
+            'estado' => ['nullable', 'string', 'max:40'],
+            'buscar' => ['nullable', 'string', 'max:120'],
+        ], [], ['desde' => 'fecha inicial', 'hasta' => 'fecha final']);
+
+        $base = $this->filtrar($this->tarjetas($usuario), $request)->join('prospectos as p', 'p.documento', '=', 'i.documento')
+            ->leftJoin('usuarios as v', 'v.correo', '=', 'i.vendedor_correo');
+        $prospecto = DB::raw("p.nombre || ' ' || p.apellido as prospecto");
+        $vendedor = DB::raw("coalesce(v.nombre || ' ' || v.apellido, 'Sin asignar') as vendedor");
+
+        [$titulo, $columnas, $filas] = match ($request->query('tipo')) {
+            'tarjetas' => ['Embudo de ventas', ['prospecto' => 'Prospecto', 'documento' => 'CI', 'modulo' => 'Módulo', 'programa' => 'Programa', 'vendedor' => 'Vendedor', 'estado' => 'Estado', 'fecha' => 'Registro'],
+                $base->orderByDesc('i.fecha')->get([$prospecto, 'p.documento', 'i.modulo_nombre as modulo', 'i.programa_nombre as programa', $vendedor, 'i.estado', DB::raw("to_char(i.fecha, 'DD/MM/YYYY') as fecha")])],
+            'perdidas' => ['Prospectos perdidos y motivo', ['prospecto' => 'Prospecto', 'modulo' => 'Módulo', 'vendedor' => 'Vendedor', 'motivo' => 'Motivo', 'categoria' => 'Categoría'],
+                $base->where('i.estado', 'Perdido')->leftJoin('motivos_perdida as m', 'm.nombre', '=', 'i.motivo_perdida')
+                    ->orderBy('m.categoria')->get([$prospecto, 'i.modulo_nombre as modulo', $vendedor, 'i.motivo_perdida as motivo', 'm.categoria'])],
+            'pagos' => ['Cuotas y pagos', ['prospecto' => 'Prospecto', 'orden' => 'Orden', 'cuota' => 'Cuota', 'monto' => 'Monto (Bs)', 'vence' => 'Vence', 'estado' => 'Estado', 'vendedor' => 'Vendedor'],
+                $base->join('ordenes_pago as o', 'o.nro_tarjeta', '=', 'i.nro_tarjeta')->join('cuotas as c', 'c.nro_orden', '=', 'o.nro_orden')
+                    ->when($request->query('estado') && in_array($request->query('estado'), ['Pendiente de pago', 'En revision', 'Pago aprobado', 'Pago rechazado'], true), fn ($q) => $q->where('c.estado', $request->query('estado')))
+                    ->orderBy('c.fecha_vencimiento')->get([$prospecto, 'o.nro_orden as orden', 'c.nro_cuota as cuota', 'c.monto', DB::raw("to_char(c.fecha_vencimiento, 'DD/MM/YYYY') as vence"), 'c.estado', $vendedor])],
+            'matriculas' => ['Matrículas confirmadas', ['prospecto' => 'Alumno', 'documento' => 'CI', 'modulo' => 'Módulo', 'precio' => 'Precio (Bs)', 'vendedor' => 'Vendedor', 'fecha' => 'Confirmación'],
+                $base->join('ordenes_pago as o', 'o.nro_tarjeta', '=', 'i.nro_tarjeta')->join('solicitudes_compra as s', 's.nro_orden', '=', 'o.nro_orden')
+                    ->join('inscripciones_comerciales as ic', 'ic.nro_solicitud', '=', 's.nro_solicitud')
+                    ->orderByDesc('ic.fecha_confirmacion')->get([$prospecto, 'p.documento', 's.modulo_nombre as modulo', 's.precio_acordado as precio', $vendedor, DB::raw("to_char(ic.fecha_confirmacion, 'DD/MM/YYYY') as fecha")])],
+            'comisiones' => ['Comisiones', ['vendedor' => 'Vendedor', 'prospecto' => 'Alumno', 'modulo' => 'Módulo', 'porcentaje' => '%', 'monto' => 'Monto (Bs)', 'estado' => 'Estado'],
+                $base->join('ordenes_pago as o', 'o.nro_tarjeta', '=', 'i.nro_tarjeta')->join('solicitudes_compra as s', 's.nro_orden', '=', 'o.nro_orden')
+                    ->join('comisiones as k', 'k.nro_solicitud', '=', 's.nro_solicitud')
+                    ->orderBy('vendedor')->get([$vendedor, $prospecto, 's.modulo_nombre as modulo', 'k.porcentaje', 'k.monto', 'k.estado'])],
+            'vendedores' => ['Cartera por vendedor', ['vendedor' => 'Vendedor', 'total' => 'Tarjetas', 'abiertas' => 'Abiertas', 'convertidos' => 'Concretadas', 'perdidos' => 'Perdidas'],
+                $base->whereNotNull('i.vendedor_correo')->groupBy('v.correo', 'v.nombre', 'v.apellido')
+                    ->get([DB::raw("v.nombre || ' ' || v.apellido as vendedor"), DB::raw('count(*) as total'),
+                        DB::raw("count(*) filter (where i.estado not in ('Convertido','Perdido')) as abiertas"),
+                        DB::raw("count(*) filter (where i.estado = 'Convertido') as convertidos"), DB::raw("count(*) filter (where i.estado = 'Perdido') as perdidos")])],
+        };
+
+        return response()->json([
+            'titulo' => $titulo,
+            'columnas' => collect($columnas)->map(fn ($label, $key) => ['key' => $key, 'label' => $label])->values(),
+            'filas' => $filas,
+            'vendedores' => $usuario->rol === 'vendedor' ? [] : Usuario::query()->where('rol', 'vendedor')->orderBy('nombre')->get(['correo', 'nombre', 'apellido']),
         ]);
+    }
 
-        if ($usuario->rol === 'vendedor') {
-            $filters['vendedor_id'] = $usuario->id;
-        }
+    /** Resumen personal del vendedor ("Mi día"). */
+    public function estadisticasVendedor(Request $request): JsonResponse
+    {
+        $usuario = $request->attributes->get('auth_usuario');
+        $correo = $usuario->correo;
+        $tarjetas = DB::table('intereses')->where('vendedor_correo', $correo);
 
-        return match ($filters['tipo']) {
-            'prospectos' => $this->reporteProspectos($filters),
-            'intereses' => $this->reporteIntereses($filters),
-            'pagos' => $this->reportePagos($filters),
-            'alumnos' => $this->reporteAlumnos($filters),
-            'comisiones' => $this->reporteComisiones($filters),
-            'vendedores' => $this->reporteVendedores($filters),
+        return response()->json(['estadisticas' => [
+            'tarjetas' => (clone $tarjetas)->count(),
+            'abiertas' => (clone $tarjetas)->whereNotIn('estado', ['Convertido', 'Perdido'])->count(),
+            'convertidos' => (clone $tarjetas)->where('estado', 'Convertido')->count(),
+            'interacciones_mes' => DB::table('interacciones')->where('usuario_correo', $correo)->where('fecha', '>=', now()->startOfMonth())->count(),
+            'comision_pendiente' => (float) DB::table('comisiones')->where('vendedor_correo', $correo)->where('estado', 'Pendiente')->sum('monto'),
+            'actividades_pendientes' => DB::table('recordatorios')->where('usuario_correo', $correo)->whereIn('estado', ['Pendiente', 'Atrasada'])->count(),
+        ]]);
+    }
+
+    private function tarjetas(Usuario $usuario): Builder
+    {
+        $query = DB::table('intereses as i');
+
+        return match ($usuario->rol) {
+            'vendedor' => $query->where('i.vendedor_correo', $usuario->correo),
+            'coordinador' => $query->whereIn('i.modulo_codigo', Alcance::modulosACargo($usuario)),
+            default => $query,
         };
     }
 
-    private function authorizeRoles(Request $request, array $roles): void
+    private function filtrar(Builder $query, Request $request): Builder
     {
-        $usuario = $request->attributes->get('auth_usuario');
-        abort_if(! in_array($usuario?->rol, $roles, true), 403, 'No tiene permisos para esta operacion.');
-    }
+        $tz = 'America/La_Paz';
 
-    private function reporteProspectos(array $filters): JsonResponse
-    {
-        $query = $this->applyProspectoFilters(Prospecto::query()->withCount(['intereses' => fn ($query) => $query
-            ->when($filters['vendedor_id'] ?? null, fn ($query, $id) => $query->where('vendedor_id', $id))]), $filters)
-            ->when($filters['buscar'] ?? null, fn ($query, $buscar) => $this->buscarProspecto($query, $buscar))
-            ->orderByDesc('fecha_registro');
-
-        return $this->reportResponse('Prospectos', [
-            ['key' => 'prospecto', 'label' => 'Prospecto'],
-            ['key' => 'ci', 'label' => 'CI'],
-            ['key' => 'contacto', 'label' => 'Contacto'],
-            ['key' => 'perfil', 'label' => 'Perfil'],
-            ['key' => 'estado', 'label' => 'Estado'],
-            ['key' => 'intereses', 'label' => 'Intereses'],
-            ['key' => 'fecha', 'label' => 'Registro'],
-        ], $query->get()->map(fn (Prospecto $prospecto) => [
-            'prospecto' => trim($prospecto->nombre.' '.$prospecto->apellido),
-            'ci' => $prospecto->documento,
-            'contacto' => $prospecto->correo.' / '.$prospecto->telefono,
-            'perfil' => trim(($prospecto->profesion ?: 'Sin profesion').' - '.($prospecto->ubicacion ?: 'Sin ubicacion')),
-            'estado' => $prospecto->estado,
-            'intereses' => $prospecto->intereses_count,
-            'fecha' => optional($prospecto->fecha_registro)->format('d/m/Y'),
-        ])->values());
-    }
-
-    private function reporteIntereses(array $filters): JsonResponse
-    {
-        $query = $this->applyInteresFilters(Interes::query()->with('prospecto', 'vendedor')->withCount('interacciones'), $filters)
-            ->when($filters['estado'] ?? null, fn ($query, $estado) => $query->where('estado', $estado))
-            ->when($filters['vendedor_id'] ?? null, fn ($query, $vendedorId) => $query->where('vendedor_id', $vendedorId))
-            ->when($filters['buscar'] ?? null, fn ($query, $buscar) => $query->where(function ($subquery) use ($buscar): void {
-                $subquery->where('modulo_nombre', 'ilike', "%{$buscar}%")
-                    ->orWhere('programa_nombre', 'ilike', "%{$buscar}%")
-                    ->orWhereHas('prospecto', fn ($relation) => $this->buscarProspecto($relation, $buscar));
-            }))
-            ->latest();
-
-        return $this->reportResponse('Intereses y agenda', [
-            ['key' => 'prospecto', 'label' => 'Prospecto'],
-            ['key' => 'modulo', 'label' => 'Modulo'],
-            ['key' => 'programa', 'label' => 'Programa'],
-            ['key' => 'vendedor', 'label' => 'Vendedor'],
-            ['key' => 'contactos', 'label' => 'Contactos'],
-            ['key' => 'estado', 'label' => 'Estado'],
-            ['key' => 'fecha', 'label' => 'Fecha'],
-        ], $query->get()->map(fn (Interes $interes) => [
-            'prospecto' => $this->nombreProspecto($interes->prospecto),
-            'modulo' => $interes->modulo_nombre,
-            'programa' => $interes->programa_nombre,
-            'vendedor' => $this->nombreUsuario($interes->vendedor) ?: 'Sin vendedor',
-            'contactos' => $interes->interacciones_count,
-            'estado' => $interes->estado,
-            'fecha' => optional($interes->created_at)->format('d/m/Y H:i'),
-        ])->values());
-    }
-
-    private function reportePagos(array $filters): JsonResponse
-    {
-        $query = $this->applyPagoFilters(Pago::query()->with([
-            'ordenPago.prospecto',
-            'ordenPago.vendedor',
-            'ordenPago.items',
-        ]), $filters)
-            ->when($filters['estado'] ?? null, fn ($query, $estado) => $query->where('estado', $estado))
-            ->when($filters['vendedor_id'] ?? null, fn ($query, $vendedorId) => $query->whereHas('ordenPago', fn ($relation) => $relation->where('vendedor_id', $vendedorId)))
-            ->latest('fecha_generacion');
-
-        return $this->reportResponse('Pagos', [
-            ['key' => 'prospecto', 'label' => 'Prospecto'],
-            ['key' => 'vendedor', 'label' => 'Vendedor'],
-            ['key' => 'modulos', 'label' => 'Modulo(s)'],
-            ['key' => 'monto', 'label' => 'Monto'],
-            ['key' => 'estado', 'label' => 'Estado'],
-            ['key' => 'fecha', 'label' => 'Fecha'],
-        ], $query->get()->map(fn (Pago $pago) => [
-            'prospecto' => $this->nombreProspecto($pago->ordenPago->prospecto),
-            'vendedor' => $this->nombreUsuario($pago->ordenPago?->vendedor) ?: 'Sin vendedor',
-            'modulos' => $pago->ordenPago->items->pluck('modulo_nombre')->join(', '),
-            'monto' => number_format((float) $pago->monto, 2).' Bs',
-            'estado' => $pago->estado,
-            'fecha' => optional($pago->fecha_generacion)->format('d/m/Y H:i'),
-        ])->values());
-    }
-
-    private function reporteAlumnos(array $filters): JsonResponse
-    {
-        $query = $this->applyInscripcionFilters(InscripcionComercial::query()->with('solicitudCompra.ordenPago.prospecto', 'solicitudCompra.ordenPago.vendedor'), $filters)
-            ->when($filters['estado'] ?? null, fn ($query, $estado) => $query->where('estado', $estado))
-            ->when($filters['vendedor_id'] ?? null, fn ($query, $vendedorId) => $query->whereHas('solicitudCompra.ordenPago', fn ($relation) => $relation->where('vendedor_id', $vendedorId)))
-            ->latest('fecha_confirmacion');
-
-        return $this->reportResponse('Alumnos inscritos', [
-            ['key' => 'alumno', 'label' => 'Alumno'],
-            ['key' => 'ci', 'label' => 'CI'],
-            ['key' => 'correo', 'label' => 'Correo'],
-            ['key' => 'programa', 'label' => 'Programa'],
-            ['key' => 'modulo', 'label' => 'Modulo'],
-            ['key' => 'estado', 'label' => 'Estado'],
-            ['key' => 'fecha', 'label' => 'Inscripcion'],
-        ], $query->get()->map(fn (InscripcionComercial $inscripcion) => [
-            'alumno' => $this->nombreProspecto($inscripcion->alumno()),
-            'ci' => $inscripcion->alumno()?->documento,
-            'correo' => $inscripcion->alumno()?->correo,
-            'programa' => $inscripcion->solicitudCompra?->programa_nombre,
-            'modulo' => $inscripcion->solicitudCompra?->modulo_nombre,
-            'estado' => $inscripcion->estado,
-            'fecha' => optional($inscripcion->fecha_confirmacion)->format('d/m/Y H:i'),
-        ])->values());
-    }
-
-    private function reporteComisiones(array $filters): JsonResponse
-    {
-        $query = $this->applyComisionFilters(Comision::query()->with('vendedor', 'venta.ordenPago.prospecto'), $filters)
-            ->when($filters['estado'] ?? null, fn ($query, $estado) => $query->where('estado', $estado))
-            ->when($filters['vendedor_id'] ?? null, fn ($query, $vendedorId) => $query->where('vendedor_id', $vendedorId))
-            ->latest();
-
-        return $this->reportResponse('Comisiones', [
-            ['key' => 'vendedor', 'label' => 'Vendedor'],
-            ['key' => 'prospecto', 'label' => 'Prospecto'],
-            ['key' => 'curso', 'label' => 'Curso'],
-            ['key' => 'porcentaje', 'label' => 'Porcentaje'],
-            ['key' => 'monto', 'label' => 'Monto'],
-            ['key' => 'estado', 'label' => 'Estado'],
-            ['key' => 'fecha_pago', 'label' => 'Fecha recibida'],
-        ], $query->get()->map(fn (Comision $comision) => [
-            'vendedor' => $this->nombreUsuario($comision->vendedor),
-            'prospecto' => $this->nombreProspecto($comision->venta?->ordenPago?->prospecto),
-            'curso' => $comision->venta?->modulo_nombre,
-            'porcentaje' => number_format((float) $comision->porcentaje, 2).'%',
-            'monto' => number_format((float) $comision->monto, 2).' Bs',
-            'estado' => $comision->estado,
-            'fecha_pago' => $comision->fecha_pago ? $comision->fecha_pago->format('d/m/Y H:i') : 'Pendiente',
-        ])->values());
-    }
-
-    private function reporteVendedores(array $filters): JsonResponse
-    {
-        $query = Usuario::query()
-            ->where('rol', 'vendedor')
-            ->when($filters['vendedor_id'] ?? null, fn ($query, $vendedorId) => $query->where('id', $vendedorId))
-            ->withCount([
-                'interesesAsignados',
-                'interesesAsignados as contactados_count' => fn ($query) => $query->has('interacciones'),
-                'interesesAsignados as concretados_count' => fn ($query) => $query->where('estado', 'Convertido'),
-                'comisiones',
-            ])
-            ->withSum('comisiones as comision_total', 'monto');
-
-        return $this->reportResponse('Vendedores', [
-            ['key' => 'vendedor', 'label' => 'Vendedor'],
-            ['key' => 'correo', 'label' => 'Correo'],
-            ['key' => 'intereses', 'label' => 'Asignados'],
-            ['key' => 'contactados', 'label' => 'Contactados'],
-            ['key' => 'concretados', 'label' => 'Concretados'],
-            ['key' => 'cursos_vendidos', 'label' => 'Cursos vendidos'],
-            ['key' => 'comision_total', 'label' => 'Comision total'],
-            ['key' => 'estado', 'label' => 'Estado'],
-        ], $query->get()->map(fn (Usuario $vendedor) => [
-            'vendedor_id' => $vendedor->id,
-            'vendedor' => $this->nombreUsuario($vendedor),
-            'correo' => $vendedor->correo,
-            'intereses' => $vendedor->intereses_asignados_count,
-            'contactados' => $vendedor->contactados_count,
-            'concretados' => $vendedor->concretados_count,
-            'cursos_vendidos' => $vendedor->comisiones_count,
-            'comision_total' => number_format((float) ($vendedor->comision_total ?? 0), 2).' Bs',
-            'estado' => $vendedor->estado,
-        ])->values());
-    }
-
-    private function reportResponse(string $titulo, array $columns, $rows): JsonResponse
-    {
-        return response()->json([
-            'titulo' => $titulo,
-            'columns' => $columns,
-            'rows' => $rows,
-            'total' => $rows->count(),
-        ]);
-    }
-
-    private function buscarProspecto($query, string $buscar)
-    {
-        return $query->where(function ($subquery) use ($buscar): void {
-            $subquery->where('nombre', 'ilike', "%{$buscar}%")
-                ->orWhere('apellido', 'ilike', "%{$buscar}%")
-                ->orWhere('correo', 'ilike', "%{$buscar}%")
-                ->orWhere('documento', 'ilike', "%{$buscar}%")
-                ->orWhere('telefono', 'ilike', "%{$buscar}%");
-        });
-    }
-
-    private function nombreProspecto(?Prospecto $prospecto): string
-    {
-        return $prospecto ? trim($prospecto->nombre.' '.$prospecto->apellido) : 'Sin prospecto';
-    }
-
-    private function nombreUsuario(?Usuario $usuario): string
-    {
-        return $usuario ? trim($usuario->nombre.' '.$usuario->apellido) : '';
-    }
-
-    private function applyProspectoFilters($query, array $filters)
-    {
         return $query
-            ->when($filters['vendedor_id'] ?? null, fn ($query, $id) => $query->whereHas('intereses', fn ($query) => $query->where('vendedor_id', $id)))
-            ->when($filters['fecha_desde'] ?? null, fn ($query, $date) => $query->whereDate('fecha_registro', '>=', $date))
-            ->when($filters['fecha_hasta'] ?? null, fn ($query, $date) => $query->whereDate('fecha_registro', '<=', $date))
-            ->when($filters['estado'] ?? null, fn ($query, $estado) => $query->where('estado', $estado))
-            ->when($filters['modulo_id'] ?? null, fn ($query, $moduloId) => $query->where(function ($subquery) use ($moduloId): void {
-                $subquery
-                    ->whereHas('intereses', fn ($relation) => $relation->where('external_modulo_id', $moduloId))
-                    ->orWhereHas('ordenesPago.items', fn ($relation) => $relation->where('external_modulo_id', $moduloId));
-            }))
-            ->when($filters['programa_id'] ?? null, fn ($query, $programaId) => $query->where(function ($subquery) use ($programaId): void {
-                $subquery
-                    ->whereHas('intereses', fn ($relation) => $relation->where('programa_nombre', $programaId))
-                    ->orWhereHas('ordenesPago.items', fn ($relation) => $relation->where('programa_nombre', $programaId));
-            }));
+            ->when($request->query('desde'), fn ($q, $d) => $q->where('i.fecha', '>=', Carbon::parse($d, $tz)->startOfDay()->utc()))
+            ->when($request->query('hasta'), fn ($q, $h) => $q->where('i.fecha', '<=', Carbon::parse($h, $tz)->endOfDay()->utc()))
+            ->when($request->query('vendedor'), fn ($q, $v) => $q->where('i.vendedor_correo', $v))
+            ->when($request->query('programa'), fn ($q, $p) => $q->where('i.programa_nombre', $p))
+            ->when($request->query('estado') && in_array($request->query('estado'), Interes::ESTADOS, true), fn ($q) => $q->where('i.estado', $request->query('estado')))
+            ->when($request->query('buscar'), fn ($q, $b) => $q->where(fn ($s) => $s->where('i.modulo_nombre', 'ilike', "%{$b}%")->orWhere('i.programa_nombre', 'ilike', "%{$b}%")
+                ->orWhereExists(fn ($e) => $e->from('prospectos as px')->whereColumn('px.documento', 'i.documento')
+                    ->where(fn ($n) => $n->where('px.nombre', 'ilike', "%{$b}%")->orWhere('px.apellido', 'ilike', "%{$b}%")->orWhere('px.documento', 'ilike', "%{$b}%")))));
     }
 
-    private function applyPagoFilters($query, array $filters)
+    /** [{etiqueta, total, porcentaje}] en el orden dado (si se da) y con ceros explícitos. */
+    private function porcentajes($conteos, ?array $orden = null): array
     {
-        return $query
-            ->when($filters['fecha_desde'] ?? null, fn ($query, $date) => $query->whereDate('fecha_generacion', '>=', $date))
-            ->when($filters['fecha_hasta'] ?? null, fn ($query, $date) => $query->whereDate('fecha_generacion', '<=', $date))
-            ->when($filters['modulo_id'] ?? null, fn ($query, $moduloId) => $query->whereHas('ordenPago.items', fn ($relation) => $relation->where('external_modulo_id', $moduloId)))
-            ->when($filters['programa_id'] ?? null, fn ($query, $programaId) => $query->whereHas('ordenPago.items', fn ($relation) => $relation->where('programa_nombre', $programaId)));
+        $conteos = collect($conteos)->map(fn ($v) => (int) $v);
+        $etiquetas = $orden ?? $conteos->sortDesc()->keys()->all();
+        $suma = max($conteos->sum(), 1);
+
+        return array_map(fn ($e) => ['etiqueta' => $e, 'total' => $conteos[$e] ?? 0, 'porcentaje' => round(($conteos[$e] ?? 0) * 100 / $suma, 1)], $etiquetas);
     }
 
-    private function applyInscripcionFilters($query, array $filters)
+    private function serie($dias, $valores): array
     {
-        return $query
-            ->when($filters['fecha_desde'] ?? null, fn ($query, $date) => $query->whereDate('fecha_confirmacion', '>=', $date))
-            ->when($filters['fecha_hasta'] ?? null, fn ($query, $date) => $query->whereDate('fecha_confirmacion', '<=', $date))
-            ->when($filters['modulo_id'] ?? null, fn ($query, $moduloId) => $query->whereHas('solicitudCompra', fn ($relation) => $relation->where('external_modulo_id', $moduloId)))
-            ->when($filters['programa_id'] ?? null, fn ($query, $programaId) => $query->whereHas('solicitudCompra', fn ($relation) => $relation->where('programa_nombre', $programaId)));
-    }
-
-    private function applyOrdenFilters($query, array $filters)
-    {
-        return $query
-            ->when($filters['fecha_desde'] ?? null, fn ($query, $date) => $query->whereDate('fecha_generacion', '>=', $date))
-            ->when($filters['fecha_hasta'] ?? null, fn ($query, $date) => $query->whereDate('fecha_generacion', '<=', $date))
-            ->when($filters['modulo_id'] ?? null, fn ($query, $moduloId) => $query->whereHas('items', fn ($relation) => $relation->where('external_modulo_id', $moduloId)))
-            ->when($filters['programa_id'] ?? null, fn ($query, $programaId) => $query->whereHas('items', fn ($relation) => $relation->where('programa_nombre', $programaId)));
-    }
-
-    private function applyInteresFilters($query, array $filters)
-    {
-        return $query
-            ->when($filters['fecha_desde'] ?? null, fn ($query, $date) => $query->whereDate('fecha', '>=', $date))
-            ->when($filters['fecha_hasta'] ?? null, fn ($query, $date) => $query->whereDate('fecha', '<=', $date))
-            ->when($filters['modulo_id'] ?? null, fn ($query, $moduloId) => $query->where('external_modulo_id', $moduloId))
-            ->when($filters['programa_id'] ?? null, fn ($query, $programaId) => $query->where('programa_nombre', $programaId));
-    }
-
-    private function applyComisionFilters($query, array $filters)
-    {
-        return $query
-            ->when($filters['fecha_desde'] ?? null, fn ($query, $date) => $query->whereDate('created_at', '>=', $date))
-            ->when($filters['fecha_hasta'] ?? null, fn ($query, $date) => $query->whereDate('created_at', '<=', $date))
-            ->when($filters['modulo_id'] ?? null, fn ($query, $moduloId) => $query->whereHas('venta', fn ($relation) => $relation->where('external_modulo_id', $moduloId)))
-            ->when($filters['programa_id'] ?? null, fn ($query, $programaId) => $query->whereHas('venta', fn ($relation) => $relation->where('programa_nombre', $programaId)));
-    }
-
-    private function modulosMasVendidos(array $filters)
-    {
-        return $this->applyInscripcionFilters(InscripcionComercial::query(), $filters)
-            ->join('solicitudes_compra', 'inscripciones_comerciales.solicitud_compra_id', '=', 'solicitudes_compra.id')
-            ->select('solicitudes_compra.external_modulo_id', 'solicitudes_compra.programa_nombre', 'solicitudes_compra.modulo_nombre', DB::raw('count(*) as total'))
-            ->groupBy('solicitudes_compra.external_modulo_id', 'solicitudes_compra.programa_nombre', 'solicitudes_compra.modulo_nombre')
-            ->orderByDesc('total')
-            ->limit(5)
-            ->get();
-    }
-
-    private function serieUltimosDias($items, string $dateField, ?string $sumField = null): array
-    {
-        return collect(range(6, 0))->map(function (int $offset) use ($items, $dateField, $sumField): array {
-            $date = now()->subDays($offset);
-            $dayItems = $items->filter(fn ($item) => $item->{$dateField} && $item->{$dateField}->isSameDay($date));
-
-            return [
-                'label' => $date->format('d/m'),
-                'total' => $sumField ? round((float) $dayItems->sum($sumField), 2) : $dayItems->count(),
-            ];
-        })->values()->all();
-    }
-
-    private function conteoEstados($items, array $states): array
-    {
-        return collect($states)->map(fn (string $state): array => [
-            'label' => $state,
-            'total' => $items->where('estado', $state)->count(),
-        ])->values()->all();
-    }
-
-    private function prospectosPorEstado(?Usuario $usuario): array
-    {
-        $query = Prospecto::query()
-            ->when($usuario?->rol === 'vendedor', fn ($query) => $query->whereHas('intereses', fn ($relation) => $relation->where('vendedor_id', $usuario->id)));
-
-        $prospectos = $query->get();
-
-        return collect(Prospecto::ESTADOS)->map(fn (string $state): array => [
-            'label' => $state,
-            'total' => $prospectos->where('estado', $state)->count(),
-        ])->values()->all();
-    }
-
-    private function rankingModulos($inscripciones): array
-    {
-        return $inscripciones
-            ->groupBy(fn (InscripcionComercial $inscripcion) => $inscripcion->solicitudCompra?->modulo_nombre ?: 'Sin modulo')
-            ->map(fn ($items, string $module): array => [
-                'label' => $module,
-                'total' => $items->count(),
-            ])
-            ->sortByDesc('total')
-            ->take(6)
-            ->values()
-            ->all();
-    }
-
-    private function rankingVendedores($comisiones): array
-    {
-        return $comisiones
-            ->groupBy(fn (Comision $comision) => $this->nombreUsuario($comision->vendedor) ?: 'Sin vendedor')
-            ->map(fn ($items, string $seller): array => [
-                'label' => $seller,
-                'total' => $items->count(),
-                'monto' => round((float) $items->sum('monto'), 2),
-            ])
-            ->sortByDesc('total')
-            ->take(6)
-            ->values()
-            ->all();
-    }
-
-    private function rankingComisionesPorVendedor($comisiones): array
-    {
-        return $comisiones
-            ->groupBy(fn (Comision $comision) => $this->nombreUsuario($comision->vendedor) ?: 'Sin vendedor')
-            ->map(fn ($items, string $seller): array => [
-                'label' => $seller,
-                'total' => round((float) $items->sum('monto'), 2),
-            ])
-            ->sortByDesc('total')
-            ->take(6)
-            ->values()
-            ->all();
-    }
-
-    private function rankingPagosPendientesPorVendedor($pagos): array
-    {
-        return $pagos
-            ->whereIn('estado', ['Pendiente de pago', 'En revision', 'Pago rechazado'])
-            ->groupBy(fn (Pago $pago) => $this->nombreUsuario($pago->ordenPago?->vendedor) ?: 'Sin vendedor')
-            ->map(fn ($items, string $seller): array => [
-                'label' => $seller,
-                'total' => $items->count(),
-            ])
-            ->sortByDesc('total')
-            ->take(6)
-            ->values()
-            ->all();
+        return $dias->map(fn ($d) => ['dia' => $d, 'total' => (float) ($valores[$d] ?? 0)])->all();
     }
 }

@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->alias([
             'auth.token' => \App\Http\Middleware\TokenAuthMiddleware::class,
+            'acceso' => \App\Http\Middleware\AccesoRecurso::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -35,7 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return response()->json([
-                'mensaje' => 'Los datos ingresados no son validos.',
+                'mensaje' => 'Revise los datos marcados: hay campos con errores.',
                 'errores' => $exception->errors(),
             ], 422);
         });
@@ -45,7 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
-            return response()->json(['mensaje' => 'El recurso solicitado no existe.'], 404);
+            return response()->json(['mensaje' => 'El registro solicitado no existe.'], 404);
         });
 
         $exceptions->render(function (\Throwable $exception, Request $request): ?JsonResponse {
@@ -54,13 +55,18 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             if ($exception instanceof HttpExceptionInterface) {
-                return response()->json([
-                    'mensaje' => $exception->getMessage() ?: 'La solicitud no pudo completarse.',
-                ], $exception->getStatusCode());
+                // Mensajes del framework en inglés (429, 405...) se reemplazan por textos en español (enunciado 6).
+                $mensaje = match ($exception->getStatusCode()) {
+                    429 => 'Demasiados intentos seguidos. Espere un minuto e intente de nuevo.',
+                    405 => 'Operación no permitida en esta dirección.',
+                    default => $exception->getMessage() ?: 'La solicitud no pudo completarse.',
+                };
+
+                return response()->json(['mensaje' => $mensaje], $exception->getStatusCode(), $exception->getHeaders());
             }
 
             report($exception);
 
-            return response()->json(['mensaje' => 'Ocurrio un error interno.'], 500);
+            return response()->json(['mensaje' => 'Ocurrió un error interno. Intente nuevamente.'], 500);
         });
     })->create();
