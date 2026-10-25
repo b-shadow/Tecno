@@ -193,8 +193,16 @@ function Registro({ eleccion, onVolver }) {
   const [estado, setEstado] = useState(null)
   const [enviando, setEnviando] = useState(false)
   const { programa, modulo } = eleccion
-  const total = modulo ? Number(modulo.precio) : programa.precio_total
+  const [modulosSeleccionados, setModulosSeleccionados] = useState(() => modulo ? [modulo.codigo] : programa.modulos.map((m) => m.codigo))
+  const seleccionados = programa.modulos.filter((m) => modulosSeleccionados.includes(m.codigo))
+  const total = seleccionados.reduce((s, m) => s + Number(m.precio), 0)
   const set = (campo) => (e) => setForm({ ...form, [campo]: e.target.value })
+
+  function alternarModulo(codigo) {
+    setModulosSeleccionados((actuales) => actuales.includes(codigo)
+      ? actuales.filter((x) => x !== codigo)
+      : [...actuales, codigo])
+  }
 
   useEffect(() => { window.scrollTo({ top: 0 }) }, [])
 
@@ -203,7 +211,7 @@ function Registro({ eleccion, onVolver }) {
     setEnviando(true)
     setEstado(null)
     try {
-      const { data } = await api.post('/registro-interes', { ...form, ...(modulo ? { modulo_codigo: modulo.codigo } : { programa_codigo: programa.codigo }) })
+      const { data } = await api.post('/registro-interes', { ...form, modulo_codigos: modulosSeleccionados })
       setEstado({ tipo: 'ok', texto: `${data.mensaje} ${data.detalle || ''}` })
       setErrores({})
       setForm(VACIO)
@@ -220,20 +228,24 @@ function Registro({ eleccion, onVolver }) {
       <div className="registro-resumen">
         <button type="button" className="btn btn-texto btn-volver" onClick={onVolver}><ArrowLeft size={16} /> Volver a la malla</button>
         <Foto src={(modulo || programa).imagen} className="registro-img" />
-        <h1>{modulo ? modulo.nombre : programa.nombre}</h1>
-        <p>{modulo ? `Módulo suelto de ${programa.nombre}` : `Programa completo: ${programa.modulos.length} módulos en orden de cursado`}</p>
+        <h1>{programa.nombre}</h1>
+        <p>{seleccionados.length === programa.modulos.length ? `Programa completo: ${programa.modulos.length} módulos` : `${seleccionados.length} de ${programa.modulos.length} módulos seleccionados`}</p>
         <ol className="cadena">
           {programa.modulos.map((m, i) => {
-            const incluido = !modulo || modulo.codigo === m.codigo
+            const incluido = modulosSeleccionados.includes(m.codigo)
             return (
-              <li key={m.codigo} className={incluido ? 'incluido' : ''}>
-                <b>{sigla(programa, i)}</b><span>{m.nombre}</span>
-                {incluido ? <Check size={16} aria-label="incluido" /> : <span className="solo-lector">no incluido</span>}
+              <li key={m.codigo} className={`${incluido ? 'incluido' : ''} modulo-interes`}>
+                <label>
+                  <input type="checkbox" checked={incluido} onChange={() => alternarModulo(m.codigo)} />
+                  <b>{sigla(programa, i)}</b><span>{m.nombre}</span>
+                  <small className="cifra">{bs(m.precio)}</small>
+                  {incluido && <Check size={16} aria-label="incluido" />}
+                </label>
               </li>
             )
           })}
         </ol>
-        <div className="total"><span className="cifra">{bs(total)}</span><small>{modulo ? 'precio del módulo' : 'programa completo, hasta 12 cuotas'}</small></div>
+        <div className="total"><span className="cifra">{bs(total)}</span><small>{seleccionados.length === programa.modulos.length ? 'programa completo' : `${seleccionados.length} módulo(s) seleccionados`}</small></div>
       </div>
       <form className="formulario dos hoja hoja-cuerpo" onSubmit={enviar}>
         <h2 className="ancho">Deje sus datos y un asesor le escribe por WhatsApp</h2>
@@ -245,7 +257,7 @@ function Registro({ eleccion, onVolver }) {
         <Campo etiqueta="Profesión u ocupación" error={errores.profesion}><input value={form.profesion} onChange={set('profesion')} maxLength={120} placeholder="Ej. Ingeniero de sistemas" /></Campo>
         <Campo etiqueta="Ciudad" error={errores.ubicacion}><input value={form.ubicacion} onChange={set('ubicacion')} maxLength={160} placeholder="Ej. Santa Cruz" autoComplete="address-level2" /></Campo>
         <div className="ancho"><Aviso tipo={estado?.tipo}>{estado?.texto}</Aviso></div>
-        <div className="acciones ancho"><Boton type="submit" className="btn-primario btn-grande" cargando={enviando}>Enviar interés</Boton></div>
+        <div className="acciones ancho"><Boton type="submit" className="btn-primario btn-grande" cargando={enviando} disabled={!modulosSeleccionados.length} aria-label="Enviar interés">Enviar interés ({modulosSeleccionados.length})</Boton></div>
       </form>
     </section>
   )

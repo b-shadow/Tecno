@@ -38,7 +38,7 @@ def start():
         '-e','DB_CONNECTION=pgsql','-e','DB_HOST=postgres','-e','DB_DATABASE='+DB,
         '-e','DB_USERNAME=crm_user','-e','DB_PASSWORD=crm_password','-e','SESSION_DRIVER=file',
         '-e','CACHE_STORE=file','-e','MAIL_MAILER=log','-e','PHP_CLI_SERVER_WORKERS=4',image,
-        'sh','-c','cd /app && mkdir -p bootstrap/cache storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs && php artisan migrate --seed --force && cd public && php -S 0.0.0.0:18002 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php')
+        'sh','-c','cd /app && mkdir -p bootstrap/cache storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs && php artisan crm:preparar-bd && php artisan migrate --seed --force && cd public && php -S 0.0.0.0:18002 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php')
     archive = io.BytesIO()
     backend = ROOT/'backend'
     with tarfile.open(fileobj=archive, mode='w') as tar:
@@ -52,7 +52,7 @@ def start():
     docker('start',NAME)
     for _ in range(30):
         try:
-            with urllib.request.urlopen(URL+'/health', timeout=2) as r:
+            with urllib.request.urlopen(URL+'/salud', timeout=2) as r:
                 if r.status==200: print('QA aislado listo:',URL); return
         except Exception: time.sleep(1)
     raise RuntimeError(docker('logs','--tail','20',NAME).decode())

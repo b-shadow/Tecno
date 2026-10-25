@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Interes;
+use App\Models\Comision;
 use App\Models\Recordatorio;
 use App\Models\Usuario;
 use App\Repositories\SeguimientoRepository;
@@ -118,7 +119,7 @@ class SeguimientoService
         $usuario = $request->attributes->get('auth_usuario');
         $comisiones = $this->seguimiento->comisiones($usuario);
 
-        return response()->json(['comisiones' => $comisiones, 'porcentaje' => Comision::porcentajeVigente()]);
+        return response()->json(['comisiones' => $comisiones, 'porcentaje' => $this->seguimiento->porcentajeComision()]);
     }
 
     public function resumenComisiones(Request $request): JsonResponse

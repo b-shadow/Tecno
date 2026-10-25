@@ -70,6 +70,10 @@ class ProspectoRepository
 
     public function modulosSolicitados(array $datos): Collection
     {
+        if (! empty($datos['modulo_codigos'])) {
+            return CatalogoCache::query()->where('estado', 'abierto')->whereIn('codigo', $datos['modulo_codigos'])->with('programa')->get();
+        }
+
         return CatalogoCache::query()->where('estado', 'abierto')
             ->when(! empty($datos['modulo_codigo']), fn ($q) => $q->whereKey($datos['modulo_codigo']))
             ->when(empty($datos['modulo_codigo']), fn ($q) => $q->where('programa_codigo', $datos['programa_codigo'] ?? ''))

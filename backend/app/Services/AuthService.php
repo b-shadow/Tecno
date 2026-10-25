@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ApiToken;
+use App\Models\Bitacora;
 use App\Models\Usuario;
 use App\Repositories\AuthRepository;
 use Illuminate\Http\Request;
