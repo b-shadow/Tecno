@@ -37,7 +37,7 @@ export default function ValidacionPagos() {
                   <td className="cifra">{fecha(c.fecha_vencimiento)}</td>
                   <td>{c.vendedor}</td>
                   <td><Etiqueta estado={c.estado}>{TEXTO[c.estado] || c.estado}</Etiqueta></td>
-                  <td>{c.comprobantes.length > 0 && <button type="button" className="btn btn-secundario" onClick={() => setRevisar(c)}><FileSearch size={16} /> {c.estado === 'En revision' ? 'Revisar' : 'Ver'}</button>}</td>
+                  <td>{(c.comprobantes.length > 0 || c.estado === 'En revision') && <button type="button" className="btn btn-secundario" onClick={() => setRevisar(c)}><FileSearch size={16} /> {c.estado === 'En revision' ? 'Revisar' : 'Ver'}</button>}</td>
                 </tr>
               ))}
             </tbody>
@@ -51,8 +51,9 @@ export default function ValidacionPagos() {
 }
 
 function Revision({ cuota, onCerrar, onListo, aviso }) {
+  // Sin comprobante = cobro con tarjeta por la pasarela simulada: se valida con la transacción registrada.
   const comp = cuota.comprobantes[0]
-  const archivo = useDatos(async () => (await pagosApi.comprobante(comp.nro_comprobante)).data.comprobante, [comp.nro_comprobante])
+  const archivo = useDatos(async () => (comp ? (await pagosApi.comprobante(comp.nro_comprobante)).data.comprobante : null), [comp?.nro_comprobante])
   const [observacion, setObservacion] = useState('')
   const enRevision = cuota.estado === 'En revision'
   async function decidir(accion) {
@@ -63,13 +64,14 @@ function Revision({ cuota, onCerrar, onListo, aviso }) {
   }
   const a = archivo.datos
   return (
-    <Modal ancho titulo={`${cuota.prospecto} · cuota ${cuota.nro_cuota} de la orden #${cuota.nro_orden}`} descripcion={`${bs(cuota.monto)} · ${comp.nombre_archivo || 'comprobante'} · enviado ${fecha(comp.fecha_envio, true)}`} onCerrar={onCerrar}
+    <Modal ancho titulo={`${cuota.prospecto} · cuota ${cuota.nro_cuota} de la orden #${cuota.nro_orden}`} descripcion={comp ? `${bs(cuota.monto)} · ${comp.nombre_archivo || 'comprobante'} · enviado ${fecha(comp.fecha_envio, true)}` : `${bs(cuota.monto)} · cobro con tarjeta (pasarela simulada)`} onCerrar={onCerrar}
       pie={enRevision && <div className="acciones"><button type="button" className="btn btn-peligro-suave" disabled={!observacion.trim()} onClick={() => decidir('rechazar')}>Rechazar</button><button type="button" className="btn btn-primario" onClick={() => decidir('aprobar')}>Aprobar pago</button></div>}>
       {archivo.cargando ? <Cargando filas={3} /> : a?.mime === 'application/pdf'
         ? <iframe title="Comprobante" src={a.archivo} style={{ width: '100%', height: 480, border: '1px solid var(--filete)', borderRadius: 'var(--radio)' }} />
         : a && <img src={a.archivo} alt={`Comprobante de ${cuota.prospecto}`} style={{ maxHeight: 480, margin: '0 auto', borderRadius: 'var(--radio)', border: '1px solid var(--filete)' }} />}
-      {comp.remitente && <p><b>Enviado por:</b> {comp.remitente}{comp.hora_pago ? ` · pagado el ${fecha(comp.hora_pago, true)}` : ''}</p>}
-      {comp.observacion && <p><b>Observación:</b> {comp.observacion}</p>}
+      {!comp && cuota.observacion && <p><b>Transacción:</b> {cuota.observacion}</p>}
+      {comp?.remitente && <p><b>Enviado por:</b> {comp.remitente}{comp.hora_pago ? ` · pagado el ${fecha(comp.hora_pago, true)}` : ''}</p>}
+      {comp?.observacion && <p><b>Observación:</b> {comp.observacion}</p>}
       {enRevision && <Campo etiqueta="Observación" ayuda="Obligatoria para rechazar: el vendedor la verá en la ficha."><textarea value={observacion} maxLength={1000} onChange={(e) => setObservacion(e.target.value)} /></Campo>}
     </Modal>
   )

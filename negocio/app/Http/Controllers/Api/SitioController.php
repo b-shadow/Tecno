@@ -3,33 +3,38 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ConsultaRequest;
+use App\Http\Requests\Sitio\VisitaRequest;
 use App\Services\SitioService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-/** Adaptador HTTP de búsqueda global, contador de visitas, fotos y salud. */
+/** Contador de visitas (enunciado 7), búsqueda global (enunciado 9), fotos de usuario y salud del sistema. */
 class SitioController extends Controller
 {
-    public function visita(Request $request, SitioService $service): JsonResponse
+    public function __construct(private readonly SitioService $sitio)
     {
-        $datos = $request->validate(['ruta' => ['required', 'string', 'max:80']]);
-
-        return response()->json(['visitas' => $service->visita($request, $datos['ruta'])]);
     }
 
-    public function buscar(Request $request, SitioService $service): JsonResponse
+    public function visita(VisitaRequest $r): JsonResponse
     {
-        return response()->json(['resultados' => $service->buscar($request, (string) $request->query('q', ''))]);
+        $visitas = $this->sitio->visita($r->bearerToken(), $r->validated('ruta'), (string) $r->ip(), $r->navegador());
+
+        return response()->json(['visitas' => $visitas]);
     }
 
-    public function foto(string $archivo, SitioService $service): BinaryFileResponse
+    public function buscar(ConsultaRequest $r): JsonResponse
     {
-        return response()->file($service->rutaFoto($archivo), ['Cache-Control' => 'public, max-age=86400']);
+        return response()->json(['resultados' => $this->sitio->buscar($r->bearerToken(), (string) $r->query('q', ''))]);
     }
 
-    public function salud(SitioService $service): JsonResponse
+    public function foto(string $archivo): BinaryFileResponse
     {
-        return response()->json($service->salud());
+        return response()->file($this->sitio->rutaFoto($archivo), ['Cache-Control' => 'public, max-age=86400']);
+    }
+
+    public function salud(): JsonResponse
+    {
+        return response()->json($this->sitio->salud());
     }
 }

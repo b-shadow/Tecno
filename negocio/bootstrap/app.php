@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\ReglaNegocioException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -36,6 +37,9 @@ return Application::configure(basePath: dirname(__DIR__))
             ], 422);
         });
 
+        // Reglas de negocio de los Services (capa 2): mensaje en español y, si aplica, datos extra (p. ej. faltantes).
+        $exceptions->render(fn (ReglaNegocioException $e) => response()->json(['mensaje' => $e->getMessage()] + $e->datos, $e->estado));
+
         $exceptions->render(function (NotFoundHttpException $exception, Request $request): ?JsonResponse {
             if (! $request->is('api/*')) {
                 return null;
@@ -45,7 +49,8 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $exceptions->render(function (\Throwable $exception, Request $request): ?JsonResponse {
-            if (! $request->is('api/*') || $exception instanceof ValidationException || $exception instanceof NotFoundHttpException) {
+            if (! $request->is('api/*') || $exception instanceof ValidationException || $exception instanceof NotFoundHttpException
+                || $exception instanceof ReglaNegocioException) {
                 return null;
             }
 
@@ -54,6 +59,8 @@ return Application::configure(basePath: dirname(__DIR__))
                 $mensaje = match ($exception->getStatusCode()) {
                     429 => 'Demasiados intentos seguidos. Espere un minuto e intente de nuevo.',
                     405 => 'Operación no permitida en esta dirección.',
+                    401 => 'Debe iniciar sesión para continuar.',
+                    403 => $exception->getMessage() ?: 'No tiene permiso para realizar esta acción.',
                     default => $exception->getMessage() ?: 'La solicitud no pudo completarse.',
                 };
 

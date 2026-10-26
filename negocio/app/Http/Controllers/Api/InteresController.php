@@ -3,59 +3,45 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Datos\Modelos\Interes;
+use App\Http\Requests\ConsultaRequest;
+use App\Http\Requests\Interes\AsignarInteresRequest;
+use App\Http\Requests\Interes\MoverInteresRequest;
 use App\Services\InteresService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
-/** Adaptador HTTP del embudo: valida las peticiones y presenta sus respuestas. */
+/** CU3 (asignación y Round-Robin), CU4 (embudo Kanban) y CU5 (pérdida con motivo): delega en InteresService. */
 class InteresController extends Controller
 {
-    public function index(Request $request, InteresService $service): JsonResponse
+    public function __construct(private readonly InteresService $intereses)
     {
-        $filtros = $request->only(['buscar', 'estado', 'vendedor', 'sin_asignar']);
-
-        return response()->json($service->listar($request->attributes->get('auth_usuario'), $filtros));
     }
 
-    public function show(Request $request, int $interes, InteresService $service): JsonResponse
+    public function index(ConsultaRequest $r): JsonResponse
     {
-        return response()->json($service->detalle($request->attributes->get('auth_usuario'), $interes));
+        return response()->json($this->intereses->listar($r->usuario(), $r->only(['buscar', 'estado', 'vendedor', 'sin_asignar'])));
     }
 
-    public function mover(Request $request, int $interes, InteresService $service): JsonResponse
+    public function show(ConsultaRequest $r, int $interes): JsonResponse
     {
-        $datos = $request->validate([
-            'estado' => ['required', Rule::in(Interes::ESTADOS)],
-            'motivo_perdida' => ['nullable', 'required_if:estado,Perdido', 'exists:motivos_perdida,nombre', Rule::notIn(['Sin clasificar (web)'])],
-            'observacion' => ['nullable', 'string', 'max:2000'],
-        ], ['motivo_perdida.required_if' => 'Para marcar la tarjeta como Perdido debe elegir el motivo.'],
-            ['motivo_perdida' => 'motivo de pérdida', 'observacion' => 'observación']);
-        $actualizado = $service->mover($request->attributes->get('auth_usuario'), $interes, $datos);
-
-        return response()->json([
-            'mensaje' => "Tarjeta movida a {$datos['estado']}.",
-            'interes' => $actualizado,
-        ]);
+        return response()->json($this->intereses->detalle($r->usuario(), $interes));
     }
 
-    public function asignar(Request $request, int $interes, InteresService $service): JsonResponse
+    public function mover(MoverInteresRequest $r, int $interes): JsonResponse
     {
-        $datos = $request->validate([
-            'vendedor_correo' => ['required', Rule::exists('usuarios', 'correo')->where('rol', 'vendedor')->where('estado', 'activo')],
-        ], [], ['vendedor_correo' => 'vendedor']);
-        $actualizado = $service->asignar(
-            $request->attributes->get('auth_usuario'),
-            $interes,
-            $datos['vendedor_correo'],
-        );
+        $actualizado = $this->intereses->mover($r->usuario(), $interes, $r->validated());
+
+        return response()->json(['mensaje' => "Tarjeta movida a {$r->validated('estado')}.", 'interes' => $actualizado]);
+    }
+
+    public function asignar(AsignarInteresRequest $r, int $interes): JsonResponse
+    {
+        $actualizado = $this->intereses->asignar($r->usuario(), $interes, $r->validated('vendedor_correo'));
 
         return response()->json(['mensaje' => 'Prospecto asignado.', 'interes' => $actualizado]);
     }
 
-    public function distribuir(Request $request, InteresService $service): JsonResponse
+    public function distribuir(ConsultaRequest $r): JsonResponse
     {
-        return response()->json($service->distribuir($request->attributes->get('auth_usuario')));
+        return response()->json($this->intereses->distribuir($r->usuario()));
     }
 }

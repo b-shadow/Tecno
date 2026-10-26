@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\ReglaNegocioException;
 use Datos\Modelos\Interes;
 use Datos\Modelos\Usuario;
 use Datos\Repositorios\InteresRepository;
@@ -25,24 +26,24 @@ class InteresService
     public function detalle(Usuario $usuario, int $numero): array
     {
         $interes = $this->intereses->detalle($numero);
-        Alcance::autorizarTarjeta($usuario, $interes);
+        AlcanceService::autorizarTarjeta($usuario, $interes);
 
-        return ['interes' => $interes, 'faltantes_conversion' => Conversion::faltantes($interes)];
+        return ['interes' => $interes, 'faltantes_conversion' => ConversionService::faltantes($interes)];
     }
 
     public function mover(Usuario $usuario, int $numero, array $datos): Interes
     {
         $interes = $this->intereses->obtener($numero);
-        Alcance::autorizarTarjeta($usuario, $interes);
-        abort_if($interes->estado === 'Convertido', 422, 'Una tarjeta convertida ya tiene matrícula: no se puede mover.');
+        AlcanceService::autorizarTarjeta($usuario, $interes);
+        ReglaNegocioException::si($interes->estado === 'Convertido', 'Una tarjeta convertida ya tiene matrícula: no se puede mover.');
 
         $this->intereses->transaccion(function () use ($usuario, $numero, $datos): void {
             $interes = $this->intereses->bloquear($numero);
 
             if ($datos['estado'] === 'Convertido') {
-                $faltan = Conversion::faltantes($interes);
-                abort_if($faltan, response()->json(['mensaje' => 'No se puede convertir todavía.', 'faltantes' => $faltan], 422));
-                Conversion::procesar($interes, $usuario);
+                $faltan = ConversionService::faltantes($interes);
+                ReglaNegocioException::si((bool) $faltan, 'No se puede convertir todavía.', 422, ['faltantes' => $faltan]);
+                ConversionService::procesar($interes, $usuario);
 
                 return;
             }
@@ -72,7 +73,7 @@ class InteresService
     public function asignar(Usuario $usuario, int $numero, string $correoVendedor): Interes
     {
         $interes = $this->intereses->obtener($numero);
-        Alcance::autorizarTarjeta($usuario, $interes);
+        AlcanceService::autorizarTarjeta($usuario, $interes);
         $vendedor = $this->intereses->vendedor($correoVendedor);
 
         $this->intereses->transaccion(fn () => $this->asignarA($interes, $vendedor, $usuario));
@@ -83,7 +84,7 @@ class InteresService
     public function distribuir(Usuario $usuario): array
     {
         $vendedores = $this->intereses->vendedoresVigentes();
-        abort_if($vendedores->isEmpty(), 422, 'No hay vendedores activos para repartir.');
+        ReglaNegocioException::si($vendedores->isEmpty(), 'No hay vendedores activos para repartir.');
 
         $cargaBase = $this->intereses->cargaPorVendedor($vendedores->pluck('correo')->all());
         $carga = $vendedores->mapWithKeys(fn ($vendedor) => [

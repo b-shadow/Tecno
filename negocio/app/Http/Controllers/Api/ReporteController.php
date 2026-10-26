@@ -3,48 +3,37 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ConsultaRequest;
+use App\Http\Requests\Reporte\ListadoRequest;
 use App\Services\ReporteService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
-/** Adaptador HTTP para los reportes del negocio. */
+/** CU8 (enunciado 8): dashboard, estadísticas porcentuales y reportes (listados). */
 class ReporteController extends Controller
 {
-    public function dashboard(Request $request, ReporteService $service): JsonResponse
+    private const FILTROS = ['desde', 'hasta', 'vendedor', 'programa', 'estado', 'buscar'];
+
+    public function __construct(private readonly ReporteService $reportes)
     {
-        return response()->json($service->dashboard($request->attributes->get('auth_usuario')));
     }
 
-    public function estadisticas(Request $request, ReporteService $service): JsonResponse
+    public function dashboard(ConsultaRequest $r): JsonResponse
     {
-        return response()->json($service->estadisticas(
-            $request->attributes->get('auth_usuario'),
-            $request->only(['desde', 'hasta', 'vendedor', 'programa', 'estado', 'buscar']),
-        ));
+        return response()->json($this->reportes->dashboard($r->usuario()));
     }
 
-    public function listado(Request $request, ReporteService $service): JsonResponse
+    public function estadisticas(ConsultaRequest $r): JsonResponse
     {
-        $request->validate([
-            'tipo' => ['required', 'in:tarjetas,pagos,matriculas,comisiones,perdidas,vendedores'],
-            'desde' => ['nullable', 'date'],
-            'hasta' => ['nullable', 'date', 'after_or_equal:desde'],
-            'vendedor' => ['nullable', 'email'],
-            'programa' => ['nullable', 'string', 'max:255'],
-            'estado' => ['nullable', 'string', 'max:40'],
-            'buscar' => ['nullable', 'string', 'max:120'],
-        ], [], ['desde' => 'fecha inicial', 'hasta' => 'fecha final']);
-
-        return response()->json($service->listado(
-            $request->attributes->get('auth_usuario'),
-            $request->only(['tipo', 'desde', 'hasta', 'vendedor', 'programa', 'estado', 'buscar']),
-        ));
+        return response()->json($this->reportes->estadisticas($r->usuario(), $r->only(self::FILTROS)));
     }
 
-    public function estadisticasVendedor(Request $request, ReporteService $service): JsonResponse
+    public function listado(ListadoRequest $r): JsonResponse
     {
-        return response()->json([
-            'estadisticas' => $service->estadisticasVendedor($request->attributes->get('auth_usuario')),
-        ]);
+        return response()->json($this->reportes->listado($r->usuario(), $r->only(['tipo', ...self::FILTROS])));
+    }
+
+    public function estadisticasVendedor(ConsultaRequest $r): JsonResponse
+    {
+        return response()->json(['estadisticas' => $this->reportes->estadisticasVendedor($r->usuario())]);
     }
 }

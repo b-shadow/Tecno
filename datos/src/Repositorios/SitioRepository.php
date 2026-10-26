@@ -21,11 +21,6 @@ class SitioRepository
         return (int) DB::table('recursos')->where('codigo', $codigo)->value('visitas');
     }
 
-    public function usuarioDeToken(string $token): ?ApiToken
-    {
-        return ApiToken::query()->with('usuario')->find(hash('sha256', $token));
-    }
-
     public function buscarCatalogo(string $like): Collection
     {
         return DB::table('catalogo_cache as c')->join('programas as p', 'p.codigo', '=', 'c.programa_codigo')

@@ -81,7 +81,7 @@ class UsuarioService
     {
         $usuario = $this->usuarios->obtener($correo);
 
-        if ($usuario->foto && ($ruta = Fotos::ruta($usuario->foto))) {
+        if ($usuario->foto && ($ruta = FotoService::ruta($usuario->foto))) {
             @unlink($ruta);
         }
 
@@ -92,7 +92,7 @@ class UsuarioService
     {
         if (! empty($datos['foto'])) {
             $this->usuarios->actualizar($usuario, [
-                'foto' => Fotos::guardar($datos['foto'], $usuario->apellido, $usuario->nombre, $usuario->foto),
+                'foto' => FotoService::guardar($datos['foto'], $usuario->apellido, $usuario->nombre, $usuario->foto),
             ]);
         }
 

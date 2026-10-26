@@ -4,6 +4,7 @@ namespace Datos\Repositorios;
 
 use Datos\Modelos\ApiToken;
 use Datos\Modelos\Usuario;
+use Illuminate\Support\Facades\DB;
 
 /** Persistencia de usuarios y tokens de autenticación. */
 class AuthRepository
@@ -11,6 +12,22 @@ class AuthRepository
     public function usuarioPorCorreo(string $correo): ?Usuario
     {
         return Usuario::query()->whereRaw('lower(correo) = ?', [mb_strtolower($correo)])->first();
+    }
+
+    public function tokenPorPlano(string $tokenPlano): ?ApiToken
+    {
+        return ApiToken::query()->with('usuario')->find(hash('sha256', $tokenPlano));
+    }
+
+    public function marcarUso(ApiToken $token): void
+    {
+        $token->forceFill(['ultimo_uso_en' => now()])->save();
+    }
+
+    /** El trigger del historial del embudo (movimientos_interes) lee de aquí quién movió cada tarjeta. */
+    public function fijarAutorDeCambios(string $correo): void
+    {
+        DB::select("select set_config('crm.usuario_correo', ?, false)", [$correo]);
     }
 
     public function crearToken(string $correo, string $tokenPlano): void

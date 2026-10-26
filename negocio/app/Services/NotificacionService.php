@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\ReglaNegocioException;
 use Datos\Modelos\Notificacion;
 use Datos\Modelos\Usuario;
 use Datos\Repositorios\NotificacionRepository;
@@ -22,7 +23,7 @@ class NotificacionService
             $esDeCartera = $this->notificaciones->prospectoAsignadoA($datos['destinatario'], $usuario->correo);
 
             if (! $esPropio && ! $esDeCartera) {
-                abort(403, 'Solo puede escribir a prospectos de su cartera.');
+                throw new ReglaNegocioException('Solo puede escribir a prospectos de su cartera.', 403);
             }
         }
 
@@ -51,10 +52,10 @@ class NotificacionService
     {
         $notificacion = $this->notificaciones->obtener($numero);
 
-        abort_if(
+        ReglaNegocioException::si(
             $usuario->rol !== 'administrador' && $notificacion->usuario_correo !== $usuario->correo,
-            403,
             'No puede modificar esta notificación.',
+            403,
         );
 
         return $this->notificaciones->marcarLeida($notificacion);

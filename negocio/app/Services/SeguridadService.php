@@ -34,7 +34,7 @@ class SeguridadService
             ['rol' => $datos['rol'], 'recurso_codigo' => $datos['recurso_codigo']],
             $datos['acceso'] ?? null,
         );
-        Acceso::olvidar();
+        AccesoService::olvidar();
     }
 
     public function bitacora(array $filtros): LengthAwarePaginator

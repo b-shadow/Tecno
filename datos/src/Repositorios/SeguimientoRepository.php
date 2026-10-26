@@ -82,18 +82,28 @@ class SeguimientoRepository
             ->orderByDesc('created_at')->get();
     }
 
-    public function resumenComisiones(): Collection
+    /** Totales por vendedor contando solo las comisiones dentro del alcance de quien consulta (RF1.3). */
+    public function resumenComisiones(Usuario $usuario): Collection
     {
-        return DB::table('usuarios as u')->leftJoin('comisiones as c', 'c.vendedor_correo', '=', 'u.correo')
-            ->where('u.rol', 'vendedor')->groupBy('u.correo', 'u.nombre', 'u.apellido')->orderBy('u.nombre')
-            ->selectRaw("u.correo, u.nombre, u.apellido, count(c.nro_solicitud) as cursos_vendidos, coalesce(sum(c.monto),0) as comision_total,
-                coalesce(sum(c.monto) filter (where c.estado = 'Pendiente'),0) as comision_pendiente")
-            ->get();
+        $porVendedor = $this->comisiones($usuario)->groupBy('vendedor_correo');
+
+        return Usuario::query()->where('rol', 'vendedor')->orderBy('nombre')->get(['correo', 'nombre', 'apellido'])
+            ->map(function (Usuario $v) use ($porVendedor) {
+                $suyas = $porVendedor->get($v->correo, collect());
+
+                return (object) [
+                    'correo' => $v->correo, 'nombre' => $v->nombre, 'apellido' => $v->apellido,
+                    'cursos_vendidos' => $suyas->count(),
+                    'comision_total' => round($suyas->sum(fn ($c) => (float) $c->monto), 2),
+                    'comision_pendiente' => round($suyas->where('estado', 'Pendiente')->sum(fn ($c) => (float) $c->monto), 2),
+                ];
+            });
     }
 
-    public function pagarComisiones(string $correo): int
+    public function pagarComisiones(string $correo, Usuario $usuario): int
     {
         return Comision::query()->where('vendedor_correo', $correo)->where('estado', 'Pendiente')
+            ->whereHas('venta.ordenPago.interes', fn ($q) => AlcanceRepository::intereses($q, $usuario))
             ->update(['estado' => 'Pagada', 'fecha_pago' => now()]);
     }
 

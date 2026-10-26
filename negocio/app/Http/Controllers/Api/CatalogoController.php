@@ -3,24 +3,24 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ConsultaRequest;
 use App\Services\CatalogoService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
-/** Adaptador HTTP del CU2 y RNF2 para el catálogo de ofertas. */
+/** CU2 y RNF2: catálogo de programas y módulos (cliente de la API del catálogo del Grupo 06). */
 class CatalogoController extends Controller
 {
-    public function programas(Request $request, CatalogoService $service): JsonResponse
+    public function __construct(private readonly CatalogoService $catalogo)
     {
-        $buscar = trim((string) $request->query('buscar', ''));
-
-        return response()->json(['programas' => $service->programas($buscar)]);
     }
 
-    public function sincronizar(CatalogoService $service): JsonResponse
+    public function programas(ConsultaRequest $r): JsonResponse
     {
-        $cantidad = $service->sincronizar();
+        return response()->json(['programas' => $this->catalogo->programas(trim((string) $r->query('buscar', '')))]);
+    }
 
-        return response()->json(['mensaje' => "Catálogo sincronizado: {$cantidad} módulos."]);
+    public function sincronizar(): JsonResponse
+    {
+        return response()->json(['mensaje' => "Catálogo sincronizado: {$this->catalogo->sincronizar()} módulos."]);
     }
 }

@@ -100,15 +100,4 @@ class ProspectoRepository
             ],
         );
     }
-
-    public function crearInteresesCSV(array $registros, callable $mapearDatos): void
-    {
-        DB::transaction(function () use ($registros, $mapearDatos): void {
-            foreach ($registros as $fila) {
-                Prospecto::query()->create($mapearDatos($fila) + [
-                    'origen' => $fila['origen'], 'estado' => 'Nuevo', 'fecha_registro' => now(),
-                ]);
-            }
-        });
-    }
 }

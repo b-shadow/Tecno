@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\ReglaNegocioException;
 use Datos\Modelos\ComprobantePago;
 use Datos\Modelos\Interes;
 use Datos\Modelos\MetodoPago;
@@ -9,13 +10,9 @@ use Datos\Modelos\OrdenPago;
 use Datos\Modelos\Prospecto;
 use Datos\Modelos\Usuario;
 use Datos\Repositorios\PagoRepository;
-use App\Services\Alcance;
-use App\Services\Conversion;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -25,100 +22,81 @@ use Illuminate\Validation\ValidationException;
  */
 class PagoService
 {
-    private const MARCAS = ['Visa', 'Mastercard', 'American Express'];
+    public const MARCAS = ['Visa', 'Mastercard', 'American Express'];
 
     public function __construct(private readonly PagoRepository $pagos)
     {
     }
 
-    public function descuentos(): JsonResponse
+    public function descuentos(): Collection
     {
-        return response()->json(['descuentos' => $this->pagos->descuentos()]);
+        return $this->pagos->descuentos();
     }
 
     // ---------------------------------------------------------------- métodos de pago
 
-    public function metodos(Request $request, Prospecto $prospecto): JsonResponse
+    public function metodos(Usuario $usuario, Prospecto $prospecto): Collection
     {
-        $this->autorizarProspecto($request, $prospecto);
+        $this->autorizarProspecto($usuario, $prospecto);
 
-        return response()->json(['metodos' => $this->pagos->metodos($prospecto), 'marcas' => self::MARCAS]);
+        return $this->pagos->metodos($prospecto);
     }
 
-    public function registrarMetodo(Request $request, Prospecto $prospecto): JsonResponse
+    /** Tarjeta (Luhn y vencimiento), QR o transferencia. De la tarjeta solo se guarda marca, últimos 4 y vencimiento. */
+    public function registrarMetodo(Usuario $usuario, Prospecto $prospecto, array $datos): MetodoPago
     {
-        $this->autorizarProspecto($request, $prospecto);
-        $data = $request->validate([
-            'tipo' => ['required', Rule::in(MetodoPago::TIPOS)],
-            'titular' => ['required', 'string', 'max:120', "regex:/^[\\pL\\s'.-]+$/u"],
-            'numero' => ['nullable', 'required_if:tipo,Tarjeta', 'string', 'regex:/^[0-9 ]{13,23}$/'],
-            'vencimiento' => ['nullable', 'required_if:tipo,Tarjeta', 'regex:/^(0[1-9]|1[0-2])\/[0-9]{2}$/'],
-        ], [
-            'numero.regex' => 'El número de tarjeta debe tener entre 13 y 19 dígitos.',
-            'vencimiento.regex' => 'El vencimiento debe tener el formato MM/AA.',
-        ], ['numero' => 'número de tarjeta', 'vencimiento' => 'vencimiento']);
+        $this->autorizarProspecto($usuario, $prospecto);
+        $fila = ['documento' => $prospecto->documento, 'tipo' => $datos['tipo'], 'titular' => trim($datos['titular']), 'estado' => 'activo'];
 
-        $fila = ['documento' => $prospecto->documento, 'tipo' => $data['tipo'], 'titular' => trim($data['titular']), 'estado' => 'activo'];
-
-        if ($data['tipo'] === 'Tarjeta') {
-            $numero = preg_replace('/\D/', '', $data['numero']);
-            [$mes, $anio] = explode('/', $data['vencimiento']);
+        if ($datos['tipo'] === 'Tarjeta') {
+            $numero = preg_replace('/\D/', '', $datos['numero']);
             $errores = [];
             if (! $this->luhn($numero)) {
                 $errores['numero'] = 'El número de tarjeta no es válido.';
             }
-            if (Carbon::create(2000 + (int) $anio, (int) $mes)->endOfMonth()->isPast()) {
+            if ($this->vencida($datos['vencimiento'])) {
                 $errores['vencimiento'] = 'La tarjeta está vencida.';
             }
             if ($errores) {
                 throw ValidationException::withMessages($errores);
             }
-            // Nunca se guarda el número completo ni el CVV: solo marca, últimos 4 dígitos y vencimiento.
-            $fila += ['marca' => $this->marca($numero), 'ultimos_digitos' => substr($numero, -4), 'vencimiento' => $data['vencimiento']];
+            // Nunca se guarda el número completo ni el CVV.
+            $fila += ['marca' => $this->marca($numero), 'ultimos_digitos' => substr($numero, -4), 'vencimiento' => $datos['vencimiento']];
         }
 
-        return response()->json(['mensaje' => 'Método de pago registrado.', 'metodo' => $this->pagos->crearMetodo($fila)], 201);
+        return $this->pagos->crearMetodo($fila);
     }
 
-    public function cambiarEstadoMetodo(Request $request, MetodoPago $metodo): JsonResponse
+    public function cambiarEstadoMetodo(Usuario $usuario, MetodoPago $metodo, string $estado): MetodoPago
     {
-        $this->pagos->metodoConProspecto($metodo);
-        $this->autorizarProspecto($request, $metodo->prospecto);
-        $data = $request->validate(['estado' => ['required', Rule::in(['activo', 'inactivo'])]]);
-        $this->pagos->actualizarMetodo($metodo, $data);
+        $this->autorizarProspecto($usuario, $this->pagos->metodoConProspecto($metodo)->prospecto);
+        $this->pagos->actualizarMetodo($metodo, ['estado' => $estado]);
 
-        return response()->json(['mensaje' => $data['estado'] === 'activo' ? 'Método activado.' : 'Método desactivado.', 'metodo' => $metodo]);
+        return $metodo;
     }
 
     // ---------------------------------------------------------------- órdenes y cuotas
 
-    public function ordenes(Request $request): JsonResponse
+    public function ordenes(Usuario $usuario): Collection
     {
-        $usuario = $request->attributes->get('auth_usuario');
-        $ordenes = $this->pagos->ordenes($usuario);
-
-        return response()->json(['ordenes' => $ordenes]);
+        return $this->pagos->ordenes($usuario);
     }
 
     /** Orden de pago: pago único (1 cuota) o plan de 2 a 12 cuotas mensuales. La genera el vendedor de la tarjeta. */
-    public function crearOrden(Request $request, Interes $interes): JsonResponse
+    public function crearOrden(Usuario $usuario, Interes $interes, array $datos): OrdenPago
     {
-        $usuario = $request->attributes->get('auth_usuario');
-        abort_if($interes->vendedor_correo !== $usuario->correo, 403, 'Solo el vendedor asignado genera la orden de pago.');
-        abort_if(in_array($interes->estado, ['Convertido', 'Perdido'], true), 422, 'La tarjeta ya está cerrada.');
+        ReglaNegocioException::si($interes->vendedor_correo !== $usuario->correo, 'Solo el vendedor asignado genera la orden de pago.', 403);
+        ReglaNegocioException::si(in_array($interes->estado, ['Convertido', 'Perdido'], true), 'La tarjeta ya está cerrada.');
 
-        $data = $request->validate([
-            'modulos' => ['required', 'array', 'min:1'],
-            'modulos.*' => ['required', 'string', 'distinct', Rule::exists('catalogo_cache', 'codigo')->where('estado', 'abierto')],
-            'descuentos' => ['nullable', 'array'],
-            'descuentos.*' => ['string', Rule::exists('descuentos', 'codigo')->where('estado', 'activo')],
-            'cuotas' => ['required', 'integer', 'between:1,12'],
-            'primer_vencimiento' => ['required', 'date', 'after_or_equal:today'],
-        ], [], ['modulos' => 'módulos', 'cuotas' => 'número de cuotas', 'primer_vencimiento' => 'primer vencimiento']);
+        $orden = $this->pagos->transaccion(function () use ($interes, $usuario, $datos) {
+            // Igual que el P1: una sola orden abierta por tarjeta (evita la venta duplicada).
+            $abierta = $this->pagos->ordenAbierta($interes->nro_tarjeta);
+            ReglaNegocioException::si((bool) $abierta, $abierta
+                ? "La tarjeta ya tiene la orden #{$abierta->nro_orden} ({$abierta->estado}). Registre su comprobante o espere su revisión."
+                : '');
 
-        $orden = $this->pagos->transaccion(function () use ($interes, $usuario, $data) {
-            $modulos = $this->pagos->modulos($data['modulos']);
-            $descuentos = $this->pagos->descuentosPorCodigo($data['descuentos'] ?? []);
+            $modulos = $this->pagos->modulos($datos['modulos']);
+            $descuentos = $this->pagos->descuentosPorCodigo($datos['descuentos'] ?? []);
             $subtotal = round($modulos->sum(fn ($m) => (float) $m->precio), 2);
             $descuentoTotal = 0.0;
 
@@ -127,6 +105,7 @@ class PagoService
                 'subtotal' => $subtotal, 'descuento_total' => 0, 'total' => $subtotal, 'fecha_generacion' => now(),
             ]);
 
+            $filasDescuento = [];
             foreach ($descuentos as $descuento) {
                 $monto = round($subtotal * (float) $descuento->porcentaje / 100, 2);
                 $descuentoTotal += $monto;
@@ -135,9 +114,9 @@ class PagoService
                     'porcentaje' => $descuento->porcentaje, 'monto' => $monto, 'created_at' => now(), 'updated_at' => now(),
                 ];
             }
-            $this->pagos->insertarDescuentosOrden($filasDescuento ?? []);
+            $this->pagos->insertarDescuentosOrden($filasDescuento);
             $total = max(round($subtotal - $descuentoTotal, 2), 0);
-            abort_if($total <= 0, 422, 'El total de la orden debe ser mayor a cero.');
+            ReglaNegocioException::si($total <= 0, 'El total de la orden debe ser mayor a cero.');
             $this->pagos->actualizarOrden($orden, ['descuento_total' => round($descuentoTotal, 2), 'total' => $total]);
 
             $items = [];
@@ -151,14 +130,14 @@ class PagoService
             $this->pagos->insertarItems($orden, $items);
 
             // Plan de pagos: cuotas mensuales iguales; la última absorbe el redondeo.
-            $n = (int) $data['cuotas'];
+            $n = (int) $datos['cuotas'];
             $base = floor($total / $n * 100) / 100;
             $filasCuota = [];
             for ($i = 1; $i <= $n; $i++) {
                 $filasCuota[] = [
                     'nro_orden' => $orden->nro_orden, 'nro_cuota' => $i,
                     'monto' => $i === $n ? round($total - $base * ($n - 1), 2) : $base,
-                    'fecha_vencimiento' => Carbon::parse($data['primer_vencimiento'])->addMonthsNoOverflow($i - 1)->toDateString(),
+                    'fecha_vencimiento' => Carbon::parse($datos['primer_vencimiento'])->addMonthsNoOverflow($i - 1)->toDateString(),
                     'estado' => 'Pendiente de pago', 'created_at' => now(), 'updated_at' => now(),
                 ];
             }
@@ -176,142 +155,116 @@ class PagoService
             return $orden;
         });
 
-        return response()->json(['mensaje' => 'Orden de pago generada.', 'orden' => $this->pagos->ordenCompleta($orden)], 201);
+        return $this->pagos->ordenCompleta($orden);
     }
 
     /** Cuotas para validar (coordinación): por defecto las que esperan revisión. */
-    public function cuotas(Request $request): JsonResponse
+    public function cuotas(Usuario $usuario, ?string $estado): Collection
     {
-        $usuario = $request->attributes->get('auth_usuario');
-        $cuotas = $this->pagos->cuotas($usuario, $request->query('estado'));
-
-        return response()->json(['cuotas' => $cuotas]);
+        return $this->pagos->cuotas($usuario, $estado);
     }
 
     /** El vendedor registra el comprobante que el prospecto le envió (imagen o PDF, hasta 5 MB). */
-    public function registrarComprobante(Request $request, OrdenPago $orden, int $cuota): JsonResponse
+    public function registrarComprobante(Usuario $usuario, OrdenPago $orden, int $cuota, array $datos): void
     {
-        $usuario = $request->attributes->get('auth_usuario');
         $interes = $this->pagos->interesDeOrden($orden);
-        Alcance::autorizarTarjeta($usuario, $interes);
-        $data = $request->validate([
-            'archivo' => ['required', 'string', 'max:8388608'],
-            'nro_metodo' => ['nullable', Rule::exists('metodos_pago', 'nro_metodo')->where('documento', $interes->documento)->where('estado', 'activo')],
-            'remitente' => ['nullable', 'string', 'max:160'],
-            'hora_pago' => ['nullable', 'date', 'before_or_equal:now'],
-            'observacion' => ['nullable', 'string', 'max:1000'],
-        ], [], ['archivo' => 'comprobante', 'nro_metodo' => 'método de pago', 'hora_pago' => 'hora del pago']);
+        AlcanceService::autorizarTarjeta($usuario, $interes);
+        if (! empty($datos['nro_metodo'])) {
+            $this->metodoActivo($interes->documento, (int) $datos['nro_metodo'], null, 'El método de pago seleccionado no es válido.');
+        }
+        $mime = $this->validarArchivo($datos['archivo']);
 
-        $mime = $this->validarArchivo($data['archivo']);
-
-        $this->pagos->transaccion(function () use ($orden, $interes, $cuota, $data, $mime, $usuario) {
+        $this->pagos->transaccion(function () use ($orden, $interes, $cuota, $datos, $mime, $usuario) {
             $fila = $this->cuotaBloqueada($orden->nro_orden, $cuota);
-            abort_if($fila->estado === 'Pago aprobado', 422, 'Esta cuota ya está pagada.');
-            abort_if($fila->estado === 'En revision', 422, 'Ya hay un comprobante en revisión para esta cuota.');
+            ReglaNegocioException::si($fila->estado === 'Pago aprobado', 'Esta cuota ya está pagada.');
+            ReglaNegocioException::si($fila->estado === 'En revision', 'Ya hay un comprobante en revisión para esta cuota.');
 
             $prospecto = $interes->prospecto;
             // Clase 40: nombre legible y ligado al dato.
             $nombre = Str::slug("{$prospecto->apellido} {$prospecto->nombre}", '_')."_orden{$orden->nro_orden}_cuota{$cuota}.".($mime === 'application/pdf' ? 'pdf' : explode('/', $mime)[1]);
 
             $this->pagos->crearComprobante([
-                'nro_orden' => $orden->nro_orden, 'nro_cuota' => $cuota, 'archivo' => $data['archivo'], 'nombre_archivo' => $nombre, 'mime' => $mime,
-                'remitente' => $data['remitente'] ?? null, 'hora_pago' => $data['hora_pago'] ?? null, 'observacion' => $data['observacion'] ?? null,
+                'nro_orden' => $orden->nro_orden, 'nro_cuota' => $cuota, 'archivo' => $datos['archivo'], 'nombre_archivo' => $nombre, 'mime' => $mime,
+                'remitente' => $datos['remitente'] ?? null, 'hora_pago' => $datos['hora_pago'] ?? null, 'observacion' => $datos['observacion'] ?? null,
                 'fecha_envio' => now(), 'estado_revision' => 'En revision',
             ]);
-            $this->pagos->cambiarEstadoCuota($orden->nro_orden, $cuota, 'En revision', ['nro_metodo' => $data['nro_metodo'] ?? null]);
+            $this->pagos->cambiarEstadoCuota($orden->nro_orden, $cuota, 'En revision', ['nro_metodo' => $datos['nro_metodo'] ?? null]);
             $this->pagos->registrarInteraccion($interes, [
                 'usuario_correo' => $usuario->correo, 'tipo' => 'Pago informado', 'fecha' => now(),
                 'descripcion' => "Comprobante de la cuota {$cuota} de la orden #{$orden->nro_orden} enviado a revisión.", 'resultado' => 'Pago en revisión',
             ]);
             $this->pagos->actualizarInteres($interes, ['ultima_actividad_en' => now()]);
         });
-
-        return response()->json(['mensaje' => 'Comprobante enviado a revisión.'], 201);
     }
 
-    /** Pasarela simulada: cobra la cuota con una tarjeta registrada y la aprueba al instante. */
-    public function pagarConTarjeta(Request $request, OrdenPago $orden, int $cuota): JsonResponse
+    /**
+     * Pasarela simulada: cobra la cuota con una tarjeta registrada del prospecto y la deja En revisión.
+     * El vendedor no aprueba su propia venta: coordinación la valida (aprobar) y recién ahí se matricula.
+     * Devuelve el código de la transacción simulada.
+     */
+    public function pagarConTarjeta(Usuario $usuario, OrdenPago $orden, int $cuota, int $nroMetodo): string
     {
-        $usuario = $request->attributes->get('auth_usuario');
         $interes = $this->pagos->interesDeOrden($orden);
-        Alcance::autorizarTarjeta($usuario, $interes);
-        $data = $request->validate([
-            'nro_metodo' => ['required', Rule::exists('metodos_pago', 'nro_metodo')->where('documento', $interes->documento)->where('tipo', 'Tarjeta')->where('estado', 'activo')],
-        ], [], ['nro_metodo' => 'tarjeta']);
+        AlcanceService::autorizarTarjeta($usuario, $interes);
+        $metodo = $this->metodoActivo($interes->documento, $nroMetodo, 'Tarjeta', 'Seleccione una tarjeta activa del prospecto.');
+        ReglaNegocioException::si($this->vencida($metodo->vencimiento), 'La tarjeta está vencida.');
 
-        $metodo = $this->pagos->metodo((int) $data['nro_metodo']);
-        [$mes, $anio] = explode('/', $metodo->vencimiento);
-        abort_if(Carbon::create(2000 + (int) $anio, (int) $mes)->endOfMonth()->isPast(), 422, 'La tarjeta está vencida.');
-
-        $resultado = $this->pagos->transaccion(function () use ($orden, $cuota, $metodo, $usuario) {
+        return $this->pagos->transaccion(function () use ($orden, $interes, $cuota, $metodo, $usuario) {
             $fila = $this->cuotaBloqueada($orden->nro_orden, $cuota);
-            abort_if(in_array($fila->estado, ['Pago aprobado', 'En revision'], true), 422, 'Esta cuota no está pendiente de pago.');
+            ReglaNegocioException::si(in_array($fila->estado, ['Pago aprobado', 'En revision'], true), 'Esta cuota no está pendiente de pago.');
             $transaccion = 'SIM-'.Str::upper(Str::random(12));
+            $tarjeta = "{$metodo->marca} ****{$metodo->ultimos_digitos}";
 
-            $this->pagos->cambiarEstadoCuota($orden->nro_orden, $cuota, 'Pago aprobado', [
-                'nro_metodo' => $metodo->nro_metodo, 'observacion' => "Pasarela simulada {$transaccion} con {$metodo->marca} ****{$metodo->ultimos_digitos}",
+            $this->pagos->cambiarEstadoCuota($orden->nro_orden, $cuota, 'En revision', [
+                'nro_metodo' => $metodo->nro_metodo, 'observacion' => "Pasarela simulada {$transaccion} con {$tarjeta}",
             ]);
+            $this->pagos->registrarInteraccion($interes, [
+                'usuario_correo' => $usuario->correo, 'tipo' => 'Pago informado', 'fecha' => now(),
+                'descripcion' => "Cuota {$cuota} cobrada con {$tarjeta} (transacción {$transaccion}); pendiente de validación.",
+                'resultado' => 'Pago en revisión',
+            ]);
+            $this->pagos->actualizarInteres($interes, ['ultima_actividad_en' => now()]);
 
-            return [$transaccion, $this->trasAprobar($orden, $cuota, $usuario, "Cuota {$cuota} cobrada con {$metodo->marca} ****{$metodo->ultimos_digitos} (transacción {$transaccion}).")];
+            return $transaccion;
         });
-
-        return response()->json(['mensaje' => 'Pago aprobado por la pasarela simulada.', 'transaccion' => $resultado[0], 'faltantes_conversion' => $resultado[1]]);
     }
 
-    public function aprobar(Request $request, OrdenPago $orden, int $cuota): JsonResponse
+    /** Coordinación aprueba una cuota En revisión. Devuelve lo que falte para la conversión (vacío si se matriculó). */
+    public function aprobar(Usuario $usuario, OrdenPago $orden, int $cuota, ?string $observacion): array
     {
-        $usuario = $request->attributes->get('auth_usuario');
-        $interes = $this->pagos->interesDeOrden($orden);
-        Alcance::autorizarTarjeta($usuario, $interes);
-        $data = $request->validate(['observacion' => ['nullable', 'string', 'max:1000']]);
+        AlcanceService::autorizarTarjeta($usuario, $this->pagos->interesDeOrden($orden));
 
-        $faltantes = $this->pagos->transaccion(function () use ($orden, $cuota, $data, $usuario) {
+        return $this->pagos->transaccion(function () use ($orden, $cuota, $observacion, $usuario) {
             $fila = $this->cuotaBloqueada($orden->nro_orden, $cuota);
-            abort_if($fila->estado !== 'En revision', 422, 'Solo se aprueba una cuota con comprobante en revisión.');
+            ReglaNegocioException::si($fila->estado !== 'En revision', 'Solo se aprueba una cuota en revisión.');
 
-            $this->pagos->cambiarEstadoCuota($orden->nro_orden, $cuota, 'Pago aprobado', ['observacion' => $data['observacion'] ?? null]);
+            $this->pagos->cambiarEstadoCuota($orden->nro_orden, $cuota, 'Pago aprobado', ['observacion' => $observacion]);
             $this->pagos->actualizarComprobantes($orden->nro_orden, $cuota, 'Pago aprobado');
 
             return $this->trasAprobar($orden, $cuota, $usuario, "Cuota {$cuota} de la orden #{$orden->nro_orden} aprobada por coordinación.");
         });
-
-        $mensaje = $cuota === 1 && ! $faltantes ? 'Pago aprobado. El prospecto quedó matriculado (Convertido).' : 'Pago aprobado.';
-
-        return response()->json(['mensaje' => $mensaje, 'faltantes_conversion' => $faltantes]);
     }
 
-    public function rechazar(Request $request, OrdenPago $orden, int $cuota): JsonResponse
+    public function rechazar(Usuario $usuario, OrdenPago $orden, int $cuota, string $observacion): void
     {
-        $interes = $this->pagos->interesDeOrden($orden);
-        Alcance::autorizarTarjeta($request->attributes->get('auth_usuario'), $interes);
-        $data = $request->validate(['observacion' => ['required', 'string', 'max:1000']], ['observacion.required' => 'Indique el motivo del rechazo para el vendedor.']);
+        AlcanceService::autorizarTarjeta($usuario, $this->pagos->interesDeOrden($orden));
 
-        $this->pagos->transaccion(function () use ($orden, $cuota, $data) {
+        $this->pagos->transaccion(function () use ($orden, $cuota, $observacion) {
             $fila = $this->cuotaBloqueada($orden->nro_orden, $cuota);
-            abort_if($fila->estado !== 'En revision', 422, 'Solo se rechaza una cuota con comprobante en revisión.');
-            $this->pagos->cambiarEstadoCuota($orden->nro_orden, $cuota, 'Pago rechazado', ['observacion' => $data['observacion']]);
-            $this->pagos->actualizarComprobantes($orden->nro_orden, $cuota, 'Pago rechazado', $data['observacion']);
+            ReglaNegocioException::si($fila->estado !== 'En revision', 'Solo se rechaza una cuota en revisión.');
+            $this->pagos->cambiarEstadoCuota($orden->nro_orden, $cuota, 'Pago rechazado', ['observacion' => $observacion]);
+            $this->pagos->actualizarComprobantes($orden->nro_orden, $cuota, 'Pago rechazado', $observacion);
         });
-
-        return response()->json(['mensaje' => 'Comprobante rechazado. El vendedor verá el motivo.']);
     }
 
-    public function comprobante(Request $request, ComprobantePago $comprobante): JsonResponse
+    public function comprobante(Usuario $usuario, ComprobantePago $comprobante): ComprobantePago
     {
-        $orden = $this->pagos->ordenDeComprobante($comprobante->nro_orden);
-        Alcance::autorizarTarjeta($request->attributes->get('auth_usuario'), $orden->interes);
+        AlcanceService::autorizarTarjeta($usuario, $this->pagos->ordenDeComprobante($comprobante->nro_orden)->interes);
 
-        return response()->json(['comprobante' => $comprobante->makeVisible('archivo')]);
+        return $comprobante->makeVisible('archivo');
     }
 
     // ---------------------------------------------------------------- apoyo
-
-    /** Cuota 1: se cambia pagos.estado y el trigger lo copia a la cuota (así el P1 ve lo mismo). */
-    private function cambiarEstadoCuota(int $nroOrden, int $cuota, string $estado, array $extra = []): void
-    {
-        $extra = array_filter($extra, fn ($v) => $v !== null);
-        $this->pagos->cambiarEstadoCuota($nroOrden, $cuota, $estado, $extra);
-    }
 
     /** Tras aprobar: interacción y, si es la 1.ª cuota, conversión (RF3.4). Devuelve lo que falte para convertir. */
     private function trasAprobar(OrdenPago $orden, int $cuota, Usuario $usuario, string $descripcion): array
@@ -322,9 +275,9 @@ class PagoService
         if ($cuota !== 1 || $interes->estado === 'Convertido') {
             return [];
         }
-        $faltan = Conversion::faltantes($interes);
+        $faltan = ConversionService::faltantes($interes);
         if (! $faltan) {
-            Conversion::procesar($interes, $usuario);
+            ConversionService::procesar($interes, $usuario);
         }
 
         return $faltan;
@@ -333,15 +286,27 @@ class PagoService
     private function cuotaBloqueada(int $nroOrden, int $cuota): object
     {
         $fila = $this->pagos->cuotaBloqueada($nroOrden, $cuota);
-        abort_unless($fila, 404, 'La cuota no existe.');
+        ReglaNegocioException::si(! $fila, 'La cuota no existe.', 404);
 
         return $fila;
     }
 
-    private function autorizarProspecto(Request $request, ?Prospecto $prospecto): void
+    private function metodoActivo(string $documento, int $numero, ?string $tipo, string $mensaje): MetodoPago
     {
-        $usuario = $request->attributes->get('auth_usuario');
-        abort_unless($prospecto && $this->pagos->prospectoEnCartera($prospecto, $usuario), 403, 'Este prospecto no está dentro de su cartera.');
+        return $this->pagos->metodoActivo($documento, $numero, $tipo)
+            ?? throw ValidationException::withMessages(['nro_metodo' => $mensaje]);
+    }
+
+    private function autorizarProspecto(Usuario $usuario, ?Prospecto $prospecto): void
+    {
+        ReglaNegocioException::si(! $prospecto || ! $this->pagos->prospectoEnCartera($prospecto, $usuario), 'Este prospecto no está dentro de su cartera.', 403);
+    }
+
+    private function vencida(string $vencimiento): bool
+    {
+        [$mes, $anio] = explode('/', $vencimiento);
+
+        return Carbon::create(2000 + (int) $anio, (int) $mes)->endOfMonth()->isPast();
     }
 
     private function validarArchivo(string $archivo): string
