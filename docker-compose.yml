@@ -16,11 +16,11 @@ services:
       timeout: 5s
       retries: 5
 
-  # Laravel (API REST + paginas React). No pisa un .env existente; php -S con el router de Laravel
-  # respeta las variables de entorno del contenedor (artisan serve no se las pasa al proceso hijo).
+  # Capa 2: Laravel (solo API REST). Monta el repo entero porque carga la capa 3 (../datos) como paquete
+  # de Composer. No pisa un .env existente; php -S con el router de Laravel respeta las variables del contenedor.
   app:
     build:
-      context: ./backend
+      context: ./negocio
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
@@ -38,27 +38,29 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./backend:/app
+      - ./:/repo
       # vendor/ en un volumen Linux: leerlo desde la carpeta de Windows hacia cada peticion ~3 s.
-      - vendor:/app/vendor
+      - vendor:/repo/negocio/vendor
+    working_dir: /repo/negocio
     command: >
-      sh -c "cd /app
-      && ([ -f .env ] || cp .env.example .env)
+      sh -c "([ -f .env ] || cp .env.example .env)
       && composer install --no-interaction
       && (grep -q '^APP_KEY=base64' .env || php artisan key:generate --force)
       && php artisan crm:preparar-bd && php artisan migrate --force
       && cd public
       && php -S 0.0.0.0:8001 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"
 
-  # Vite en modo desarrollo para las paginas React (laravel-vite-plugin escribe public/hot).
-  vite:
+  # Capa 1: React (Vite en modo desarrollo) en http://localhost:5173; reenvia /api a la capa 2.
+  presentacion:
     image: node:22-alpine
     restart: unless-stopped
     working_dir: /app
     ports:
       - "5173:5173"
+    environment:
+      - VITE_API_PROXY=http://app:8001
     volumes:
-      - ./backend:/app
+      - ./presentacion:/app
       # node_modules propio del contenedor (binarios Linux), separado del node_modules del host.
       - /app/node_modules
     command: sh -c "npm ci && npm run dev"
