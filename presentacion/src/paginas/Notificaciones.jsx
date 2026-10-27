@@ -43,11 +43,11 @@ export default function Notificaciones() {
           {error && <Aviso tipo="error">{error}</Aviso>}
           {cargando && !datos ? <div className="hoja-cuerpo"><Cargando /></div> : !datos?.length ? <Vacio titulo="Sin notificaciones" icono={Mail} /> : (
             <ul className="agenda-items">{datos.map((n) => (
-              <li key={n.nro_notificacion} style={{ display: 'grid', gap: 4, padding: '12px 14px', borderBottom: '1px solid var(--filete)' }}>
-                <span style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}><strong>{n.tipo}</strong><Etiqueta estado={n.estado} /></span>
-                <small style={{ color: 'var(--tinta-suave)' }}>Para {n.destinatario} · {fecha(n.fecha_envio, true)}</small>
-                <p style={{ fontSize: 'var(--t-s)' }}>{n.mensaje}</p>
-                {n.estado !== 'leida' && <button type="button" className="btn btn-texto" style={{ justifySelf: 'start' }} onClick={async () => { await notificacionesApi.marcarLeida(n.nro_notificacion); recargar() }}>Marcar como leída</button>}
+              <li key={n.nro_notificacion} className="aviso-enviado">
+                <span className="aviso-enviado-cabeza"><strong>{n.tipo}</strong><Etiqueta estado={n.estado} /></span>
+                <small className="nota">Para {n.destinatario} · {fecha(n.fecha_envio, true)}</small>
+                <p>{n.mensaje}</p>
+                {n.estado !== 'leida' && <button type="button" className="btn btn-texto" onClick={async () => { await notificacionesApi.marcarLeida(n.nro_notificacion); recargar() }}>Marcar como leída</button>}
               </li>
             ))}</ul>
           )}

@@ -15,9 +15,11 @@ export function Etiqueta({ estado, children }) {
   return <span className={`etiqueta ${claseEstado(estado)}`}>{children || estado}</span>
 }
 
-export function Avatar({ usuario, tam = 36 }) {
-  if (usuario?.foto_url) return <img className="avatar" src={usuario.foto_url} alt="" width={tam} height={tam} style={{ width: tam, height: tam }} />
-  return <span className="avatar" style={{ width: tam, height: tam }} aria-hidden="true">{iniciales(usuario)}</span>
+export function Avatar({ usuario, chica = false }) {
+  const clase = chica ? 'avatar avatar-chica' : 'avatar'
+  const tam = chica ? 32 : 36
+  if (usuario?.foto_url) return <img className={clase} src={usuario.foto_url} alt="" width={tam} height={tam} />
+  return <span className={clase} aria-hidden="true">{iniciales(usuario)}</span>
 }
 
 export function Aviso({ tipo = 'info', children }) {
@@ -43,8 +45,8 @@ export function Vacio({ titulo, children, icono: Icono = Inbox }) {
 
 export function Cargando({ filas = 4 }) {
   return (
-    <div style={{ display: 'grid', gap: 10 }} aria-busy="true" aria-label="Cargando">
-      {Array.from({ length: filas }, (_, i) => <div key={i} className="esqueleto" style={{ height: 44 }} />)}
+    <div className="cargando" aria-busy="true" aria-label="Cargando">
+      {Array.from({ length: filas }, (_, i) => <div key={i} className="esqueleto" />)}
     </div>
   )
 }
@@ -149,15 +151,15 @@ export function CabeceraPagina({ titulo, children, acciones }) {
   )
 }
 
-export function Barras({ datos, color, formato = (v) => v, porcentaje = true }) {
+export function Barras({ datos, tono, formato = (v) => v, porcentaje = true }) {
   const max = Math.max(...datos.map((d) => d.total), 1)
   if (!datos.length || datos.every((d) => !d.total)) return <Vacio titulo="Sin datos todavía">Aparecerán cuando haya registros en este periodo.</Vacio>
   return (
     <ul className="barras">
       {datos.map((d) => (
-        <li key={d.etiqueta} style={{ '--c': d.color || color }}>
+        <li key={d.etiqueta} className={d.tono || tono ? `tono-${d.tono || tono}` : undefined}>
           <span>{d.etiqueta}</span>
-          <span className="pista" aria-hidden="true"><span className="relleno" style={{ width: `${(d.total / max) * 100}%`, display: 'block' }} /></span>
+          <progress className="pista" max={max} value={d.total} aria-hidden="true" />
           <span className="valor">{porcentaje && d.porcentaje != null ? `${Number(d.porcentaje).toLocaleString('es-BO')} %` : formato(d.total)}</span>
         </li>
       ))}

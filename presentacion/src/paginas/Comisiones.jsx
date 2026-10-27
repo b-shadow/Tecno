@@ -22,25 +22,25 @@ export default function Comisiones() {
   return (
     <>
       <CabeceraPagina titulo="Ventas y comisiones">Cada módulo matriculado genera la comisión del vendedor que hizo la venta, con el porcentaje vigente en ese momento.</CabeceraPagina>
-      <dl className="cifras" style={{ marginBottom: 'var(--e-5)' }}>
+      <dl className="cifras tramo">
         <div><dt>Ventas concretadas</dt><dd>{lista.length}</dd></div>
         <div><dt>Comisión pendiente</dt><dd className="cifra">{bs(pendiente)}</dd></div>
         <div><dt>Porcentaje vigente</dt><dd>{Number(comisiones.datos.porcentaje)}%</dd></div>
       </dl>
       {gestiona && (
-        <div className="rejilla-lateral" style={{ marginBottom: 'var(--e-5)' }}>
+        <div className="rejilla-lateral tramo">
           <section className="hoja"><header className="hoja-titulo"><h3>Por vendedor</h3></header>
-            <div className="tabla-marco" style={{ border: 0 }}><table className="tabla">
+            <div className="tabla-marco interna"><table className="tabla">
               <thead><tr><th>Vendedor</th><th className="num">Cursos</th><th className="num">Total</th><th className="num">Pendiente</th><th /></tr></thead>
               <tbody>{(resumen.datos || []).map((v) => (
                 <tr key={v.correo}><td>{nombre(v)}</td><td className="num">{v.cursos_vendidos}</td><td className="num">{bs(v.comision_total)}</td><td className="num">{bs(v.comision_pendiente)}</td>
-                  <td>{Number(v.comision_pendiente) > 0 && <button type="button" className="btn btn-secundario" onClick={async () => { try { aviso.ok((await seguimientoApi.pagarComisiones(v.correo)).data.mensaje); recargar() } catch (e) { aviso.error(e) } }}>Registrar pago</button>}</td></tr>
+                  <td>{Number(v.comision_pendiente)> 0 && <button type="button" className="btn btn-secundario" onClick={async () => { try { aviso.ok((await seguimientoApi.pagarComisiones(v.correo)).data.mensaje); recargar() } catch (e) { aviso.error(e) } }}>Registrar pago</button>}</td></tr>
               ))}</tbody>
             </table></div>
           </section>
           {sesion.usuario?.rol === 'administrador' && <form className="hoja hoja-cuerpo formulario" onSubmit={async (e) => { e.preventDefault(); try { aviso.ok((await seguimientoApi.actualizarConfiguracionComision(porcentaje)).data.mensaje); setPorcentaje(''); recargar() } catch (err) { aviso.error(err) } }}>
             <h3>Porcentaje de comisión</h3>
-            <p style={{ color: 'var(--tinta-suave)', fontSize: 'var(--t-s)' }}>Se aplica a las ventas que se matriculen desde ahora.</p>
+            <p className="nota-s">Se aplica a las ventas que se matriculen desde ahora.</p>
             <Campo etiqueta="Nuevo porcentaje (0 a 50)" requerido><input type="number" min={0} max={50} step="0.5" required value={porcentaje} onChange={(e) => setPorcentaje(e.target.value)} /></Campo>
             <div className="acciones"><button type="submit" className="btn btn-primario">Guardar</button></div>
           </form>}

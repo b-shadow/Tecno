@@ -7,7 +7,7 @@ Chart.register(BarController, BarElement, LineController, LineElement, PointElem
 const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim()
 
 /** Serie diaria (líneas) con colores tomados de los tokens del tema activo; se redibuja al cambiar de tema. */
-export default function GraficoLineas({ etiquetas, series, formato = (v) => v, alto = 260, descripcion, tipo = 'line' }) {
+export default function GraficoLineas({ etiquetas, series, formato = (v) => v, descripcion, tipo = 'line' }) {
   const lienzo = useRef(null)
   const apariencia = useApariencia()
   useEffect(() => {
@@ -27,7 +27,7 @@ export default function GraficoLineas({ etiquetas, series, formato = (v) => v, a
         responsive: true, maintainAspectRatio: false, animation: { duration: 500 },
         interaction: { mode: 'index', intersect: false },
         plugins: {
-          legend: { display: series.length > 1, labels: { color: tinta, font: { family: fuente }, boxWidth: 12 } },
+          legend: { display: series.length> 1, labels: { color: tinta, font: { family: fuente }, boxWidth: 12 } },
           tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${formato(c.parsed.y)}` } },
         },
         scales: {
@@ -38,5 +38,5 @@ export default function GraficoLineas({ etiquetas, series, formato = (v) => v, a
     })
     return () => grafico.destroy()
   }, [etiquetas, series, formato, apariencia, tipo])
-  return <div className="grafico" style={{ height: alto }}><canvas ref={lienzo} role="img" aria-label={descripcion} /></div>
+  return <div className="grafico"><canvas ref={lienzo} role="img" aria-label={descripcion} /></div>
 }

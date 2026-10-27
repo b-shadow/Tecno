@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { Link, Outlet, ScrollRestoration } from 'react-router-dom'
 import {
   BadgeDollarSign, BarChart3, CalendarDays, Circle, CircleSlash, CreditCard, GraduationCap, KanbanSquare, LayoutDashboard,
@@ -103,12 +103,12 @@ function Interno({ children, actual }) {
             grupoPrevio = grupo
             const Icono = ICONOS[item.icono] || Circle
             return (
-              <div key={item.codigo} style={{ display: 'contents' }}>
+              <Fragment key={item.codigo}>
                 {titulo && <div className="riel-grupo">{titulo}</div>}
                 <Link to={item.ruta} className={item.ruta === path ? 'router-link-active' : ''} aria-current={item.ruta === path ? 'page' : undefined} title={cerrado ? item.nombre : undefined}>
                   <Icono size={19} aria-hidden="true" /><span>{item.nombre}</span>
                 </Link>
-              </div>
+              </Fragment>
             )
           })}
         </nav>

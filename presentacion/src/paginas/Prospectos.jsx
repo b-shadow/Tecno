@@ -42,10 +42,10 @@ export default function Prospectos() {
                   <td className="cifra">{p.telefono}</td>
                   <td>{p.origen}</td>
                   <td>{p.intereses.length ? p.intereses.map((i) => (
-                    <div key={i.nro_tarjeta} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBlock: 2 }}>
+                    <div key={i.nro_tarjeta} className="interes-linea">
                       <a href="#" onClick={(e) => { e.preventDefault(); go(`/agenda?interes=${i.nro_tarjeta}`) }}>{i.modulo_nombre}</a><Etiqueta estado={i.estado} />
                     </div>
-                  )) : <small style={{ color: 'var(--tinta-suave)' }}>Sin interés registrado</small>}</td>
+                  )) : <small className="nota">Sin interés registrado</small>}</td>
                   <td className="cifra">{fecha(p.fecha_registro)}</td>
                 </tr>
               ))}
@@ -127,7 +127,7 @@ function ImportarCsv({ onCerrar, onListo }) {
       {resultado && (
         <Aviso tipo="error">
           {resultado.mensaje}
-          {Array.isArray(resultado.errores) && resultado.errores.length > 0 && <ul>{resultado.errores.slice(0, 12).map((e, i) => <li key={i}>{e.fila ? `Fila ${e.fila}: ` : ''}{e.columna ? `${e.columna} — ` : ''}{e.error}</li>)}</ul>}
+          {Array.isArray(resultado.errores) && resultado.errores.length> 0 && <ul>{resultado.errores.slice(0, 12).map((e, i) => <li key={i}>{e.fila ? `Fila ${e.fila}: ` : ''}{e.columna ? `${e.columna} — ` : ''}{e.error}</li>)}</ul>}
         </Aviso>
       )}
     </Modal>

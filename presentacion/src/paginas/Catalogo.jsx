@@ -18,7 +18,7 @@ const Foto = ({ src, className }) => (src ? <img className={className} src={src}
 function coloresDeAreas(areas) {
   const mapa = new Map()
   for (const a of areas) {
-    let k = [...a].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 4
+    let k = [...a].reduce((h, c) => (h * 31 + c.charCodeAt(0))>>> 0, 7) % 4
     for (let n = 0; n < 4 && [...mapa.values()].includes(k + 1); n++) k = (k + 1) % 4
     mapa.set(a, k + 1)
   }

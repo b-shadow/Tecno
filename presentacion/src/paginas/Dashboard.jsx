@@ -30,7 +30,7 @@ export default function Dashboard() {
       <CabeceraPagina titulo={`Hola, ${usuario?.nombre}`} acciones={<button type="button" className="btn btn-secundario" onClick={recargar}>Actualizar</button>}>
         {usuario?.rol === 'coordinador' ? 'Resumen de los programas a su cargo.' : 'Resumen de toda la operación comercial.'}
       </CabeceraPagina>
-      <dl className="cifras" style={{ marginBottom: 'var(--e-5)' }}>
+      <dl className="cifras tramo">
         <div><dt>Tarjetas abiertas</dt><dd>{k.tarjetas_abiertas}</dd></div>
         <div><dt>Sin asignar</dt><dd>{k.sin_asignar}</dd></div>
         <div><dt>Cuotas en revisión</dt><dd>{k.cuotas_en_revision}</dd></div>
@@ -38,9 +38,9 @@ export default function Dashboard() {
         <div><dt>Ingresos del mes</dt><dd className="cifra">{bs(k.ingresos_mes)}</dd></div>
         <div><dt>Actividades hoy</dt><dd>{k.actividades_hoy}</dd></div>
       </dl>
-      <div className="rejilla-2" style={{ marginBottom: 'var(--e-5)' }}>
+      <div className="rejilla-2 tramo">
         <section className="hoja"><header className="hoja-titulo"><h3>Embudo por etapa</h3><small>{k.convertidos} convertidos · {k.perdidos} perdidos</small></header>
-          <div className="hoja-cuerpo"><Barras datos={datos.embudo.map((e) => ({ ...e, color: `var(--etapa-${ETAPA[e.etiqueta]})` }))} /></div></section>
+          <div className="hoja-cuerpo"><Barras datos={datos.embudo.map((e) => ({ ...e, tono: ETAPA[e.etiqueta] }))} /></div></section>
         <section className="hoja"><header className="hoja-titulo"><h3>Ingresos de los últimos 14 días</h3></header>
           <div className="hoja-cuerpo"><GraficoLineas {...ingresos} tipo="bar" formato={moneda} descripcion="Ingresos aprobados por día" /></div></section>
       </div>
@@ -48,10 +48,10 @@ export default function Dashboard() {
         <section className="hoja"><header className="hoja-titulo"><h3>Matrículas por programa</h3></header>
           <div className="hoja-cuerpo"><Barras datos={datos.ventas_por_programa} /></div></section>
         <section className="hoja"><header className="hoja-titulo"><h3>Páginas más visitadas</h3></header>
-          <div className="hoja-cuerpo"><Barras porcentaje={false} datos={datos.visitas_por_pagina.map((v) => ({ etiqueta: v.nombre, total: v.visitas }))} formato={miles} color="var(--etapa-seguimiento)" /></div></section>
+          <div className="hoja-cuerpo"><Barras porcentaje={false} datos={datos.visitas_por_pagina.map((v) => ({ etiqueta: v.nombre, total: v.visitas }))} formato={miles} tono="seguimiento" /></div></section>
       </div>
       {accesos && (
-        <section className="hoja" style={{ marginTop: 'var(--e-5)' }}>
+        <section className="hoja desde-arriba">
           <header className="hoja-titulo"><h3>Accesos al sistema (14 días)</h3><small>{datos.accesos.denegados_semana} accesos denegados esta semana</small></header>
           <div className="hoja-cuerpo"><GraficoLineas {...accesos} descripcion="Inicios de sesión exitosos y fallidos por día" /></div>
         </section>

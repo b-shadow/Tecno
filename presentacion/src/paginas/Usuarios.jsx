@@ -46,7 +46,7 @@ export default function Usuarios() {
               {datos.usuarios.map((u) => (
                 <tr key={u.correo}>
                   <td><div className="persona"><Avatar usuario={u} /><div><strong>{nombre(u)}</strong><small>{u.correo}</small></div></div></td>
-                  <td style={{ textTransform: 'capitalize' }}>{u.rol}{u.rol === 'coordinador' && <small style={{ display: 'block', color: 'var(--tinta-suave)' }}>{u.programas_a_cargo?.length || 0} programa(s)</small>}</td>
+                  <td className="capitalizar">{u.rol}{u.rol === 'coordinador' && <small className="nota bloque">{u.programas_a_cargo?.length || 0} programa(s)</small>}</td>
                   <td className="cifra">{fecha(u.fecha_inicio)} — {fecha(u.fecha_fin)}</td>
                   <td><span className={`status-pill etiqueta e-${u.estado}`}>{u.estado}</span></td>
                   <td className="acciones">{editable && <>
@@ -103,8 +103,8 @@ function FormUsuario({ usuario, roles, programas, onCerrar, onListo }) {
         <Campo etiqueta="Estado" requerido><select value={form.estado} onChange={set('estado')}><option>activo</option><option>inactivo</option></select></Campo>
         <Campo etiqueta="Foto" error={errores.foto} ayuda="Se guarda como apellido_nombre.jpg."><input type="file" accept="image/jpeg,image/png,image/webp" onChange={async (e) => { const f = e.target.files[0]; if (f) setForm({ ...form, foto: await leerArchivo(f) }) }} /></Campo>
         {form.rol === 'coordinador' && (
-          <fieldset className="ancho" style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 8 }}>
-            <legend style={{ fontWeight: 700, marginBottom: 6 }}>Programas a su cargo (RF1.3)</legend>
+          <fieldset className="ancho grupo-campos apilado-s">
+            <legend>Programas a su cargo (RF1.3)</legend>
             {programas.map((p) => <label key={p.codigo} className="check"><input type="checkbox" checked={form.programas.includes(p.codigo)} onChange={() => setForm({ ...form, programas: form.programas.includes(p.codigo) ? form.programas.filter((x) => x !== p.codigo) : [...form.programas, p.codigo] })} /> {p.nombre}</label>)}
           </fieldset>
         )}

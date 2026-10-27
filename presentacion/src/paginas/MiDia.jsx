@@ -34,7 +34,7 @@ export default function MiDia() {
     <>
       <CabeceraPagina titulo={`Buen día, ${usuario?.nombre}`}>Sus actividades agendadas y el estado de su cartera.</CabeceraPagina>
       {s ? (
-        <dl className="cifras" style={{ marginBottom: 'var(--e-5)' }}>
+        <dl className="cifras tramo">
           <div><dt>Tarjetas abiertas</dt><dd>{s.abiertas}<small> de {s.tarjetas}</small></dd></div>
           <div><dt>Convertidos</dt><dd>{s.convertidos}</dd></div>
           <div><dt>Actividades pendientes</dt><dd>{s.actividades_pendientes}</dd></div>
@@ -45,7 +45,7 @@ export default function MiDia() {
       <div className="rejilla-ancha">
         <section className="hoja">
           <header className="hoja-titulo">
-            <h3 style={{ textTransform: 'capitalize' }}>{mes.toLocaleDateString('es-BO', { month: 'long', year: 'numeric' })}</h3>
+            <h3 className="capitalizar">{mes.toLocaleDateString('es-BO', { month: 'long', year: 'numeric' })}</h3>
             <div className="acciones">
               <button type="button" className="btn btn-texto btn-icono" aria-label="Mes anterior" onClick={() => setMes(new Date(mes.getFullYear(), mes.getMonth() - 1, 1))}><ChevronLeft size={18} /></button>
               <button type="button" className="btn btn-secundario" onClick={() => { const d = new Date(); setMes(new Date(d.getFullYear(), d.getMonth(), 1)); setDia(hoy) }}>Hoy</button>
@@ -72,7 +72,7 @@ export default function MiDia() {
           <header className="hoja-titulo"><h3>{new Date(`${dia}T12:00:00`).toLocaleDateString('es-BO', { weekday: 'long', day: 'numeric', month: 'long' })}</h3></header>
           <div className="hoja-cuerpo">
             {agenda.error && <Aviso tipo="error">{agenda.error}</Aviso>}
-            {!(porDia[dia] || []).length ? <p style={{ color: 'var(--tinta-suave)' }}>Sin actividades este día.</p> : (
+            {!(porDia[dia] || []).length ? <p className="nota">Sin actividades este día.</p> : (
               <ol className="historial">
                 {porDia[dia].map((r) => (
                   <li key={r.nro_recordatorio}>
@@ -91,7 +91,7 @@ export default function MiDia() {
           pie={<div className="acciones"><button type="button" className="btn btn-secundario" onClick={() => setCompletar(null)}>Cancelar</button><button type="button" className="btn btn-primario" disabled={completar.resultado.trim().length < 3} onClick={async () => {
             try { aviso.ok((await seguimientoApi.completarRecordatorio(completar.r.nro_recordatorio, completar.resultado)).data.mensaje); setCompletar(null); agenda.recargar(); stats.recargar() } catch (e) { aviso.error(e) }
           }}>Guardar</button></div>}>
-          {new Date(completar.r.fecha_programada) > new Date() && <Aviso>Estaba agendada para el {fecha(completar.r.fecha_programada, true)}. ¿Está seguro de que ya se realizó?</Aviso>}
+          {new Date(completar.r.fecha_programada)> new Date() && <Aviso>Estaba agendada para el {fecha(completar.r.fecha_programada, true)}. ¿Está seguro de que ya se realizó?</Aviso>}
           <Campo etiqueta="Resultado" requerido><textarea value={completar.resultado} onChange={(e) => setCompletar({ ...completar, resultado: e.target.value })} /></Campo>
         </Modal>
       )}

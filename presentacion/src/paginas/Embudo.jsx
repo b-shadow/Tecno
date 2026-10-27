@@ -69,7 +69,7 @@ export default function Embudo() {
           <>
           <nav className="etapas" aria-label="Ir a una etapa">
             {(datos?.estados || []).map((estado) => (
-              <button key={estado} type="button" style={{ '--c': `var(--etapa-${COLOR[estado]})` }}
+              <button key={estado} type="button" className={`tono-${COLOR[estado]}`}
                 onClick={() => document.getElementById(`etapa-${COLOR[estado]}`)?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' })}>
                 {estado} <b>{porEstado[estado]?.length || 0}</b>
               </button>
@@ -77,7 +77,7 @@ export default function Embudo() {
           </nav>
           <div className="kanban" aria-label="Tablero del embudo">
             {(datos?.estados || []).map((estado) => (
-              <section key={estado} id={`etapa-${COLOR[estado]}`} className={`columna ${encima === estado ? 'encima' : ''}`} style={{ '--c': `var(--etapa-${COLOR[estado]})` }} aria-label={estado}
+              <section key={estado} id={`etapa-${COLOR[estado]}`} className={`columna tono-${COLOR[estado]} ${encima === estado ? 'encima' : ''}`} aria-label={estado}
                 onDragOver={(e) => { if (editable && arrastrada) { e.preventDefault(); setEncima(estado) } }}
                 onDragLeave={() => setEncima(null)}
                 onDrop={(e) => { e.preventDefault(); setEncima(null); mover(arrastrada, estado); setArrastrada(null) }}>

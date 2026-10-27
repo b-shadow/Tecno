@@ -34,14 +34,14 @@ export default function Agenda() {
   return (
     <div className="agenda agenda-page">
       <aside className="hoja agenda-lista" aria-label="Tarjetas" id="lista-tarjetas">
-        <div className="hoja-cuerpo" style={{ display: 'grid', gap: 8 }}>
+        <div className="hoja-cuerpo apilado-s">
           <input className="control" type="search" placeholder="Buscar prospecto o módulo…" aria-label="Buscar en mis tarjetas" value={buscar} onChange={(e) => setBuscar(e.target.value)} />
           <select className="control" aria-label="Filtrar por etapa" value={estado} onChange={(e) => setEstado(e.target.value)}>
             <option value="">Todas las etapas</option>
             {(lista.datos?.estados || []).map((e) => <option key={e}>{e}</option>)}
           </select>
         </div>
-        {lista.cargando && !lista.datos ? <div style={{ padding: 12 }}><Cargando /></div> : (
+        {lista.cargando && !lista.datos ? <div className="cargando-marco"><Cargando /></div> : (
           <ul className="agenda-items">
             {(lista.datos?.intereses || []).map((t) => (
               <li key={t.nro_tarjeta}>
@@ -105,12 +105,12 @@ function Ficha({ nro, sesion, enfocar, onCambio }) {
         <div><dt>Profesión · ciudad</dt><dd>{p.profesion || '—'} · {p.ubicacion || '—'}</dd></div>
         <div><dt>Vendedor</dt><dd>{t.vendedor ? nombre(t.vendedor) : 'Sin asignar'}</dd></div>
       </dl>
-      <div className="hoja-cuerpo" style={{ display: 'grid', gap: 'var(--e-4)' }}>
-        {t.estado !== 'Convertido' && datos.faltantes_conversion?.length > 0 && (
+      <div className="hoja-cuerpo apilado-m">
+        {t.estado !== 'Convertido' && datos.faltantes_conversion?.length> 0 && (
           <Aviso>Para matricular falta: {datos.faltantes_conversion.join(' ')}</Aviso>
         )}
         {t.estado === 'Perdido' && <Aviso tipo="error">Perdido. Motivo: {t.motivo_perdida}{t.observacion ? ` — ${t.observacion}` : ''}</Aviso>}
-        <div className="acciones" style={{ justifyContent: 'flex-start' }}>
+        <div className="acciones al-inicio">
           {editable && <button type="button" className="btn btn-secundario" onClick={() => setEditar(true)}><Pencil size={16} /> Editar datos</button>}
           <button type="button" className="btn btn-texto" onClick={() => go('/embudo')}>Ver en el embudo</button>
           {editable && t.estado !== 'Convertido' && datos.faltantes_conversion?.length === 0 && (
@@ -201,7 +201,7 @@ function Recordatorios({ t, editable, aviso, onCambio }) {
     }
   }
   return (
-    <div style={{ display: 'grid', gap: 'var(--e-5)' }}>
+    <div className="apilado">
       {editable && (
         <form className="formulario dos" onSubmit={agendar}>
           <Campo etiqueta="Fecha y hora" requerido error={errores.fecha_programada}><input type="datetime-local" required value={form.fecha_programada} onChange={(e) => setForm({ ...form, fecha_programada: e.target.value })} /></Campo>
@@ -210,8 +210,8 @@ function Recordatorios({ t, editable, aviso, onCambio }) {
         </form>
       )}
       <div>
-        <h4 style={{ marginBottom: 8 }}>Pendientes</h4>
-        {!pendientes.length ? <p style={{ color: 'var(--tinta-suave)' }}>No hay actividades pendientes.</p> : (
+        <h4 className="tramo-xs">Pendientes</h4>
+        {!pendientes.length ? <p className="nota">No hay actividades pendientes.</p> : (
           <div className="tabla-marco"><table className="tabla"><thead><tr><th>Fecha</th><th>Actividad</th><th>Estado</th><th /></tr></thead><tbody>
             {pendientes.map((r) => (
               <tr key={r.nro_recordatorio}>
@@ -230,7 +230,7 @@ function Recordatorios({ t, editable, aviso, onCambio }) {
           pie={<div className="acciones"><button type="button" className="btn btn-secundario" onClick={() => setCompletar(null)}>Cancelar</button><button type="button" className="btn btn-primario" disabled={completar.resultado.trim().length < 3} onClick={async () => {
             try { aviso.ok((await seguimientoApi.completarRecordatorio(completar.r.nro_recordatorio, completar.resultado)).data.mensaje); setCompletar(null); onCambio() } catch (e) { aviso.error(e) }
           }}>Guardar</button></div>}>
-          {new Date(completar.r.fecha_programada) > new Date() && <Aviso>Estaba agendada para el {fecha(completar.r.fecha_programada, true)}. ¿Está seguro de que ya se realizó?</Aviso>}
+          {new Date(completar.r.fecha_programada)> new Date() && <Aviso>Estaba agendada para el {fecha(completar.r.fecha_programada, true)}. ¿Está seguro de que ya se realizó?</Aviso>}
           <Campo etiqueta="Resultado" requerido ayuda="Queda en el historial con la fecha de hoy."><textarea value={completar.resultado} onChange={(e) => setCompletar({ ...completar, resultado: e.target.value })} /></Campo>
         </Modal>
       )}
@@ -244,14 +244,14 @@ function Pagos({ t, esSuVendedor, editable, aviso, onCambio }) {
   const metodos = t.prospecto.metodos_pago || []
   const activos = metodos.filter((m) => m.estado === 'activo')
   return (
-    <div style={{ display: 'grid', gap: 'var(--e-5)' }}>
+    <div className="apilado">
       <section>
-        <div className="hoja-titulo" style={{ padding: '0 0 8px', border: 0 }}><h4>Métodos de pago</h4>{editable && <button type="button" className="btn btn-secundario" onClick={() => setModal({ tipo: 'metodo' })}><CreditCard size={16} /> Registrar método</button>}</div>
-        {!metodos.length ? <p style={{ color: 'var(--tinta-suave)' }}>El prospecto todavía no tiene métodos registrados.</p> : (
+        <div className="hoja-titulo subtitulo"><h4>Métodos de pago</h4>{editable && <button type="button" className="btn btn-secundario" onClick={() => setModal({ tipo: 'metodo' })}><CreditCard size={16} /> Registrar método</button>}</div>
+        {!metodos.length ? <p className="nota">El prospecto todavía no tiene métodos registrados.</p> : (
           <div className="cuotas">{metodos.map((m) => (
             <div key={m.nro_metodo} className="metodo">
               <CreditCard size={18} aria-hidden="true" />
-              <span style={{ flex: 1 }}><b>{m.tipo === 'Tarjeta' ? `${m.marca} ` : m.tipo}</b>{m.tipo === 'Tarjeta' && <span className="cifra">•••• {m.ultimos_digitos} · vence {m.vencimiento}</span>} · {m.titular}</span>
+              <span className="crece"><b>{m.tipo === 'Tarjeta' ? `${m.marca} ` : m.tipo}</b>{m.tipo === 'Tarjeta' && <span className="cifra">•••• {m.ultimos_digitos} · vence {m.vencimiento}</span>} · {m.titular}</span>
               <Etiqueta estado={m.estado} />
               {editable && <button type="button" className="btn btn-texto" onClick={async () => { try { aviso.ok((await pagosApi.cambiarEstadoMetodo(m.nro_metodo, m.estado === 'activo' ? 'inactivo' : 'activo')).data.mensaje); onCambio() } catch (e) { aviso.error(e) } }}>{m.estado === 'activo' ? 'Desactivar' : 'Activar'}</button>}
             </div>
@@ -259,10 +259,10 @@ function Pagos({ t, esSuVendedor, editable, aviso, onCambio }) {
         )}
       </section>
       <section>
-        <div className="hoja-titulo" style={{ padding: '0 0 8px', border: 0 }}><h4>Órdenes y cuotas</h4>{editable && esSuVendedor && t.estado !== 'Convertido' && <button type="button" className="btn btn-primario" onClick={() => setModal({ tipo: 'orden' })}>Generar orden de pago</button>}</div>
-        {!t.ordenes_pago.length ? <p style={{ color: 'var(--tinta-suave)' }}>{esSuVendedor ? 'Genere la orden cuando el prospecto confirme los módulos.' : 'Sin órdenes de pago.'}</p> : t.ordenes_pago.map((o) => (
-          <article key={o.nro_orden} className="hoja" style={{ marginBottom: 'var(--e-3)' }}>
-            <div className="hoja-titulo"><h4>Orden #{o.nro_orden} · {bs(o.total)}</h4><small>{o.items.map((i) => i.modulo_nombre).join(', ')}{Number(o.descuento_total) > 0 && ` · descuento ${bs(o.descuento_total)}`}</small></div>
+        <div className="hoja-titulo subtitulo"><h4>Órdenes y cuotas</h4>{editable && esSuVendedor && t.estado !== 'Convertido' && <button type="button" className="btn btn-primario" onClick={() => setModal({ tipo: 'orden' })}>Generar orden de pago</button>}</div>
+        {!t.ordenes_pago.length ? <p className="nota">{esSuVendedor ? 'Genere la orden cuando el prospecto confirme los módulos.' : 'Sin órdenes de pago.'}</p> : t.ordenes_pago.map((o) => (
+          <article key={o.nro_orden} className="hoja tramo-s">
+            <div className="hoja-titulo"><h4>Orden #{o.nro_orden} · {bs(o.total)}</h4><small>{o.items.map((i) => i.modulo_nombre).join(', ')}{Number(o.descuento_total)> 0 && ` · descuento ${bs(o.descuento_total)}`}</small></div>
             <div className="hoja-cuerpo cuotas">
               {o.cuotas.map((c) => (
                 <div key={c.nro_cuota} className="cuota">
@@ -334,13 +334,13 @@ function NuevaOrden({ t, onCerrar, onListo }) {
     <Modal ancho titulo="Generar orden de pago" descripcion={`${nombre(t.prospecto)} · ${t.programa_nombre}`} onCerrar={onCerrar}>
       {!programa ? <Cargando /> : (
         <form className="formulario" onSubmit={generar}>
-          <fieldset className="formulario" style={{ border: 0, padding: 0, margin: 0 }}>
-            <legend style={{ fontWeight: 700, marginBottom: 8 }}>Módulos</legend>
+          <fieldset className="formulario grupo-campos">
+            <legend>Módulos</legend>
             <label className="check"><input type="checkbox" checked={modulos.length === programa.modulos.length} onChange={(e) => setModulos(e.target.checked ? programa.modulos.map((m) => m.codigo) : [t.modulo_codigo])} /> Programa completo ({programa.modulos.length} módulos)</label>
             {programa.modulos.map((m, i) => <label key={m.codigo} className="check"><input type="checkbox" checked={modulos.includes(m.codigo)} onChange={() => alternar(modulos, setModulos, m.codigo)} /> {String(i + 1).padStart(2, '0')} · {m.nombre} — {bs(m.precio)}</label>)}
           </fieldset>
-          <fieldset className="formulario" style={{ border: 0, padding: 0, margin: 0 }}>
-            <legend style={{ fontWeight: 700, marginBottom: 8 }}>Descuentos</legend>
+          <fieldset className="formulario grupo-campos">
+            <legend>Descuentos</legend>
             {(descuentos.datos || []).map((d) => <label key={d.codigo} className="check"><input type="checkbox" checked={dctos.includes(d.codigo)} onChange={() => alternar(dctos, setDctos, d.codigo)} /> {d.nombre} ({Number(d.porcentaje)}%)</label>)}
           </fieldset>
           <div className="formulario dos">
@@ -373,7 +373,7 @@ function Comprobante({ orden, cuota, metodos, onCerrar, onListo }) {
   return (
     <Modal titulo={`Comprobante · cuota ${cuota.nro_cuota} de la orden #${orden.nro_orden}`} descripcion={`${bs(cuota.monto)}. Coordinación lo revisará.`} onCerrar={onCerrar}>
       <form className="formulario" onSubmit={enviar}>
-        <Campo etiqueta="Archivo (imagen o PDF, hasta 5 MB)" requerido><input type="file" required accept="image/png,image/jpeg,image/webp,application/pdf" onChange={async (e) => { const f = e.target.files[0]; if (f) { if (f.size > 5 * 1024 * 1024) { setError('El archivo supera 5 MB.'); return } setError(null); setForm({ ...form, archivo: await leerArchivo(f) }) } }} /></Campo>
+        <Campo etiqueta="Archivo (imagen o PDF, hasta 5 MB)" requerido><input type="file" required accept="image/png,image/jpeg,image/webp,application/pdf" onChange={async (e) => { const f = e.target.files[0]; if (f) { if (f.size> 5 * 1024 * 1024) { setError('El archivo supera 5 MB.'); return } setError(null); setForm({ ...form, archivo: await leerArchivo(f) }) } }} /></Campo>
         <div className="formulario dos">
           <Campo etiqueta="Método usado"><select value={form.nro_metodo} onChange={(e) => setForm({ ...form, nro_metodo: e.target.value })}><option value="">Sin especificar</option>{metodos.map((m) => <option key={m.nro_metodo} value={m.nro_metodo}>{m.tipo}{m.ultimos_digitos ? ` •••• ${m.ultimos_digitos}` : ''}</option>)}</select></Campo>
           <Campo etiqueta="Hora del pago"><input type="datetime-local" value={form.hora_pago} onChange={(e) => setForm({ ...form, hora_pago: e.target.value })} /></Campo>

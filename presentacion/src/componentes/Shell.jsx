@@ -60,7 +60,7 @@ export function Buscador({ placeholder = 'Buscar programa, módulo o prospecto�
     if (e.key === 'Escape') setAbierto(false)
   }
 
-  const mostrar = abierto && q.trim().length >= 2
+  const mostrar = abierto && q.trim().length>= 2
   return (
     <div className="buscador" ref={raiz} role="search">
       <div className="buscador-campo">
@@ -130,14 +130,14 @@ export function Apariencia() {
           <fieldset>
             <legend>Día o noche</legend>
             <div className="segmentos">{seg('modo', 'auto', 'Según la hora')}{seg('modo', 'light', 'Día')}{seg('modo', 'dark', 'Noche')}</div>
-            <small style={{ color: 'var(--tinta-suave)' }}>Automático: día de 07:00 a 19:00 en su reloj.</small>
+            <small className="nota">Automático: día de 07:00 a 19:00 en su reloj.</small>
           </fieldset>
           <fieldset>
             <legend id="letra-leyenda">Tamaño de letra</legend>
             <div className="letra">
               <button type="button" className="btn btn-secundario btn-icono" aria-label="Letra más pequeña" disabled={ap.letra <= -1} onClick={() => cambiar({ letra: ap.letra - 1 })}>A−</button>
               <input type="range" min={-1} max={3} step={1} value={ap.letra} aria-labelledby="letra-leyenda" onChange={(e) => cambiar({ letra: Number(e.target.value) })} />
-              <button type="button" className="btn btn-secundario btn-icono" aria-label="Letra más grande" disabled={ap.letra >= 3} onClick={() => cambiar({ letra: ap.letra + 1 })}>A+</button>
+              <button type="button" className="btn btn-secundario btn-icono" aria-label="Letra más grande" disabled={ap.letra>= 3} onClick={() => cambiar({ letra: ap.letra + 1 })}>A+</button>
             </div>
           </fieldset>
           <label className="check"><input type="checkbox" checked={ap.contraste === 'alto'} onChange={(e) => cambiar({ contraste: e.target.checked ? 'alto' : 'normal' })} /><Contrast size={16} aria-hidden="true" /> Alto contraste</label>
@@ -160,9 +160,9 @@ export function Perfil() {
   }, [])
   if (!usuario) return null
   return (
-    <div style={{ position: 'relative' }} ref={raiz}>
+    <div className="ancla" ref={raiz}>
       <button type="button" className="profile-chip" aria-expanded={menu} onClick={() => setMenu(!menu)}>
-        <Avatar usuario={usuario} tam={32} />
+        <Avatar usuario={usuario} chica />
         <span><strong>{usuario.nombre}</strong><small>{usuario.rol}</small></span>
       </button>
       {menu && (
