@@ -32,16 +32,22 @@ BEGIN
           WHERE c.conrelid = t.oid AND c.contype = 'f' AND a.attnum = ANY(c.conkey));
     IF faltantes IS NOT NULL THEN RAISE EXCEPTION 'Referencias locales sin FK: %', faltantes; END IF;
 
+    -- Clase 46: la clave es la del diseño, sin columna id extra.
+    SELECT string_agg(t.relname, ', ') INTO faltantes
+    FROM pg_attribute a JOIN pg_class t ON t.oid = a.attrelid JOIN pg_namespace n ON n.oid = t.relnamespace
+    WHERE n.nspname = 'public' AND t.relkind = 'r' AND NOT a.attisdropped AND a.attname = 'id';
+    IF faltantes IS NOT NULL THEN RAISE EXCEPTION 'Tablas con columna id extra: %', faltantes; END IF;
+
     IF EXISTS (SELECT 1 FROM pg_constraint WHERE connamespace = 'public'::regnamespace AND NOT convalidated)
     THEN RAISE EXCEPTION 'Hay restricciones sin validar'; END IF;
     IF to_regclass('public.orden_pago_items') IS NOT NULL
        OR to_regclass('public.chat_conversaciones') IS NOT NULL
        OR to_regclass('public.chat_mensajes') IS NOT NULL
     THEN RAISE EXCEPTION 'Persisten tablas retiradas'; END IF;
-    IF EXISTS (SELECT 1 FROM pagos WHERE orden_pago_id IS NULL)
-       OR EXISTS (SELECT 1 FROM solicitudes_compra WHERE orden_pago_id IS NULL)
+    IF EXISTS (SELECT 1 FROM pagos WHERE nro_orden IS NULL)
+       OR EXISTS (SELECT 1 FROM solicitudes_compra WHERE nro_orden IS NULL)
     THEN RAISE EXCEPTION 'Hay pagos o ventas sin orden'; END IF;
-    RAISE NOTICE 'OK: PK, grafo conectado, FK locales, restricciones validadas y ventas unificadas';
+    RAISE NOTICE 'OK: PK, grafo conectado, FK locales, sin id extra, restricciones validadas y ventas unificadas';
 END $$;
 SELECT contype AS tipo, count(*) AS cantidad FROM pg_constraint
 WHERE connamespace = 'public'::regnamespace GROUP BY contype ORDER BY contype;

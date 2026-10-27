@@ -19,6 +19,10 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        if (app()->isProduction()) {
+            throw new \RuntimeException('El seeder de demostración no se corre en producción (db_grupo05sa del servidor).');
+        }
+
         if (! CatalogoCache::query()->exists()) {
             DB::unprepared(file_get_contents(__DIR__.'/referencias.sql'));
         }
