@@ -36,6 +36,7 @@ const ANCHO_MALLA = {
   3: 'malla:max-amplio:min-w-[1160px]', 4: 'malla:max-amplio:min-w-[1160px]', 5: 'malla:max-amplio:min-w-[1160px]',
   6: 'malla:min-w-[1340px]', 7: 'malla:min-w-[1520px]', 8: 'malla:min-w-[1700px]', 9: 'malla:min-w-[1880px]', 10: 'malla:min-w-[2060px]',
 }
+// La columna del programa queda fija al desplazar la malla: su franja izquierda (::before) tapa lo que pasa por debajo.
 // Trazo que une cada casilla con la siguiente (en escritorio, horizontal).
 const CONECTOR = "after:absolute after:top-[46px] after:-right-4 after:h-0.5 after:w-4 after:bg-c after:content-[''] max-malla:after:hidden"
 const CASILLA = 'grid h-full w-full min-w-0 min-h-[92px] content-start gap-1 rounded-ui border-2 border-c px-3 py-2.5 text-left transition-colors duration-180 ease-curva contraste:aria-pressed:outline-3 contraste:aria-pressed:outline-offset-2 contraste:aria-pressed:outline-tinta'
@@ -141,7 +142,7 @@ function Malla({ areas, colores, visibles, eleccion, onElegir }) {
         <colgroup><col className="w-[280px]" />{Array.from({ length: columnas }, (_, i) => <col key={i} />)}</colgroup>
         <thead className="max-malla:hidden">
           <tr>
-            <th scope="col" className="sticky left-0 z-2 bg-papel px-3.5 pt-3.5 text-left align-top text-xs font-bold whitespace-nowrap text-tinta-suave shadow-[-16px_0_0_var(--papel)]">Programa</th>
+            <th scope="col" className="sticky left-0 z-2 bg-papel px-3.5 pt-3.5 text-left align-top text-xs font-bold whitespace-nowrap text-tinta-suave before:absolute before:inset-y-0 before:-left-4 before:w-4 before:bg-papel before:content-[''] max-malla:before:hidden">Programa</th>
             {Array.from({ length: columnas }, (_, i) => <th key={i} scope="col" className="px-3.5 pt-3.5 text-left align-top text-xs font-bold whitespace-nowrap text-tinta-suave">Módulo {i + 1}</th>)}
           </tr>
         </thead>
@@ -157,7 +158,7 @@ function Malla({ areas, colores, visibles, eleccion, onElegir }) {
               const programaElegido = abierta && !eleccion.modulo
               return (
                 <tr key={p.codigo} ref={abierta ? fila : undefined} className={`max-malla:mb-3 ${bloque}`}>
-                  <th scope="row" className={`sticky left-0 z-2 h-px bg-papel p-0 align-top shadow-[-16px_0_0_var(--papel)] max-malla:static max-malla:h-auto max-malla:shadow-none ${bloque} ${CONECTOR}`}>
+                  <th scope="row" className={`sticky left-0 z-2 h-px bg-papel p-0 align-top before:absolute before:inset-y-0 before:-left-4 before:w-4 before:bg-papel before:content-[''] max-malla:before:hidden max-malla:static max-malla:h-auto ${bloque} ${CONECTOR}`}>
                     <button type="button" aria-expanded={abierta} aria-pressed={programaElegido}
                       onClick={() => onElegir(programaElegido ? null : { programa: p, modulo: null })}
                       className={`${CASILLA} max-malla:grid-cols-[minmax(0,1fr)_auto] max-malla:gap-x-3 ${programaElegido
