@@ -264,7 +264,7 @@ export function Pie() {
   }, [path])
   return (
     <footer className="flex items-center justify-between gap-4 border-t border-filete bg-papel px-[clamp(16px,3vw,40px)] py-2 text-xs text-tinta-suave">
-      <span className="min-w-0 truncate">UNEXO · Grupo 05 SA · INF513 UAGRM</span>
+      <span className="min-w-0 truncate">UNEXO</span>
       <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap" aria-live="polite"><b className="font-bold text-tinta tabular-nums">{visitas == null ? '—' : visitas.toLocaleString('es-BO')}</b> visitas a esta página</span>
     </footer>
   )

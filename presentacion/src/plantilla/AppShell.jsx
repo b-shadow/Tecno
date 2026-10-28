@@ -15,8 +15,8 @@ const ICONOS = { BadgeDollarSign, BarChart3, CalendarDays, CircleSlash, CreditCa
 const GRUPOS = { 1: 'Inicio', 2: 'Gestión comercial', 3: 'Pagos y matrícula', 4: 'Análisis y comunicación', 5: 'Administración' }
 
 // Piezas comunes a la plantilla pública y la interna.
-const ENCABEZADO = 'sticky top-0 z-30 flex min-h-[68px] items-center gap-4 border-b border-filete bg-papel px-[clamp(16px,3vw,40px)] max-tableta:min-h-[60px] max-tableta:gap-2 max-movil:flex-wrap max-movil:py-2'
-const ACCIONES = 'flex shrink-0 items-center gap-2'
+const ENCABEZADO = 'sticky top-0 z-30 flex min-h-[68px] items-center justify-between gap-4 border-b border-filete bg-papel px-[clamp(16px,3vw,40px)] max-tableta:min-h-[60px] max-tableta:gap-2 max-movil:flex-wrap max-movil:py-2'
+const ACCIONES = 'ml-auto flex shrink-0 items-center gap-2'
 const BUSCADOR = 'mx-auto min-w-0 max-w-[560px] flex-1 max-movil:order-3 max-movil:max-w-none max-movil:basis-full'
 const SALTAR = 'absolute top-0 left-3 z-100 -translate-y-[120%] rounded-ui bg-navy px-3.5 py-2.5 text-white focus:translate-y-3'
 
