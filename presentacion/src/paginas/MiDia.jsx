@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { go } from '../servicios/navigation'
 import { useAuth } from '../servicios/auth'
-import { Aviso, CabeceraPagina, Cargando, Etiqueta, Modal, Campo, bs, fecha, nombre, useAviso, useDatos } from '../componentes/ui'
+import { Aviso, CabeceraPagina, Cargando, Etiqueta, Modal, Campo, bs, fecha, nombre, useAviso, useDatos, HISTORIAL } from '../componentes/ui'
 import * as reportesApi from '../api/reportes'
 import * as seguimientoApi from '../api/seguimiento'
 
@@ -34,18 +34,18 @@ export default function MiDia() {
     <>
       <CabeceraPagina titulo={`Buen día, ${usuario?.nombre}`}>Sus actividades agendadas y el estado de su cartera.</CabeceraPagina>
       {s ? (
-        <dl className="cifras tramo">
+        <dl className="cifras mb-6">
           <div><dt>Tarjetas abiertas</dt><dd>{s.abiertas}<small> de {s.tarjetas}</small></dd></div>
           <div><dt>Convertidos</dt><dd>{s.convertidos}</dd></div>
           <div><dt>Actividades pendientes</dt><dd>{s.actividades_pendientes}</dd></div>
           <div><dt>Contactos este mes</dt><dd>{s.interacciones_mes}</dd></div>
-          <div><dt>Comisión por cobrar</dt><dd className="cifra">{bs(s.comision_pendiente)}</dd></div>
+          <div><dt>Comisión por cobrar</dt><dd className="tabular-nums">{bs(s.comision_pendiente)}</dd></div>
         </dl>
       ) : <Cargando filas={1} />}
-      <div className="rejilla-ancha">
+      <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6 max-movil:grid-cols-1">
         <section className="hoja">
           <header className="hoja-titulo">
-            <h3 className="capitalizar">{mes.toLocaleDateString('es-BO', { month: 'long', year: 'numeric' })}</h3>
+            <h3 className="capitalize">{mes.toLocaleDateString('es-BO', { month: 'long', year: 'numeric' })}</h3>
             <div className="acciones">
               <button type="button" className="btn btn-texto btn-icono" aria-label="Mes anterior" onClick={() => setMes(new Date(mes.getFullYear(), mes.getMonth() - 1, 1))}><ChevronLeft size={18} /></button>
               <button type="button" className="btn btn-secundario" onClick={() => { const d = new Date(); setMes(new Date(d.getFullYear(), d.getMonth(), 1)); setDia(hoy) }}>Hoy</button>
@@ -53,15 +53,15 @@ export default function MiDia() {
             </div>
           </header>
           <div className="hoja-cuerpo">
-            <div className="calendario">
-              {DIAS.map((d) => <div key={d} className="dia-nombre">{d}</div>)}
+            <div className="grid grid-cols-7 overflow-hidden rounded-hoja border border-filete bg-papel">
+              {DIAS.map((d) => <div key={d} className="border-b border-filete bg-niebla-2 p-2 text-center text-xs font-bold text-tinta-suave">{d}</div>)}
               {celdas.map((d) => {
                 const k = clave(d)
                 const items = porDia[k] || []
                 return (
-                  <button key={k} type="button" className={`${d.getMonth() !== mes.getMonth() ? 'fuera' : ''} ${k === hoy ? 'hoy' : ''}`} aria-pressed={k === dia} aria-label={`${d.toLocaleDateString('es-BO')}: ${items.length} actividades`} onClick={() => setDia(k)}>
-                    <span className="n">{d.getDate()}</span>
-                    <span className="marcas">{items.slice(0, 6).map((r) => <i key={r.nro_recordatorio} className={r.estado === 'Atrasada' ? 'atrasada' : ''} />)}</span>
+                  <button key={k} type="button" className={`grid min-h-[76px] content-start gap-1 border-r border-b border-filete px-2 py-1.5 text-left nth-[7n]:border-r-0 aria-pressed:shadow-[inset_0_0_0_2px_var(--acento)] max-movil:min-h-[52px] ${d.getMonth() !== mes.getMonth() ? 'bg-niebla-2 text-tinta-suave' : 'bg-papel'}`} aria-pressed={k === dia} aria-label={`${d.toLocaleDateString('es-BO')}: ${items.length} actividades`} onClick={() => setDia(k)}>
+                    <span className={`grid size-[26px] place-items-center text-sm font-bold tabular-nums ${k === hoy ? 'rounded-full bg-navy text-white dark:bg-acento dark:text-sobre-acento' : ''}`}>{d.getDate()}</span>
+                    <span className="flex flex-wrap gap-[3px]">{items.slice(0, 6).map((r) => <i key={r.nro_recordatorio} className={`size-2 rounded-full ${r.estado === 'Atrasada' ? 'bg-aviso' : 'bg-acento'}`} />)}</span>
                   </button>
                 )
               })}
@@ -72,13 +72,13 @@ export default function MiDia() {
           <header className="hoja-titulo"><h3>{new Date(`${dia}T12:00:00`).toLocaleDateString('es-BO', { weekday: 'long', day: 'numeric', month: 'long' })}</h3></header>
           <div className="hoja-cuerpo">
             {agenda.error && <Aviso tipo="error">{agenda.error}</Aviso>}
-            {!(porDia[dia] || []).length ? <p className="nota">Sin actividades este día.</p> : (
-              <ol className="historial">
+            {!(porDia[dia] || []).length ? <p className="text-tinta-suave">Sin actividades este día.</p> : (
+              <ol className={HISTORIAL.lista}>
                 {porDia[dia].map((r) => (
-                  <li key={r.nro_recordatorio}>
-                    <span className="tipo">{fecha(r.fecha_programada, true).split(' ').pop()} · <Etiqueta estado={r.estado} /></span>
-                    <p><a href="#" onClick={(e) => { e.preventDefault(); go(`/agenda?interes=${r.nro_tarjeta}`) }}>{nombre(r.interes?.prospecto)}</a>: {r.descripcion}</p>
-                    {['Pendiente', 'Atrasada'].includes(r.estado) && <small><button type="button" className="btn btn-texto" onClick={() => setCompletar({ r, resultado: '' })}>Marcar realizada</button></small>}
+                  <li key={r.nro_recordatorio} className={HISTORIAL.item}>
+                    <span className={HISTORIAL.tipo}>{fecha(r.fecha_programada, true).split(' ').pop()} · <Etiqueta estado={r.estado} /></span>
+                    <p className={HISTORIAL.texto}><a href="#" onClick={(e) => { e.preventDefault(); go(`/agenda?interes=${r.nro_tarjeta}`) }}>{nombre(r.interes?.prospecto)}</a>: {r.descripcion}</p>
+                    {['Pendiente', 'Atrasada'].includes(r.estado) && <small className={HISTORIAL.nota}><button type="button" className="btn btn-texto" onClick={() => setCompletar({ r, resultado: '' })}>Marcar realizada</button></small>}
                   </li>
                 ))}
               </ol>

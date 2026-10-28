@@ -366,7 +366,8 @@ Cada columna es niebla con radio grande y una franja superior de 4px del color d
 ## Do's and Don'ts
 
 ### Do:
-- **Do** poner cada valor visual detrás de un token de `tokens.css` para que tema, audiencia, letra y contraste lo cambien.
+- **Do** poner cada valor visual detrás de un token de `tokens.css` para que tema, audiencia, letra y contraste lo cambien;
+  Tailwind lo lee desde `@theme inline` de `estilos/app.css` (`bg-papel`, `text-tinta-suave`, `rounded-hoja`, `font-titulo`…).
 - **Do** usar `--acento-texto` (#0a7c82 de día) cuando el turquesa tenga que leerse como texto.
 - **Do** mostrar la oferta como malla: un programa por fila, sus módulos como casillas de borde 2px del color del área en columnas Módulo 1..N iguales, unidas por líneas de correlatividad.
 - **Do** asignar el color de área por hash de su nombre entre programa-1 y programa-4, y escribir siempre el nombre del área junto al color.

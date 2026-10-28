@@ -28,9 +28,9 @@ export default function Notificaciones() {
   return (
     <>
       <CabeceraPagina titulo="Notificaciones">Correos enviados desde el CRM y su estado.</CabeceraPagina>
-      <div className={puedeEnviar ? 'rejilla-ancha' : ''}>
+      <div className={puedeEnviar ? 'grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-start gap-6 max-movil:grid-cols-1' : ''}>
         {puedeEnviar && (
-          <form className="hoja hoja-cuerpo formulario" onSubmit={enviar}>
+          <form className="hoja hoja-cuerpo grid gap-4" onSubmit={enviar}>
             <h3>Enviar correo</h3>
             <Campo etiqueta="Para" requerido error={errores.destinatario}><input type="email" required maxLength={160} value={form.destinatario} onChange={(e) => setForm({ ...form, destinatario: e.target.value })} placeholder="correo del prospecto" /></Campo>
             <Campo etiqueta="Asunto" requerido error={errores.tipo}><input required maxLength={120} value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })} /></Campo>
@@ -42,12 +42,12 @@ export default function Notificaciones() {
           <header className="hoja-titulo"><h3>Enviadas</h3></header>
           {error && <Aviso tipo="error">{error}</Aviso>}
           {cargando && !datos ? <div className="hoja-cuerpo"><Cargando /></div> : !datos?.length ? <Vacio titulo="Sin notificaciones" icono={Mail} /> : (
-            <ul className="agenda-items">{datos.map((n) => (
-              <li key={n.nro_notificacion} className="aviso-enviado">
-                <span className="aviso-enviado-cabeza"><strong>{n.tipo}</strong><Etiqueta estado={n.estado} /></span>
-                <small className="nota">Para {n.destinatario} · {fecha(n.fecha_envio, true)}</small>
-                <p>{n.mensaje}</p>
-                {n.estado !== 'leida' && <button type="button" className="btn btn-texto" onClick={async () => { await notificacionesApi.marcarLeida(n.nro_notificacion); recargar() }}>Marcar como leída</button>}
+            <ul>{datos.map((n) => (
+              <li key={n.nro_notificacion} className="grid gap-1 border-b border-filete px-3.5 py-3">
+                <span className="flex justify-between gap-2"><strong>{n.tipo}</strong><Etiqueta estado={n.estado} /></span>
+                <small className="text-tinta-suave">Para {n.destinatario} · {fecha(n.fecha_envio, true)}</small>
+                <p className="text-sm">{n.mensaje}</p>
+                {n.estado !== 'leida' && <button type="button" className="btn btn-texto justify-self-start" onClick={async () => { await notificacionesApi.marcarLeida(n.nro_notificacion); recargar() }}>Marcar como leída</button>}
               </li>
             ))}</ul>
           )}

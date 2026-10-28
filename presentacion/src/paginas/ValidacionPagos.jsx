@@ -32,9 +32,9 @@ export default function ValidacionPagos() {
               {datos.map((c) => (
                 <tr key={`${c.nro_orden}-${c.nro_cuota}`}>
                   <td><a href="#" onClick={(e) => { e.preventDefault(); go(`/agenda?interes=${c.nro_tarjeta}`) }}><strong>{c.prospecto}</strong></a><br /><small>{c.modulo_nombre}</small></td>
-                  <td className="cifra">#{c.nro_orden} · {c.nro_cuota}</td>
+                  <td className="tabular-nums">#{c.nro_orden} · {c.nro_cuota}</td>
                   <td className="num">{bs(c.monto)}</td>
-                  <td className="cifra">{fecha(c.fecha_vencimiento)}</td>
+                  <td className="tabular-nums">{fecha(c.fecha_vencimiento)}</td>
                   <td>{c.vendedor}</td>
                   <td><Etiqueta estado={c.estado}>{TEXTO[c.estado] || c.estado}</Etiqueta></td>
                   <td>{(c.comprobantes.length> 0 || c.estado === 'En revision') && <button type="button" className="btn btn-secundario" onClick={() => setRevisar(c)}><FileSearch size={16} /> {c.estado === 'En revision' ? 'Revisar' : 'Ver'}</button>}</td>
@@ -67,8 +67,8 @@ function Revision({ cuota, onCerrar, onListo, aviso }) {
     <Modal ancho titulo={`${cuota.prospecto} · cuota ${cuota.nro_cuota} de la orden #${cuota.nro_orden}`} descripcion={comp ? `${bs(cuota.monto)} · ${comp.nombre_archivo || 'comprobante'} · enviado ${fecha(comp.fecha_envio, true)}` : `${bs(cuota.monto)} · cobro con tarjeta (pasarela simulada)`} onCerrar={onCerrar}
       pie={enRevision && <div className="acciones"><button type="button" className="btn btn-peligro-suave" disabled={!observacion.trim()} onClick={() => decidir('rechazar')}>Rechazar</button><button type="button" className="btn btn-primario" onClick={() => decidir('aprobar')}>Aprobar pago</button></div>}>
       {archivo.cargando ? <Cargando filas={3} /> : a?.mime === 'application/pdf'
-        ? <iframe title="Comprobante" src={a.archivo} className="comprobante-pdf" />
-        : a && <img src={a.archivo} alt={`Comprobante de ${cuota.prospecto}`} className="comprobante-img" />}
+        ? <iframe title="Comprobante" src={a.archivo} className="h-[480px] w-full rounded-ui border border-filete" />
+        : a && <img src={a.archivo} alt={`Comprobante de ${cuota.prospecto}`} className="mx-auto max-h-[480px] rounded-ui border border-filete" />}
       {!comp && cuota.observacion && <p><b>Transacción:</b> {cuota.observacion}</p>}
       {comp?.remitente && <p><b>Enviado por:</b> {comp.remitente}{comp.hora_pago ? ` · pagado el ${fecha(comp.hora_pago, true)}` : ''}</p>}
       {comp?.observacion && <p><b>Observación:</b> {comp.observacion}</p>}

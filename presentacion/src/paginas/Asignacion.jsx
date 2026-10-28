@@ -43,17 +43,17 @@ export default function Asignacion() {
       {error && <Aviso tipo="error">{error}</Aviso>}
       {cargando && !datos ? <Cargando /> : !datos?.intereses?.length ? <Vacio titulo={filtro.sin_asignar ? 'No hay prospectos pendientes de reparto' : 'Sin resultados'}>{filtro.sin_asignar ? 'Todos los prospectos tienen vendedor.' : 'Pruebe con otro filtro.'}</Vacio> : (
         <>
-          {filtro.sin_asignar && <p className="nota tramo-s">{sinAsignar} tarjeta(s) esperan vendedor.</p>}
+          {filtro.sin_asignar && <p className="text-tinta-suave mb-3">{sinAsignar} tarjeta(s) esperan vendedor.</p>}
           <div className="tabla-marco">
             <table className="tabla">
               <thead><tr><th>Prospecto</th><th>Interés</th><th>Etapa</th><th>Registro</th><th>Vendedor</th></tr></thead>
               <tbody>
                 {datos.intereses.map((t) => (
                   <tr key={t.nro_tarjeta}>
-                    <td><a href="#" onClick={(e) => { e.preventDefault(); go(`/agenda?interes=${t.nro_tarjeta}`) }}><strong>{nombre(t.prospecto)}</strong></a><br /><small className="cifra">CI {t.documento}</small></td>
-                    <td>{t.modulo_nombre}<br /><small className="nota">{t.programa_nombre}</small></td>
+                    <td><a href="#" onClick={(e) => { e.preventDefault(); go(`/agenda?interes=${t.nro_tarjeta}`) }}><strong>{nombre(t.prospecto)}</strong></a><br /><small className="tabular-nums">CI {t.documento}</small></td>
+                    <td>{t.modulo_nombre}<br /><small className="text-tinta-suave">{t.programa_nombre}</small></td>
                     <td><Etiqueta estado={t.estado} /></td>
-                    <td className="cifra">{fecha(t.fecha)}</td>
+                    <td className="tabular-nums">{fecha(t.fecha)}</td>
                     <td>
                       <select className="control" aria-label={`Vendedor de la tarjeta ${t.nro_tarjeta}`} value={t.vendedor_correo || ''} onChange={(e) => asignar(t, e.target.value)} disabled={['Convertido', 'Perdido'].includes(t.estado)}>
                         <option value="">Sin asignar</option>

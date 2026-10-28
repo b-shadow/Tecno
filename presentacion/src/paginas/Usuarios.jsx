@@ -3,7 +3,7 @@ import { UserPlus, Users } from 'lucide-react'
 import { leerArchivo } from '../servicios/archivos'
 import { useAppRoute } from '../servicios/navigation'
 import { puede, useAuth } from '../servicios/auth'
-import { Avatar, Aviso, Boton, CabeceraPagina, Campo, Cargando, Modal, Vacio, erroresDe, fecha, nombre, useAviso, useDatos } from '../componentes/ui'
+import { Aviso, Boton, CabeceraPagina, Campo, Cargando, Etiqueta, Modal, Persona, Vacio, erroresDe, fecha, nombre, useAviso, useDatos } from '../componentes/ui'
 import { apiErrorMessage } from '../servicios/errors'
 import * as usuariosApi from '../api/usuarios'
 
@@ -45,10 +45,10 @@ export default function Usuarios() {
             <tbody>
               {datos.usuarios.map((u) => (
                 <tr key={u.correo}>
-                  <td><div className="persona"><Avatar usuario={u} /><div><strong>{nombre(u)}</strong><small>{u.correo}</small></div></div></td>
-                  <td className="capitalizar">{u.rol}{u.rol === 'coordinador' && <small className="nota bloque">{u.programas_a_cargo?.length || 0} programa(s)</small>}</td>
-                  <td className="cifra">{fecha(u.fecha_inicio)} — {fecha(u.fecha_fin)}</td>
-                  <td><span className={`status-pill etiqueta e-${u.estado}`}>{u.estado}</span></td>
+                  <td><Persona usuario={u} detalle={u.correo} avatar /></td>
+                  <td className="capitalize">{u.rol}{u.rol === 'coordinador' && <small className="text-tinta-suave block">{u.programas_a_cargo?.length || 0} programa(s)</small>}</td>
+                  <td className="tabular-nums">{fecha(u.fecha_inicio)} — {fecha(u.fecha_fin)}</td>
+                  <td><Etiqueta estado={u.estado} /></td>
                   <td className="acciones">{editable && <>
                     <button type="button" className="btn btn-texto" onClick={() => setEditando(u)}>Editar</button>
                     <button type="button" className="btn btn-secundario" onClick={() => cambiarEstado(u)}>{u.estado === 'activo' ? 'Desactivar' : 'Activar'}</button>
@@ -91,7 +91,7 @@ function FormUsuario({ usuario, roles, programas, onCerrar, onListo }) {
   return (
     <Modal ancho titulo={nuevo ? 'Nuevo usuario' : `Editar ${nombre(usuario)}`} onCerrar={onCerrar}>
       {/* autoComplete="off" + nombres propios: el navegador no rellena la contraseña del administrador en este formulario. */}
-      <form className="formulario dos" onSubmit={guardar} autoComplete="off">
+      <form className="grid gap-4 grid-cols-2 max-movil:grid-cols-1" onSubmit={guardar} autoComplete="off">
         <Campo etiqueta="Nombre" requerido error={errores.nombre}><input name="usuario-nombre" required maxLength={120} value={form.nombre} onChange={set('nombre')} /></Campo>
         <Campo etiqueta="Apellido" requerido error={errores.apellido}><input name="usuario-apellido" required maxLength={120} value={form.apellido} onChange={set('apellido')} /></Campo>
         <Campo etiqueta="Correo" requerido error={errores.correo} ayuda={nuevo ? 'Será su usuario de acceso.' : 'Identifica al usuario: no se puede cambiar.'}><input name="usuario-correo" type="email" required maxLength={160} value={form.correo} onChange={set('correo')} readOnly={!nuevo} autoComplete="off" /></Campo>
@@ -103,13 +103,13 @@ function FormUsuario({ usuario, roles, programas, onCerrar, onListo }) {
         <Campo etiqueta="Estado" requerido><select value={form.estado} onChange={set('estado')}><option>activo</option><option>inactivo</option></select></Campo>
         <Campo etiqueta="Foto" error={errores.foto} ayuda="Se guarda como apellido_nombre.jpg."><input type="file" accept="image/jpeg,image/png,image/webp" onChange={async (e) => { const f = e.target.files[0]; if (f) setForm({ ...form, foto: await leerArchivo(f) }) }} /></Campo>
         {form.rol === 'coordinador' && (
-          <fieldset className="ancho grupo-campos apilado-s">
-            <legend>Programas a su cargo (RF1.3)</legend>
+          <fieldset className="col-span-full min-w-0 grid gap-2">
+            <legend className="mb-2 font-bold">Programas a su cargo (RF1.3)</legend>
             {programas.map((p) => <label key={p.codigo} className="check"><input type="checkbox" checked={form.programas.includes(p.codigo)} onChange={() => setForm({ ...form, programas: form.programas.includes(p.codigo) ? form.programas.filter((x) => x !== p.codigo) : [...form.programas, p.codigo] })} /> {p.nombre}</label>)}
           </fieldset>
         )}
-        {errores.general && <div className="ancho"><Aviso tipo="error">{errores.general}</Aviso></div>}
-        <div className="acciones ancho"><button type="button" className="btn btn-secundario" onClick={onCerrar}>Cancelar</button><Boton type="submit" cargando={enviando}>{nuevo ? 'Crear usuario' : 'Guardar cambios'}</Boton></div>
+        {errores.general && <div className="col-span-full"><Aviso tipo="error">{errores.general}</Aviso></div>}
+        <div className="acciones col-span-full"><button type="button" className="btn btn-secundario" onClick={onCerrar}>Cancelar</button><Boton type="submit" cargando={enviando}>{nuevo ? 'Crear usuario' : 'Guardar cambios'}</Boton></div>
       </form>
     </Modal>
   )

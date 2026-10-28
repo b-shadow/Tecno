@@ -9,8 +9,12 @@ import { leerArchivo } from '../servicios/archivos'
 import * as authApi from '../api/auth'
 import * as sitioApi from '../api/sitio'
 
+const LEYENDA = 'mb-1.5 text-sm font-bold'
+const SEGMENTOS = 'segmentos flex *:flex-1'
+const OPCION = 'flex items-center gap-2.5 rounded-ui px-3 py-2.5 text-left hover:bg-niebla'
+
 /** Búsqueda global predictiva (enunciado 9): sin sesión busca en la oferta; con sesión, también datos del negocio. */
-export function Buscador({ placeholder = 'Buscar programa, módulo o prospecto…' }) {
+export function Buscador({ placeholder = 'Buscar programa, módulo o prospecto…', className = '' }) {
   const [q, setQ] = useState('')
   const [resultados, setResultados] = useState([])
   const [abierto, setAbierto] = useState(false)
@@ -62,26 +66,27 @@ export function Buscador({ placeholder = 'Buscar programa, módulo o prospecto�
 
   const mostrar = abierto && q.trim().length>= 2
   return (
-    <div className="buscador" ref={raiz} role="search">
-      <div className="buscador-campo">
-        <Search size={18} aria-hidden="true" />
+    <div className={`relative ${className}`} ref={raiz} role="search">
+      <div className="flex h-11 items-center gap-2 rounded-ui border border-filete-fuerte bg-niebla-2 px-3 focus-within:border-acento-texto focus-within:bg-papel focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--acento)_30%,transparent)]">
+        <Search size={18} aria-hidden="true" className="shrink-0 text-tinta-suave" />
         <input
           type="search" value={q} placeholder={placeholder} aria-label="Buscar en UNEXO"
           role="combobox" aria-expanded={mostrar} aria-controls={`${id}-lista`} aria-autocomplete="list"
           aria-activedescendant={mostrar && resultados[activo] ? `${id}-${activo}` : undefined}
           onChange={(e) => setQ(e.target.value)} onFocus={() => setAbierto(true)} onKeyDown={tecla} maxLength={80}
+          className="h-full min-w-0 flex-1 bg-transparent outline-none"
         />
       </div>
       {mostrar && (
-        <ul className="buscador-lista" id={`${id}-lista`} role="listbox">
+        <ul className="absolute top-[calc(100%+6px)] right-0 left-0 z-40 max-h-[420px] overflow-auto rounded-hoja border border-filete bg-papel p-1.5 shadow-capa" id={`${id}-lista`} role="listbox">
           {resultados.map((r, i) => (
-            <li key={`${r.tipo}-${r.ruta}`} id={`${id}-${i}`} role="option" aria-selected={i === activo} onMouseEnter={() => setActivo(i)} onMouseDown={(e) => { e.preventDefault(); elegir(r) }}>
-              <span className="tipo">{r.tipo}</span>
+            <li key={`${r.tipo}-${r.ruta}`} id={`${id}-${i}`} role="option" aria-selected={i === activo} className="grid cursor-pointer grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 rounded-ui px-3 py-2.5 aria-selected:bg-acento-suave" onMouseEnter={() => setActivo(i)} onMouseDown={(e) => { e.preventDefault(); elegir(r) }}>
+              <span className="row-span-2 min-w-[72px] self-center text-xs font-[750] text-acento-texto">{r.tipo}</span>
               <strong>{r.titulo}</strong>
-              <span className="detalle">{r.detalle}</span>
+              <span className="text-xs text-tinta-suave">{r.detalle}</span>
             </li>
           ))}
-          {!resultados.length && <li className="nada" role="option" aria-selected="false">{buscando ? 'Buscando…' : 'Sin resultados para esa búsqueda.'}</li>}
+          {!resultados.length && <li className="block cursor-default px-3 py-2.5 text-tinta-suave" role="option" aria-selected="false">{buscando ? 'Buscando…' : 'Sin resultados para esa búsqueda.'}</li>}
         </ul>
       )}
     </div>
@@ -116,27 +121,27 @@ export function Apariencia() {
     <button type="button" aria-pressed={ap[campo] === valor} onClick={() => cambiar({ [campo]: valor })}>{texto}</button>
   )
   return (
-    <div className="apariencia" ref={raiz}>
+    <div className="relative" ref={raiz}>
       <button type="button" className="btn btn-texto btn-icono" aria-expanded={abierto} aria-label="Apariencia y accesibilidad" title="Apariencia y accesibilidad" onClick={() => setAbierto(!abierto)}>
         <Palette size={20} />
       </button>
       {abierto && (
-        <div className="apariencia-panel" role="dialog" aria-label="Apariencia y accesibilidad">
-          <h3>Apariencia</h3>
+        <div className="absolute top-[calc(100%+8px)] right-0 z-45 grid w-[min(340px,calc(100vw-24px))] gap-4 rounded-hoja border border-filete bg-papel p-6 shadow-capa max-movil:fixed max-movil:top-16 max-movil:right-3 max-movil:left-3 max-movil:max-h-[calc(100dvh-76px)] max-movil:w-auto max-movil:overflow-y-auto" role="dialog" aria-label="Apariencia y accesibilidad">
+          <h3 className="text-lg">Apariencia</h3>
           <fieldset>
-            <legend>Tema según el público</legend>
-            <div className="segmentos">{seg('audiencia', 'ninos', 'Niños')}{seg('audiencia', 'jovenes', 'Jóvenes')}{seg('audiencia', 'adultos', 'Adultos')}</div>
+            <legend className={LEYENDA}>Tema según el público</legend>
+            <div className={SEGMENTOS}>{seg('audiencia', 'ninos', 'Niños')}{seg('audiencia', 'jovenes', 'Jóvenes')}{seg('audiencia', 'adultos', 'Adultos')}</div>
           </fieldset>
           <fieldset>
-            <legend>Día o noche</legend>
-            <div className="segmentos">{seg('modo', 'auto', 'Según la hora')}{seg('modo', 'light', 'Día')}{seg('modo', 'dark', 'Noche')}</div>
-            <small className="nota">Automático: día de 07:00 a 19:00 en su reloj.</small>
+            <legend className={LEYENDA}>Día o noche</legend>
+            <div className={SEGMENTOS}>{seg('modo', 'auto', 'Según la hora')}{seg('modo', 'light', 'Día')}{seg('modo', 'dark', 'Noche')}</div>
+            <small className="text-tinta-suave">Automático: día de 07:00 a 19:00 en su reloj.</small>
           </fieldset>
           <fieldset>
-            <legend id="letra-leyenda">Tamaño de letra</legend>
-            <div className="letra">
+            <legend id="letra-leyenda" className={LEYENDA}>Tamaño de letra</legend>
+            <div className="flex items-center gap-2">
               <button type="button" className="btn btn-secundario btn-icono" aria-label="Letra más pequeña" disabled={ap.letra <= -1} onClick={() => cambiar({ letra: ap.letra - 1 })}>A−</button>
-              <input type="range" min={-1} max={3} step={1} value={ap.letra} aria-labelledby="letra-leyenda" onChange={(e) => cambiar({ letra: Number(e.target.value) })} />
+              <input type="range" className="flex-1 accent-navy dark:accent-acento" min={-1} max={3} step={1} value={ap.letra} aria-labelledby="letra-leyenda" onChange={(e) => cambiar({ letra: Number(e.target.value) })} />
               <button type="button" className="btn btn-secundario btn-icono" aria-label="Letra más grande" disabled={ap.letra>= 3} onClick={() => cambiar({ letra: ap.letra + 1 })}>A+</button>
             </div>
           </fieldset>
@@ -160,22 +165,22 @@ export function Perfil() {
   }, [])
   if (!usuario) return null
   return (
-    <div className="ancla" ref={raiz}>
-      <button type="button" className="profile-chip" aria-expanded={menu} onClick={() => setMenu(!menu)}>
+    <div className="relative" ref={raiz}>
+      <button type="button" className="inline-flex items-center gap-2.5 rounded-full border border-filete bg-papel py-1 pr-2.5 pl-1 max-movil:p-0.5" aria-expanded={menu} onClick={() => setMenu(!menu)}>
         <Avatar usuario={usuario} chica />
-        <span><strong>{usuario.nombre}</strong><small>{usuario.rol}</small></span>
+        <span className="text-left max-movil:hidden"><strong className="block text-sm leading-tight">{usuario.nombre}</strong><small className="block text-xs text-tinta-suave capitalize">{usuario.rol}</small></span>
       </button>
       {menu && (
-        <div className="menu-flotante">
-          <button type="button" onClick={() => { setModal('perfil'); setMenu(false) }}><UserCog size={18} /> Mi perfil</button>
-          <button type="button" onClick={() => { setModal('clave'); setMenu(false) }}><KeyRound size={18} /> Cambiar contraseña</button>
-          <button type="button" onClick={() => { setModal('salir'); setMenu(false) }}><LogOut size={18} /> Cerrar sesión</button>
+        <div className="absolute top-[calc(100%+8px)] right-0 z-45 grid min-w-[220px] rounded-hoja border border-filete bg-papel p-1.5 shadow-capa">
+          <button type="button" className={OPCION} onClick={() => { setModal('perfil'); setMenu(false) }}><UserCog size={18} /> Mi perfil</button>
+          <button type="button" className={OPCION} onClick={() => { setModal('clave'); setMenu(false) }}><KeyRound size={18} /> Cambiar contraseña</button>
+          <button type="button" className={OPCION} onClick={() => { setModal('salir'); setMenu(false) }}><LogOut size={18} /> Cerrar sesión</button>
         </div>
       )}
       {modal === 'perfil' && <ModalPerfil usuario={usuario} onCerrar={() => setModal(null)} />}
       {modal === 'clave' && <ModalClave onCerrar={() => setModal(null)} />}
       {modal === 'salir' && (
-        <Modal className="logout-card" titulo="¿Cerrar sesión?" descripcion="Tendrá que volver a ingresar con su correo y contraseña." onCerrar={() => setModal(null)}
+        <Modal titulo="¿Cerrar sesión?" descripcion="Tendrá que volver a ingresar con su correo y contraseña." onCerrar={() => setModal(null)}
           pie={<div className="acciones"><button type="button" className="btn btn-secundario" onClick={() => setModal(null)}>Cancelar</button><button type="button" className="btn btn-primario" onClick={async () => { await logout(); go('/login', { replace: true }) }}>Cerrar sesión</button></div>} />
       )}
     </div>
@@ -202,14 +207,14 @@ function ModalPerfil({ usuario, onCerrar }) {
     }
   }
   return (
-    <Modal className="profile-card" titulo="Mi perfil" descripcion={usuario.correo} onCerrar={onCerrar}>
-      <form className="formulario dos" onSubmit={guardar}>
+    <Modal titulo="Mi perfil" descripcion={usuario.correo} onCerrar={onCerrar}>
+      <form className="grid gap-4 grid-cols-2 max-movil:grid-cols-1" onSubmit={guardar}>
         <Campo etiqueta="Nombre" requerido error={errores.nombre}><input value={form.nombre} required maxLength={120} onChange={(e) => setForm({ ...form, nombre: e.target.value })} /></Campo>
         <Campo etiqueta="Apellido" requerido error={errores.apellido}><input value={form.apellido} required maxLength={120} onChange={(e) => setForm({ ...form, apellido: e.target.value })} /></Campo>
         <Campo etiqueta="Teléfono" error={errores.telefono}><input value={form.telefono} inputMode="tel" pattern="\+?[0-9 ]{7,20}" title="Entre 7 y 20 dígitos." onChange={(e) => setForm({ ...form, telefono: e.target.value })} /></Campo>
         <Campo etiqueta="Foto" ayuda="JPG, PNG o WEBP hasta 2 MB." error={errores.foto}><input type="file" accept="image/jpeg,image/png,image/webp" onChange={async (e) => { const f = e.target.files[0]; if (f) setForm({ ...form, foto: await leerArchivo(f) }) }} /></Campo>
-        <div className="ancho"><Aviso tipo={msg?.tipo}>{msg?.texto}</Aviso></div>
-        <div className="acciones ancho"><button type="button" className="btn btn-secundario" onClick={onCerrar}>Cerrar</button><Boton type="submit" cargando={enviando}>Guardar</Boton></div>
+        <div className="col-span-full"><Aviso tipo={msg?.tipo}>{msg?.texto}</Aviso></div>
+        <div className="acciones col-span-full"><button type="button" className="btn btn-secundario" onClick={onCerrar}>Cerrar</button><Boton type="submit" cargando={enviando}>Guardar</Boton></div>
       </form>
     </Modal>
   )
@@ -237,7 +242,7 @@ function ModalClave({ onCerrar }) {
   }
   return (
     <Modal titulo="Cambiar contraseña" descripcion="Mínimo 8 caracteres, con letras y números." onCerrar={onCerrar}>
-      <form className="formulario" onSubmit={guardar}>
+      <form className="grid gap-4" onSubmit={guardar}>
         <Campo etiqueta="Contraseña actual" requerido error={errores.password_actual}><input type="password" autoComplete="current-password" required value={form.password_actual} onChange={(e) => setForm({ ...form, password_actual: e.target.value })} /></Campo>
         <Campo etiqueta="Nueva contraseña" requerido error={errores.password}><input type="password" autoComplete="new-password" required minLength={8} pattern="(?=.*[A-Za-z])(?=.*\d).{8,}" title="Al menos 8 caracteres con letras y números." value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></Campo>
         <Campo etiqueta="Repetir nueva contraseña" requerido error={errores.password_confirmation}><input type="password" autoComplete="new-password" required value={form.password_confirmation} onChange={(e) => setForm({ ...form, password_confirmation: e.target.value })} /></Campo>
@@ -258,9 +263,9 @@ export function Pie() {
     return () => { vivo = false }
   }, [path])
   return (
-    <footer className="pie">
-      <span className="pie-texto">UNEXO · Grupo 05 SA · INF513 UAGRM</span>
-      <span className="contador" aria-live="polite"><b>{visitas == null ? '—' : visitas.toLocaleString('es-BO')}</b> visitas a esta página</span>
+    <footer className="flex items-center justify-between gap-4 border-t border-filete bg-papel px-[clamp(16px,3vw,40px)] py-2 text-xs text-tinta-suave">
+      <span className="min-w-0 truncate">UNEXO · Grupo 05 SA · INF513 UAGRM</span>
+      <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap" aria-live="polite"><b className="font-bold text-tinta tabular-nums">{visitas == null ? '—' : visitas.toLocaleString('es-BO')}</b> visitas a esta página</span>
     </footer>
   )
 }
