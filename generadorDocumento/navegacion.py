@@ -77,6 +77,8 @@ def sesion(d, actor):
     d.p('f_clave', 'form', 'Cambiar Contrasena', 'password_actual, password, password_confirmation', 'guardar()')
     d.p('ps_clave', 'ps', 'ps Cambiar Password', 'password_actual, password', 'cambiarPassword()')
     d.p('ps_logout', 'ps', 'ps Cerrar Sesion', 'token', 'logout()')
+    d.p('ps_me', 'ps', 'ps Sesion Actual', 'token', 'me()')
+    d.p('error404', 'cliente', 'Pagina no Encontrada', 'mensaje = "La dirección que abrió no existe."', 'irAlCatalogo()')
     d.e('actor', 'login', 'link', 'usa el sistema')
     d.e('login', 'f_login', 'contiene')
     d.e('f_login', 'ps_login', 'submit', 'login()')
@@ -87,6 +89,12 @@ def sesion(d, actor):
     d.e('ps_login', 'error', 'build', 'auth fallido')
     d.e('error', 'login', 'link', 'volver')
     d.e('ps_login', 'menu', 'build', 'auth ok')
+    d.e('menu', 'ps_me', 'submit', 'refreshSession()')   # AppShell relee sesión y menú al cargar
+    acceso(d, 'ps_me', 'SELECT sesion', 'usuarios', 'api_tokens')
+    acceso(d, 'ps_me', 'SELECT menu', 'recursos', 'permisos')
+    d.e('ps_me', 'menu', 'build', 'JSON sesion y menu')
+    d.e('menu', 'error404', 'link', 'ruta inexistente')
+    d.e('error404', 'ps_visita', 'submit', 'visita("/error")')
     # menú dinámico: un enlace por recurso permitido, en el orden de la tabla recursos (el primero es la página de inicio)
     for codigo in sorted(d.permisos, key=list(RECURSOS).index):   # mismo orden que la tabla recursos
         d.e('menu', codigo, 'link', RECURSOS[codigo]['ruta'])
@@ -170,15 +178,13 @@ def listar_intereses(d, desde):
 def embudo(d):   # CU4 / CU5
     d.p('embudo', 'cliente', 'Embudo de Ventas', 'intereses, estados, buscar', 'arrastrar(), moverA(), abrirFicha()')
     listar_intereses(d, 'embudo')
+    acceso(d, 'ps_intereses', 'SELECT motivos', 'motivos_perdida')   # InteresService::listar devuelve también los motivos
     if d.permisos.get('embudo') and 'inicio-vendedor' not in d.permisos: ps_vendedores(d, 'embudo')   # filtro por vendedor
     if d.puede('embudo', 'modificacion'):
         d.p('ps_mover', 'ps', 'ps Mover Tarjeta', 'nro_tarjeta, estado, motivo_perdida, observacion', 'mover()')
         d.p('f_perdida', 'form', 'Marcar como Perdido', 'motivo_perdida, observacion', 'guardar()')
-        d.p('ps_motivos', 'ps', 'ps Listar Motivos', 'nombre', 'index()')
         d.e('embudo', 'ps_mover', 'submit', 'moverA()')
         d.e('embudo', 'f_perdida', 'link', 'perdido')
-        d.e('f_perdida', 'ps_motivos', 'submit', 'cargar()')
-        acceso(d, 'ps_motivos', 'SELECT', 'motivos_perdida')
         d.e('f_perdida', 'ps_mover', 'submit', 'guardar()')
         acceso(d, 'ps_mover', 'UPDATE estado', 'intereses', 'prospectos')
         d.e('ps_mover', 'embudo', 'build', 'redirect back')
@@ -254,6 +260,10 @@ def agenda(d):   # CU7 y pagos de CU6
         d.e('ficha', f, rel, txt); d.e(f, ps, 'submit', 'guardar()')
         acceso(d, ps, sql, *tablas)
         d.e(ps, 'ficha', 'build', 'redirect back')
+    d.p('ps_estmetodo', 'ps', 'ps Cambiar Estado Metodo', 'nro_metodo, estado', 'cambiarEstadoMetodo()')
+    d.e('ficha', 'ps_estmetodo', 'submit', 'activar / desactivar')
+    acceso(d, 'ps_estmetodo', 'UPDATE estado', 'metodos_pago')
+    d.e('ps_estmetodo', 'ficha', 'build', 'redirect back')
     d.p('ps_cancelar', 'ps', 'ps Cancelar Recordatorio', 'nro_recordatorio', 'cancelarRecordatorio()')
     d.e('ficha', 'ps_cancelar', 'submit', 'cancelar()')
     acceso(d, 'ps_cancelar', 'UPDATE estado', 'recordatorios')
@@ -478,6 +488,10 @@ def visitante():
     d.e('ps_registro', 'exito', 'build', 'registro ok')
     d.e('exito', 'catalogo', 'link', 'volver')
     d.e('catalogo', 'login', 'link', 'iniciar sesión')
+    d.p('error404', 'cliente', 'Pagina no Encontrada', 'mensaje = "La dirección que abrió no existe."', 'irAlCatalogo()')
+    d.e('catalogo', 'error404', 'link', 'ruta inexistente')
+    d.e('error404', 'catalogo', 'link', 'Ir al catálogo')
+    d.e('error404', 'ps_visita', 'submit', 'visita("/error")')
     return d.paginas, d.enlaces
 
 
@@ -486,3 +500,89 @@ ACTORES = {'Administrador': lambda: rol('administrador', 'Administrador'),
            'Coordinador': lambda: rol('coordinador', 'Coordinador'),
            'Vendedor': lambda: rol('vendedor', 'Vendedor'),
            'Visitante': visitante}
+
+
+# ------------------------------------------------------------------ coherencia con el código (documento_p2.py la exige)
+# Cada «server page» es una o más funciones de presentacion/src/api/<area>.js (cada una = una ruta de api.php = un
+# método del controlador con el mismo nombre). verificar() lo comprueba todo contra el código que lee codigo.py.
+API = {
+    'ps_login': 'auth.login', 'ps_me': 'auth.me', 'ps_perfil': 'auth.actualizarPerfil', 'ps_clave': 'auth.cambiarPassword',
+    'ps_logout': 'auth.logout', 'ps_visita': 'sitio.visita', 'ps_buscar': 'sitio.buscar',
+    'ps_usuarios': 'usuarios.index', 'ps_usuario_g': 'usuarios.store usuarios.update', 'ps_estado': 'usuarios.cambiarEstado',
+    'ps_vend': 'usuarios.vendedores', 'ps_matriz': 'seguridad.matriz', 'ps_asig_perm': 'seguridad.asignar',
+    'ps_bitacora': 'seguridad.bitacora', 'ps_bresumen': 'seguridad.resumen',
+    'ps_catalogo': 'catalogo.programas', 'ps_sinc': 'catalogo.sincronizar', 'ps_registro': 'catalogo.registrarInteres',
+    'ps_prosp': 'prospectos.index', 'ps_alta': 'prospectos.store', 'ps_csv': 'prospectos.importarCSV', 'ps_update': 'prospectos.update',
+    'ps_intereses': 'intereses.index', 'ps_show': 'intereses.show', 'ps_mover': 'intereses.mover',
+    'ps_asignar': 'intereses.asignar', 'ps_repartir': 'intereses.distribuir',
+    'ps_motivos': 'motivos.index', 'ps_motivo_g': 'motivos.store motivos.update', 'ps_motivo_d': 'motivos.destroy',
+    'ps_desc': 'pagos.descuentos', 'ps_metodo': 'pagos.registrarMetodo', 'ps_estmetodo': 'pagos.cambiarEstadoMetodo',
+    'ps_orden': 'pagos.crearOrden', 'ps_comprob': 'pagos.registrarComprobante', 'ps_tarjeta': 'pagos.pagarConTarjeta',
+    'ps_cuotas': 'pagos.cuotas', 'ps_comp': 'pagos.comprobante', 'ps_aprobar': 'pagos.aprobar', 'ps_rechazar': 'pagos.rechazar',
+    'ps_insc': 'seguimiento.inscripciones', 'ps_pend': 'exportaciones.pendientes', 'ps_exportar': 'exportaciones.exportar',
+    'ps_resultado': 'exportaciones.registrarResultado',
+    'ps_interac': 'seguimiento.registrarInteraccion', 'ps_crearrec': 'seguimiento.crearRecordatorio',
+    'ps_record': 'seguimiento.recordatorios', 'ps_completar': 'seguimiento.completarRecordatorio',
+    'ps_cancelar': 'seguimiento.cancelarRecordatorio', 'ps_notif': 'notificaciones.index', 'ps_enviar': 'notificaciones.enviar',
+    'ps_leida': 'notificaciones.marcarLeida',
+    'ps_comis': 'seguimiento.comisiones', 'ps_resumen': 'seguimiento.resumenComisiones', 'ps_pagar': 'seguimiento.pagarComisiones',
+    'ps_porcentaje': 'seguimiento.actualizarConfiguracionComision', 'ps_dash': 'reportes.dashboard',
+    'ps_estvend': 'reportes.estadisticasVendedor', 'ps_est': 'reportes.estadisticas', 'ps_listado': 'reportes.listado',
+}
+# client page -> archivo de presentacion/src. Las del menú salen de RECURSOS + rutas.jsx; estas no son un recurso propio:
+PAGINA_EXTRA = {'login': 'paginas/Login.jsx', 'catalogo': 'paginas/Catalogo.jsx', 'error404': 'paginas/Error404.jsx',
+                'ficha': 'paginas/Agenda.jsx',            # /agenda?interes=n abre la ficha dentro de Agenda.jsx
+                'menu': 'plantilla/AppShell.jsx',         # menú, búsqueda, perfil y contador: AppShell + componentes/Shell
+                'error': 'paginas/Login.jsx', 'exito': 'paginas/Catalogo.jsx'}   # «PC Message» dentro de su página
+SHELL = ('plantilla/AppShell.jsx', 'componentes/Shell.jsx')   # envuelven toda página: contador, búsqueda, perfil
+
+
+def verificar():
+    """Errores de coherencia entre los diagramas de navegación y el código (vacío = todo cuadra)."""
+    import codigo
+    F, U, router = codigo.funciones_api(), codigo.usos_api(), codigo.paginas_router()
+    rutas = {r['clave']: r for r in codigo.rutas_api()}
+    _, con_auth = codigo.usos_servicio_auth()
+    archivo = {k: f'paginas/{router[r["ruta"]]}.jsx' for k, r in RECURSOS.items() if r['ruta'] in router} | PAGINA_EXTRA
+    errores, usadas, paginas_vistas = [], set(), set()
+
+    def usos(arch):
+        u = set(U.get(arch, ()))
+        if arch.rsplit('/', 1)[-1] in con_auth or arch in SHELL: u |= U.get('servicios/auth.js', set())
+        for s in SHELL: u |= {x for x in U.get(s, ()) if x.startswith(('sitio.', 'auth.'))}
+        return u
+
+    for actor, armar in ACTORES.items():
+        paginas, enlaces = armar()
+        for k, (tipo, nombre, _, op) in paginas.items():
+            if tipo == 'cliente':
+                a = archivo.get(k)
+                if not a or not (codigo.PRE / a).exists():
+                    errores.append(f'{actor}: la página "{nombre}" ({k}) no existe en presentacion/src'); continue
+                paginas_vistas.add(a)
+            if tipo != 'ps': continue
+            if k not in API: errores.append(f'{actor}: "{nombre}" no está ligado a ninguna función de api/ (navegacion.API)'); continue
+            funcs = API[k].split()
+            nombres_op = {o.strip().removesuffix('()') for o in op.split(',')}
+            for fn in funcs:
+                usadas.add(fn)
+                if fn not in F: errores.append(f'{actor}: "{nombre}" usa api/{fn}, que no existe'); continue
+                r = rutas.get((F[fn]['verbo'], F[fn]['ruta']))
+                if not r: errores.append(f'{actor}: "{nombre}": {F[fn]["verbo"]} {F[fn]["ruta"]} no está en routes/api.php'); continue
+                if r['metodo'] not in codigo.clases_php().get(r['controlador'], {}).get('metodos', {}):
+                    errores.append(f'{actor}: "{nombre}": {r["controlador"]}@{r["metodo"]} no existe')
+            metodos = {rutas[(F[f]['verbo'], F[f]['ruta'])]['metodo'] for f in funcs if f in F and (F[f]['verbo'], F[f]['ruta']) in rutas}
+            if metodos and nombres_op != metodos:
+                errores.append(f'{actor}: "{nombre}" dice {sorted(nombres_op)} pero el controlador es {sorted(metodos)}')
+            # la página (o la página del formulario) que envía al server page debe llamar de verdad a esa función
+            for a, b, st, _ in enlaces:
+                if b != k or st != 'submit': continue
+                pagina = a if paginas[a][0] == 'cliente' else next(
+                    (x for x, y, s, _ in enlaces if y == a and paginas[x][0] == 'cliente' and s in ('link', 'contiene')), None)
+                if pagina and archivo.get(pagina) and not set(funcs) & usos(archivo[pagina]):
+                    errores.append(f'{actor}: {archivo[pagina]} no llama a api/{"/".join(funcs)} ("{paginas[a][1]}" → "{nombre}")')
+    llamadas = set().union(*U.values())
+    errores += [f'api/{fn} la usa la interfaz pero no aparece en ningún diagrama de navegación' for fn in sorted(llamadas - usadas)]
+    errores += [f'{p} no aparece en ningún diagrama de navegación' for p in
+                sorted(f'paginas/{f.name}' for f in (codigo.PRE / 'paginas').glob('*.jsx')) if p not in paginas_vistas]
+    return sorted(set(errores), key=errores.index)

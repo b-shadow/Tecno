@@ -1,6 +1,6 @@
 """Utilidades comunes para los informes Word de la materia con formato FICCT/APA
 (carátula de integrantes, Times New Roman 12, carta, márgenes de 2.5 cm, figuras y tablas numeradas, índices).
-Copia de tools/doc_ficct.py para que el generador del P2 sea independiente. Después de guardar, exportar.ps1 actualiza
+Formato FICCT de los informes de la materia, copiado aquí para que el generador sea independiente. Después de guardar, exportar.ps1 actualiza
 índices y exporta .doc y .pdf."""
 import pathlib, re
 from docx import Document

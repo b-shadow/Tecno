@@ -70,6 +70,38 @@ def orden_mapeo():
     return listo
 
 
+def tablas_migraciones():
+    """{tabla: {columnas}} que dejan las migraciones de crm-web/datos/migraciones al correr up() en orden
+    (Schema::create / Schema::table, timestamps(), dropColumn). Es la fuente de verdad del esquema."""
+    from rutas import CRM_WEB
+    no_columna = {'foreign', 'index', 'unique', 'primary', 'dropForeign', 'dropIndex', 'dropPrimary', 'dropUnique',
+                  'renameColumn', 'timestamps', 'softDeletes'}
+    res = {}
+    for f in sorted((CRM_WEB / 'datos' / 'migraciones').glob('*.php')):
+        up = f.read_text(encoding='utf-8').split('public function down')[0]
+        for tabla, v, cuerpo in re.findall(r"Schema::(?:create|table)\('(\w+)',\s*(?:function|fn)\s*\(Blueprint \$(\w+)\)(.*?)(?=Schema::|\Z)", up, re.S):
+            cols = res.setdefault(tabla, set())
+            for met, col in re.findall(r"\$%s->(\w+)\('(\w+)'" % v, cuerpo):
+                if met == 'dropColumn': cols.discard(col)
+                elif met not in no_columna: cols.add(col)
+            if re.search(r"\$%s->timestamps\(" % v, cuerpo): cols |= {'created_at', 'updated_at'}
+        for tabla, col in re.findall(r'ALTER TABLE (\w+) ADD COLUMN (\w+)', up): res.setdefault(tabla, set()).add(col)
+        for tabla in re.findall(r"Schema::dropIfExists\('(\w+)'\)", up): res.pop(tabla, None)
+    return res
+
+
+def diferencias_migraciones():
+    """Tablas y columnas en que fuentes/esquema.sql no coincide con las migraciones (vacío = al día)."""
+    sql, mig = {t: {c for c, *_ in cs} for t, cs in tablas().items()}, tablas_migraciones()
+    mig.pop('migrations', None)
+    res = [f'tabla {t}: está en las migraciones y no en esquema.sql' for t in sorted(set(mig) - set(sql))]
+    res += [f'tabla {t}: está en esquema.sql y no en las migraciones' for t in sorted(set(sql) - set(mig))]
+    for t in sorted(set(sql) & set(mig)):
+        if solo := mig[t] - sql[t]: res.append(f'{t}: columnas de las migraciones que faltan en esquema.sql {sorted(solo)}')
+        if solo := sql[t] - mig[t]: res.append(f'{t}: columnas de esquema.sql que ninguna migración crea {sorted(solo)}')
+    return res
+
+
 if __name__ == '__main__':   # chequeo: ninguna tabla suelta, toda FK apunta a una tabla del modelo
     t, f = tablas(), fks()
     relacionadas = {x for h, _, p, _ in f for x in (h, p)}

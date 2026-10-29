@@ -2,12 +2,13 @@
   python documento_p2.py
   powershell -File exportar.ps1   (índice, .doc y .pdf en documento/, reemplazando los anteriores)
 Textos: contenido.py · BD: esquema.py (fuentes/esquema.sql) · navegación: navegacion.py · diagramas: ea/ea_p2.py."""
-import json, pathlib, sys
+import json, pathlib, re, sys
 
 AQUI = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(AQUI))
 from rutas import CRM_WEB, DIAGRAMAS, DOCUMENTO  # noqa: E402
 import contenido as C  # noqa: E402
+import codigo  # noqa: E402
 import esquema  # noqa: E402
 import navegacion  # noqa: E402
 from formato_g07 import G07, PENDIENTES, MARGEN_NAV  # noqa: E402
@@ -101,9 +102,10 @@ d.h('5.3. Análisis de Caso de Uso', 3)
 d.h('5.3.1. Diagramas de Colaboración', 4)
 for cu, nombre in C.CU.items():
     d.imagen(DIAG / f'com-{cu.lower()}.png', f'{cu}. {nombre}', alto_max=10)
-d.h('5.3.2. Análisis de clases', 4)
-for cu, nombre in C.CU.items():
-    d.imagen(DIAG / f'cls-{cu.lower()}.png', f'{cu}. {nombre}', alto_max=10)
+d.h('5.3.2. Análisis de clases', 4)   # 3 capas reales por CU (codigo.py → ea_p2.clases_cu), una página cada uno
+for i, (cu, nombre) in enumerate(C.CU.items()):
+    if i: d.salto()
+    d.imagen(DIAG / f'cls-{cu.lower()}.png', f'{cu}. {nombre}', alto_max=20)
 
 # ------------------------------------------------------------------ Capítulo VII
 d.h('Capítulo VII: Diseño', 1)
@@ -164,7 +166,7 @@ d.h('10. Plan de Pruebas', 2)
 for sub, titulo, pruebas in (('10.1.', 'Prueba de Caja Blanca', C.PRUEBAS_BLANCA), ('10.2.', 'Prueba de Caja Negra', C.PRUEBAS_NEGRA)):
     d.h(f'{sub} {titulo}', 3)
     if not pruebas: d.pendiente(titulo)
-    for n, (t, obj, crit) in enumerate(pruebas, 1):
+    for n, (t, obj, crit, *_) in enumerate(pruebas, 1):
         d.p(f'**{n}. {t}**'); d.vinetas([f'**Objetivo:** {obj}', f'**Criterio de éxito:** {crit}'], sub=True)
 d.h('11. Conclusión', 1).alignment = IZQ
 d.vinetas(C.CONCLUSIONES) if C.CONCLUSIONES else d.pendiente('Conclusión (una por objetivo específico)')
@@ -175,7 +177,9 @@ if not C.BIBLIOGRAFIA: d.pendiente('Bibliografía')
 d.h('13. Anexo', 1).alignment = IZQ
 for i, (t, img) in enumerate(C.ANEXOS, 1):
     d.h(f'13.{i}. Anexo # {i}: {t}', 2); d.imagen(img)
-d.p(f'**URL Proyecto GitHub:** {C.URL_GITHUB}') if C.URL_GITHUB else d.pendiente('URL del repositorio GitHub')
+_git = (CRM_WEB / '.git' / 'config').read_text(encoding='utf-8') if (CRM_WEB / '.git' / 'config').exists() else ''
+URL_GITHUB = C.URL_GITHUB or next(iter(re.findall(r'url = (https://github\.com/\S+?)(?:\.git)?\s', _git)), None)
+d.p(f'**URL Proyecto GitHub:** {URL_GITHUB}') if URL_GITHUB else d.pendiente('URL del repositorio GitHub')
 
 # ------------------------------------------------------------------ coherencia del documento (falla si algo no cuadra)
 def coherencia():
@@ -198,12 +202,71 @@ def coherencia():
     # nada del stack ni de la organización de otros documentos (G07 era MVC con Inertia, Vue y JWT; el P1 era otra unidad)
     texto = chr(10).join([p.text for p in d.doc.paragraphs] + [c.text for t in d.doc.tables for f in t.rows for c in f.cells])
     for prohibido in ('MVC', 'Modelo-Vista', 'Vue', 'Inertia', 'JWT', 'Unidad de Capacitación', 'San Pablo'):
-        if prohibido in texto: errores.append(f'el documento menciona "{prohibido}", que no corresponde a este proyecto')
+        if re.search(r'\b' + re.escape(prohibido) + r'\b', texto): errores.append(f'el documento menciona "{prohibido}", que no corresponde a este proyecto')
+    # el documento no puede contradecir al código: BD, navegación, stack y cadena de clases se comparan con crm-web
+    errores += [f'BD: {e} (refrescar fuentes/esquema.sql, ver README.md)' for e in esquema.diferencias_migraciones()]
+    errores += [f'navegación: {e}' for e in navegacion.verificar()]
+    errores += stack()
+    errores += textos()
+    errores += [f'código: {e}' for e in codigo.errores_codigo()]
+    for cu in C.CU: errores += [f'5.3.2 {e}' for e in codigo.cadena(cu)[2]]
     if errores: raise SystemExit('INCOHERENCIAS:' + ''.join(chr(10) + ' - ' + e for e in errores))
-    print('coherencia: actores = navegación = matriz de acceso = CU; sin términos de otro stack u organización')
+    print('coherencia: actores = navegación = matriz de acceso = CU; esquema.sql = migraciones; navegación = páginas, '
+          'api/ y rutas reales; Cap. II y herramientas = dependencias reales; 5.3.2 = clases y métodos reales')
+    for r in codigo.rutas_sin_pantalla():   # no contradicen al documento (no aparecen en él), pero conviene saberlo
+        print(f'  aviso: {r["verbo"]} {r["ruta"]} ({r["controlador"]}@{r["metodo"]}) no la llama ninguna pantalla')
+
+
+def textos():
+    """Lo escrito a mano en contenido.py que se puede verificar contra crm-web."""
+    errores, codigo_neg = [], chr(10).join(f.read_text(encoding='utf-8') for d_ in (NEGOCIO / 'app', CRM_WEB / 'datos' / 'src')
+                                        for f in d_.rglob('*.php'))
+    for cu, x in C.DETALLE.items():   # cada mensaje citado en Excepciones existe tal cual en el backend
+        for e in x.get('excepciones', []):
+            for msg in re.findall(r'"([^"]+)"', e):
+                if msg not in codigo_neg: errores.append(f'4.4 {cu}: el mensaje "{msg}" no está en negocio/ ni en datos/')
+    for archivo, pruebas in (('verificar_p2.py', C.PRUEBAS_BLANCA), ('verificar_navegadores.mjs', C.PRUEBAS_NEGRA)):
+        txt = (CRM_WEB / 'scripts' / archivo).read_text(encoding='utf-8')
+        errores += [f'10: la prueba "{t}" no está en scripts/{archivo} ({caso})' for t, _, _, caso in pruebas if caso not in txt]
+    todas, vistas = set(esquema.tablas()), [t for x in C.PAQUETES.values() for t in x['tablas']]
+    if dup := {t for t in vistas if vistas.count(t) > 1}: errores.append(f'5.1.1: tablas en dos paquetes {sorted(dup)}')
+    if falta := todas - set(vistas): errores.append(f'5.1.1: tablas sin paquete {sorted(falta)}')
+    if sobra := set(vistas) - todas: errores.append(f'5.1.1: tablas que no existen {sorted(sobra)}')
+    if sin := set(C.CU) - {c for x in C.PAQUETES.values() for c in x['cu']}: errores.append(f'5.1.1: CU sin paquete {sorted(sin)}')
+    return errores
+
+
+def stack():
+    """Cap. II y 8.1 solo con lo que está en crm-web (C.EVIDENCIA); nada de otro stack en las dependencias."""
+    comp = json.loads((NEGOCIO / 'composer.json').read_text(encoding='utf-8'))
+    pkg = json.loads((PRESENTACION / 'package.json').read_text(encoding='utf-8'))
+    deps = {'composer': {**comp['require'], **comp.get('require-dev', {})}, 'npm': {**pkg['dependencies'], **pkg['devDependencies']}}
+
+    def hay(ev):
+        origen, _, resto = ev.partition(':')
+        if origen in deps: return resto in deps[origen]
+        ruta, _, texto = ev.partition(':')
+        p = CRM_WEB / ruta
+        return p.exists() and (not texto or texto in (p.read_text(encoding='utf-8', errors='ignore') if p.is_file() else ''))
+
+    errores = []
+    for tema in C.TEORIA:
+        if not (ev := C.EVIDENCIA.get(tema)): errores.append(f'Cap. II: "{tema}" no tiene evidencia en contenido.EVIDENCIA')
+        elif not hay(ev): errores.append(f'Cap. II: "{tema}" ya no está en crm-web ({ev})')
+    for items in C.HERRAMIENTAS.values():
+        for nombre, version, _ in items:
+            ev = version if version and ':' in version else C.EVIDENCIA.get(nombre)
+            if not ev: errores.append(f'8.1: "{nombre}" no tiene evidencia en contenido.EVIDENCIA')
+            elif not hay(ev): errores.append(f'8.1: "{nombre}" no es dependencia directa ni está en crm-web ({ev})')
+    errores += [f'stack: {d} en las dependencias ({o}) es de otro stack' for o, ds in deps.items() for d in ds
+                if any(x in d.lower() for x in C.STACK_AJENO)]
+    if not LOCK['npm'].get('tailwindcss', '').startswith('4.'): errores.append('stack: el documento dice Tailwind CSS v4')
+    return errores
 
 
 coherencia()
 DOCUMENTO.parent.mkdir(exist_ok=True)
 d.guardar(DOCUMENTO)
 print(f'\n{len(PENDIENTES)} PENDIENTES:'); [print(' -', x) for x in PENDIENTES]
+print(f'\n{len(C.POR_CONFIRMAR)} POR CONFIRMAR con UNEXO (propuesta del grupo, ya en el documento):')
+[print(' -', x) for x in C.POR_CONFIRMAR]

@@ -1,12 +1,13 @@
 # Reglas del documento del P2 (Sistema vía Web)
 
-**Modelo único:** `C:\Users\rekte\OneDrive\Desktop\grupo07scwebActualizado.pdf` (Grupo 07 SC, 129 pág., **aprobado por el
+**Modelo único:** `referencias/G07-documento-aprobado.pdf` (Grupo 07 SC, 129 pág., **aprobado por el
 docente**). Estructura, títulos, orden, tablas, formato y forma de diagramar se copian de ahí. No se agrega ni se inventa
 nada que G07 no tenga; lo que G07 hace mal se corrige (lista al final). Para este entregable el formato G07 **reemplaza**
-la regla "12 secciones del Anexo B / APA" de `CLAUDE.md` y `GUIA_INFORMES.md` (decisión del usuario, 23/11/2026).
+la regla "12 secciones del Anexo B / APA" de los informes de las prácticas (decisión del grupo, 23/11/2026).
+G07 es MVC (Inertia + Vue): se copia su **forma**, no su stack; donde G07 muestra MVC, aquí van las 3 capas reales.
 
-Orden de prioridad ante un conflicto: **1) G07** (estructura y notación) → **2) reglas del docente** (`CLASES_DOCENTE.md`,
-clases 03–07, 40, 46–48: corrección del contenido) → 3) guías viejas (`GUIA_DOCUMENTO_PUDS.md`, Bulacia).
+Orden de prioridad ante un conflicto: **1) G07** (estructura y notación) → **2) reglas del docente**
+(`referencias/CLASES_DOCENTE.md`, clases 03–07, 40, 46–48: corrección del contenido).
 
 Generador: esta carpeta, `crm-web/generadorDocumento/` (autosuficiente; cómo regenerar, al final y en `README.md`). Todo dato sale del código o de la BD real; lo que falta sale en rojo
 `[PENDIENTE: …]` y se lista al terminar.
@@ -74,7 +75,7 @@ Generador: esta carpeta, `crm-web/generadorDocumento/` (autosuficiente; cómo re
 | CU (4.4, 4.5) | Uno por CU (`uc CUn. …`: actores + elipse) y el general con todos los actores y los 8 CU. General de CU = menú por actor = matriz de acceso (clase 40) |
 | Paquetes (5.1.1, 5.2) | `pkg Identificar Paquetes`; por paquete su `pkg` con los CU unidos por dependencias «trace». Cada paquete dueño de sus tablas (clase 03) |
 | Colaboración (5.3.1) | Por CU, marco `sd CU-0n - …`: actor → «boundary» = página React (`Pages/*.jsx`, capa 1) → «control» = controlador de la API (`Api\*Controller`, capa 2) → «entity» con el nombre de la tabla (capa 3); mensajes numerados `1: accion()`, `1.1: store()`, `1.2: create()` con los métodos reales |
-| Análisis de clases (5.3.2) | Por CU, 3 clases: «interface» `I<Entidad>` = la página React (campos del formulario sin tipo + operaciones de la UI), «Controller» `<Entidad>Controller` = controlador de la API (métodos reales de `routes/api.php` con parámetros), «Entity» `<Entidad>` = modelo Eloquent / tabla (atributos con el tipo de la BD) |
+| Análisis de clases (5.3.2) | Mismo lugar que G07, pero **3 capas** en vez de su trío MVC (interface / Controller / Entity): por CU, un diagrama de clases con las capas Presentación, Negocio y Datos (§6b), leído del código por `codigo.py` y dibujado por `ea_p2.py --solo clases`; una página por CU |
 | Despliegue (6.1) | `deployment`: «device» con «executionEnvironment» y artefactos **reales**, mostrando las 3 capas del enunciado: navegador del cliente con el bundle React (capa 1) —HTTPS 443, JSON/HTTP— servidor `www.tecnoweb.org.bo` con Apache + PHP 8.4 + Laravel (API RESTful, `/inf513/grupo05sa/proyecto2`, capa 2) —TCP 5432, SQL— `db.tecnoweb.org.bo` PostgreSQL 18, `db_grupo05sa.public` (capa 3); un valor por elemento, nada "X / Y" |
 | Conceptual (7.1) | `class`: una caja por tabla con **todos** sus atributos solo por nombre (sin tipos, sin marcas «PK»/«FK», sin métodos); **la PK va subrayada** (lo pidió el docente en la revisión del P1; es la notación clásica del identificador en un conceptual). En EA se logra marcando la PK como `static`, lo único que EA subraya (`IsID` pinta "{id}"); las FK no se listan, son asociaciones con multiplicidad. N-N: asociación entre las dos fuertes y la intermedia unida con línea punteada (clase de asociación). Ninguna tabla suelta (clase 46). Va solo en su página con 1 cm de margen. `ea_p2.py` lo audita al generarlo: falla si una relación o línea punteada pasa sobre una caja y lista los cruces |
 | Lógico = Mapeo (7.2 Diseño Lógico → 7.2.1 Mapeo) | Tablas Word (§3); aquí sí PK/FK |
@@ -119,8 +120,10 @@ Generador: esta carpeta, `crm-web/generadorDocumento/` (autosuficiente; cómo re
 ## 6a. Título y organización
 
 Título: **Sistema de Control de Prospectos (CRM Educativo)**. Organización: **UNEXO** (marca y logo del sistema). Los
-textos de organización del P1 (Unidad de Capacitación de la FICCT) **no** se usan; misión, visión, objetivo, ubicación
-y organigrama de UNEXO quedan pendientes hasta tener los datos reales.
+textos de organización del P1 (Unidad de Capacitación de la FICCT) **no** se usan. Misión, visión, objetivo y
+organigrama (área comercial: Administración → Coordinación → Vendedores, de `../PRODUCT.md`) son **propuesta del grupo**
+a confirmar con la clienta: `contenido.POR_CONFIRMAR` los lista al generar. Ubicación, antecedentes y problema necesitan
+datos de UNEXO que no están en ninguna fuente: quedan `[PENDIENTE]`.
 
 ## 6b. Stack real (verificado en el código, 24/11/2026)
 
@@ -135,11 +138,13 @@ Una carpeta por capa en `crm-web/` (rehecho el 24/11/2026; ya **no hay Inertia n
   transacciones) y `Datos\Modelos\*` (Eloquent, una por tabla), migraciones con triggers; PostgreSQL
   `db.tecnoweb.org.bo`, `db_grupo05sa.public`.
 
-**Diseño procedimental por CU (diagrama de clases con dependencias):** paquetes `Presentación`, `Negocio`, `Datos`; clases
-reales con estereotipo y métodos con parámetros como están en el código: `«client page» <Pagina>.jsx` → `«module»
-api/<area>.js` → (HTTP/JSON) `«controller» <Area>Controller` → `«request» <Accion>Request` y `«service» <Area>Service` →
-`«repository» <Area>Repository` → `«model» <Tabla>`. Solo dependencias «use» que bajan de capa (nunca página→modelo ni
-controller→repositorio/modelo). Todo diagrama y texto del documento usa estas capas.
+**Clases por CU en 3 capas (5.3.2, diagrama de clases con dependencias):** marcos `Capa Presentación`, `Capa Negocio`,
+`Capa Datos` (las clases viven en esos paquetes del modelo EA); clases reales con estereotipo y métodos con parámetros
+como están en el código: `«client page» <Pagina>.jsx` → `«module» api/<area>.js` → (HTTP/JSON) `«controller»
+<Area>Controller` → `«request» <Accion>Request` y `«service» <Area>Service` → `«repositorio» <Area>Repository` (EA dibuja
+el estereotipo «repository» como cilindro y oculta los métodos) → `«model» <Modelo>` con las columnas de su tabla. Solo
+dependencias «use» que bajan de capa o quedan en ella (nunca página→modelo ni controller→repositorio/modelo); `codigo.py`
+falla si aparece una que sube. Todo diagrama y texto del documento usa estas capas.
 
 ## 7. Errores de G07 que NO se copian
 
