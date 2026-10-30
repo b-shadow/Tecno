@@ -257,6 +257,7 @@ def stack():
         for nombre, version, _ in items:
             ev = version if version and ':' in version else C.EVIDENCIA.get(nombre)
             if not ev: errores.append(f'8.1: "{nombre}" no tiene evidencia en contenido.EVIDENCIA')
+            elif ev == 'externa': continue   # Git, GitHub: se usan para trabajar, no están en el código
             elif not hay(ev): errores.append(f'8.1: "{nombre}" no es dependencia directa ni está en crm-web ({ev})')
     errores += [f'stack: {d} en las dependencias ({o}) es de otro stack' for o, ds in deps.items() for d in ds
                 if any(x in d.lower() for x in C.STACK_AJENO)]

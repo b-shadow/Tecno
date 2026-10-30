@@ -94,7 +94,7 @@ EVIDENCIA = {
     'Control de acceso basado en roles (RBAC)': 'negocio/app/Http/Middleware/AccesoRecurso.php',
     # herramientas sin 'composer:'/'npm:' en su versión
     'PHP': 'composer:php',
-    'Enterprise Architect': 'generadorDocumento/ea/crm-p2.eapx', 'Git': '.git', 'GitHub': '.git/config:github.com',
+    'Enterprise Architect': 'generadorDocumento/ea/crm-p2.eapx', 'Git': 'externa', 'GitHub': 'externa',   # herramientas de trabajo, no del código: no se exigen
 }
 STACK_AJENO = ('inertia', 'vue', 'jwt', 'livewire', 'blade')   # nada de esto puede estar en composer.json / package.json
 

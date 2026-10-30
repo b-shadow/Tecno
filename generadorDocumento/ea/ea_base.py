@@ -6,7 +6,7 @@ import win32com.client
 
 SALIDA = None   # carpeta de PNG/EMF; la fija ea_p2.py
 EAPX = None     # repositorio .eapx; lo fija ea_p2.py
-BASE = pathlib.Path(r'C:/Program Files (x86)/Sparx Systems/EA Trial/EABase.eapx')
+from rutas import EA_BASE as BASE  # noqa: E402  (plantilla vacía de EA: su ruta está en rutas.py)
 
 # Visibilidad de miembros en un diagrama (t_diagramobjects.ObjectStyle): oculta atributos y operaciones.
 OCULTO = 'AttPub=0;AttPri=0;AttPro=0;AttPkg=0;AttCustom=0;OpCustom=0;OpPub=0;OpPri=0;OpPro=0;OpPkg=0;'
