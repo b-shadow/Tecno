@@ -137,14 +137,15 @@ def _param(p):
 @cache
 def clases_php():
     """{Nombre: dict(capa, estereotipo, props {prop: Tipo}, metodos {m: dict(vis, firma, cuerpo, params)}, tabla, campos)}."""
-    carpetas = [(NEG / 'app' / 'Http' / 'Controllers' / 'Api', 'Negocio', 'controller'),
-                (NEG / 'app' / 'Http' / 'Requests', 'Negocio', 'request'),
-                (NEG / 'app' / 'Services', 'Negocio', 'service'),
-                (DAT / 'src' / 'Repositorios', 'Datos', 'repository'),
-                (DAT / 'src' / 'Modelos', 'Datos', 'model')]
+    # 3 capas estricto (convención P / N / D del docente, Agenda 3C): N = negocio, D = datos
+    carpetas = [(NEG / 'app' / 'Negocio', 'N*.php', 'Negocio', 'negocio'),
+                (NEG / 'app' / 'Http' / 'Requests', '**/*.php', 'Negocio', 'request'),
+                (DAT / 'src', 'D*.php', 'Datos', 'datos'),
+                (DAT / 'src' / 'Modelos', '*.php', 'Datos', 'model')]
     res = {}
-    for carpeta, capa, st in carpetas:
-        for f in sorted(carpeta.rglob('*.php')):
+    for carpeta, patron, capa, st in carpetas:
+        for f in sorted(carpeta.glob(patron)):
+            if f.stem == 'DatosServiceProvider': continue
             txt = _leer(f)
             m = re.search(r'^(?:final |abstract )?class (\w+)', txt, re.M)
             if not m: continue
@@ -185,17 +186,22 @@ def _llamadas(clase, metodo, C):
     res = [(C[clase]['props'][p].rsplit('\\', 1)[-1], m) for p, m in re.findall(r'\$this->(\w+)->(\w+)\(', cuerpo)
            if p in C[clase]['props']]
     res += [(clase, m) for m in re.findall(r'\$this->(\w+)\(', cuerpo)]
-    res += [(c, m) for c, m in re.findall(r'\b([A-Z]\w+)::(\w+)\(', cuerpo) if c in C and C[c]['estereotipo'] in ('service', 'repository')]
+    res += [(c, m) for c, m in re.findall(r'\b([A-Z]\w+)::(\w+)\(', cuerpo) if c in C and C[c]['estereotipo'] in ('negocio', 'datos')]
     return list(dict.fromkeys(res))
 
 
 # ------------------------------------------------------------------ cadena por CU (5.3.2)
 def cadena(cu):
     """Clases y dependencias del CU leídas del código. Devuelve (clases, dependencias, errores):
-    clases = {nombre: dict(capa, estereotipo, atributos [str], metodos [str])}; dependencias = {(a, b)}."""
+    clases = {nombre: dict(capa, estereotipo, atributos [str], metodos [str])};
+    dependencias = {(a, b): [mensajes]}: lo que a llama de b (funciones, «GET /ruta», métodos) — el texto del «use»."""
     C, F, U = clases_php(), funciones_api(), usos_api()
     por_ruta = {(f['verbo'], f['ruta']): k for k, f in F.items()}
-    clases, deps, errores = {}, set(), []
+    clases, deps, errores = {}, {}, []
+
+    def dep(a, b, mensaje=None):
+        s = deps.setdefault((a, b), [])
+        if mensaje and mensaje not in s: s.append(mensaje)
 
     def clase(nombre, capa, st, atributos=()):
         x = clases.setdefault(nombre, dict(capa=capa, estereotipo=st, atributos=list(atributos), metodos={}))
@@ -213,13 +219,16 @@ def cadena(cu):
         x['metodos'][m] = c['metodos'][m]['vis'] + c['metodos'][m]['firma']
         for destino, mm in _llamadas(nombre_clase, m, C):
             if destino not in C: errores.append(f'{cu}: {nombre_clase}.{m}() llama a {destino}, que no está en crm-web'); continue
-            if destino != nombre_clase: deps.add((nombre_clase, destino))
+            if destino != nombre_clase: dep(nombre_clase, destino, f'{mm}()')
             metodo(destino, mm, visitados)
-        if c['estereotipo'] == 'repository':   # modelos que usa el repositorio
-            for mod in dict.fromkeys(re.findall(r'(?:new |\b)([A-Z]\w+)(?=::|\s+\$|\(\))', c['metodos'][m]['cuerpo'] + ' ' + c['metodos'][m]['params'])):
+        if c['estereotipo'] == 'datos':   # modelos (tablas) que usa la clase D, con la operación de Eloquent si la hay
+            cuerpo = c['metodos'][m]['cuerpo'] + ' ' + c['metodos'][m]['params']
+            for mod in dict.fromkeys(re.findall(r'(?:new |\b)([A-Z]\w+)(?=::|\s+\$|\(\))', cuerpo)):
                 if mod in C and C[mod]['estereotipo'] == 'model':
                     clase(mod, 'Datos', 'model', atributos_modelo(C[mod]['tabla']))
-                    deps.add((nombre_clase, mod))
+                    ops = re.findall(rf'\b{mod}::(\w+)\(', cuerpo)
+                    dep(nombre_clase, mod)
+                    for op in ops: dep(nombre_clase, mod, f'{op}()')
 
     visitados = set()
     for r in rutas_api():
@@ -232,25 +241,26 @@ def cadena(cu):
         f = F[fn]
         modulo = f'api/{f["modulo"]}.js'
         clase(modulo, 'Presentacion', 'module')['metodos'][f['nombre']] = f'+{f["nombre"]}({", ".join(f["params"])})'
-        deps.add((modulo, ctrl))
+        dep(modulo, ctrl, f'{r["verbo"]} {r["ruta"]}')   # P → N solo por HTTP/JSON
         for archivo, usos in U.items():
             if fn not in usos: continue
-            if archivo == 'servicios/auth.js':   # sesión: Login.jsx / Shell.jsx → servicios/auth.js → api/auth.js
+            if archivo == 'servicios/auth.js':   # sesión: PLogin.jsx / Shell.jsx → servicios/auth.js → api/auth.js
                 funciones, paginas = usos_servicio_auth()
-                clase(archivo, 'Presentacion', 'module')['metodos'].update(funciones); deps.add((archivo, modulo))
+                clase(archivo, 'Presentacion', 'module')['metodos'].update(funciones); dep(archivo, modulo, f'{f["nombre"]}()')
                 for pagina in paginas:
-                    clase(pagina, 'Presentacion', 'client page'); deps.add((pagina, archivo))
+                    clase(pagina, 'Presentacion', 'client page'); dep(pagina, archivo)
             elif archivo.startswith(('paginas/', 'componentes/', 'plantilla/')):
                 pagina = archivo.rsplit('/', 1)[-1]
-                clase(pagina, 'Presentacion', 'client page'); deps.add((pagina, modulo))
+                clase(pagina, 'Presentacion', 'client page'); dep(pagina, modulo, f'{f["nombre"]}()')
         metodo(ctrl, r['metodo'], visitados)
         for t in re.findall(r'(\w+Request) \$', C[ctrl]['metodos'][r['metodo']]['params']):
             if t in C:
                 clase(t, 'Negocio', 'request', C[t]['campos'])['metodos'].setdefault('rules', '+rules(): array')
-                deps.add((ctrl, t))
-    # §6b: solo dependencias que bajan de capa o quedan en la misma
+                dep(ctrl, t, 'validated()')
+    # 3 capas estricto: solo dependencias que bajan de capa o quedan en la misma; P solo llega a N por HTTP
     orden = {'Presentacion': 0, 'Negocio': 1, 'Datos': 2}
     for a, b in deps:
+        if orden[clases[a]['capa']] == 0 and orden[clases[b]['capa']] == 2: errores.append(f'{cu}: {a} salta a la capa de datos ({b})')
         if orden[clases[a]['capa']] > orden[clases[b]['capa']]: errores.append(f'{cu}: dependencia que sube de capa {a} -> {b}')
     for x in clases.values(): x['metodos'] = list(x['metodos'].values())
     return clases, deps, errores
@@ -276,6 +286,35 @@ def errores_codigo():
     usadas = set().union(*usos_api().values())
     errores += [f'api/{k.replace(".", ".js ")}() no la llama ninguna página' for k in funciones_api() if k not in usadas]
     errores += [f'{r["verbo"]} {r["ruta"]}: sin CU (agregar sección "// CUn —" en api.php)' for r in rutas_api() if r['cu'] == '?']
+    return errores + errores_3capas()
+
+
+CONSULTA = r'\b([A-Z]\w+)::(?:query|where\w*|find\w*|create|all|first\w*|insert|with|updateOrCreate|firstOrCreate|destroy)\('
+
+
+def errores_3capas():
+    """3 capas estricto (no MVC): P → N por HTTP/JSON, N → D, solo D toca la BD. Vacío = se cumple."""
+    errores, C = [], clases_php()
+    modelos = {n for n, x in C.items() if x['estereotipo'] == 'model'}
+    for f in list((NEG / 'app').rglob('*.php')) + list((DAT / 'src').rglob('*.php')):
+        for nombre in re.findall(r'^(?:final |abstract )?class (\w+(?:Controller|Service|Repository))\b', _leer(f), re.M):
+            errores.append(f'{f.relative_to(CRM_WEB).as_posix()}: clase {nombre} con nombre MVC (usar N<Area> / D<Area>)')
+    for n, x in C.items():
+        if x['estereotipo'] != 'negocio': continue
+        txt = _leer(x['archivo'])
+        for mod, in [(m,) for m in re.findall(CONSULTA, txt) if m in modelos]:
+            errores.append(f'{n}: consulta el modelo {mod} directo (debe pedirlo a su clase D)')
+        if re.search(r'\bDB::|->(?:save|refresh|fresh|loadMissing|load)\(', txt):
+            errores.append(f'{n}: accede a la BD sin pasar por la capa de datos (DB::, save, refresh, load…)')
+        endpoints = {r['metodo'] for r in rutas_api() if r['controlador'] == n}
+        for m, d in x['metodos'].items():   # route-model binding: Laravel consultaría la BD antes del negocio
+            if m in endpoints and (t := re.findall(r'\b([A-Z]\w+) \$', d['params'])) and set(t) & modelos:
+                errores.append(f'{n}::{m}() recibe {sorted(set(t) & modelos)} por la ruta (route-model binding): recibir el identificador')
+    for f in (DAT / 'src').rglob('*.php'):
+        if 'App\\Negocio' in _leer(f): errores.append(f'{f.relative_to(CRM_WEB).as_posix()}: la capa de datos usa la de negocio')
+    for f in PRE.rglob('*.js*'):
+        if f.parent.name != 'api' and re.search(r"from '(?:\.\./)+api/cliente'", _leer(f)):
+            errores.append(f'{f.relative_to(PRE).as_posix()}: usa el cliente HTTP directo (debe pasar por api/<area>.js)')
     return errores
 
 

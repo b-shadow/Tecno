@@ -200,8 +200,14 @@ def diagramas_navegacion(ea, raiz):
 # ------------------------------------------------------------------------------------------------ 5.3.2 Clases (3 capas)
 CAPAS = {'Presentacion': 'Presentación', 'Negocio': 'Negocio', 'Datos': 'Datos'}
 # filas de cada capa, de arriba abajo: página → módulo api/ | controller → request y service | repository → model
-FILAS = [('Presentacion', ('client page',)), ('Presentacion', ('module',)), ('Negocio', ('controller',)),
-         ('Negocio', ('service', 'request')), ('Datos', ('repository',)), ('Datos', ('model',))]
+# filas de cada capa, de arriba abajo: página P → módulo api/ | clase N → requests | clase D → modelos (tablas)
+# Los «request» (validación) no se dibujan: ya están como tipo del parámetro en la firma de cada método de N.
+FILAS = [('Presentacion', ('client page',)), ('Presentacion', ('module',)), ('Negocio', ('negocio',)),
+         ('Datos', ('datos',)), ('Datos', ('model',))]
+# solo el nombre: las funciones del módulo api/ van en el mensaje que le llega de la página, los campos del request en
+# las firmas de N y las columnas de los modelos en 7.1–7.3 (Diseño de Datos)
+PLEGADAS = ('module', 'model')
+SEPARACION = 120   # alto libre entre filas: el mensaje del «use» va entre ellas sin tocar las cajas
 ANCHO_MAX = 1500   # ancho de una fila antes de partirla (que el diagrama quepa en una página vertical)
 
 
@@ -226,9 +232,11 @@ def clases_cu(ea, raiz):
         pkg = ea.paquete(raiz, f'{cu} Clases')
         capas = {c: ea.paquete(pkg, n) for c, n in CAPAS.items()}
         el, medidas = {}, {}
+        clases = {n: x for n, x in clases.items() if x['estereotipo'] != 'request'}
+        deps = {k: v for k, v in deps.items() if k[0] in clases and k[1] in clases}
         for n, x in clases.items():
-            # «repository» es un estereotipo propio de EA que se dibuja como cilindro y oculta los métodos
-            e = ea.elemento(capas[x['capa']], n, 'Class', {'repository': 'repositorio'}.get(x['estereotipo'], x['estereotipo']))
+            if x['estereotipo'] in PLEGADAS: x = dict(x, atributos=[], metodos=[])
+            e = ea.elemento(capas[x['capa']], n, 'Class', x['estereotipo'])
             for i, a in enumerate(x['atributos']):
                 nombre, _, tipo = a.partition(': ')
                 at = e.Attributes.AddNew(nombre, tipo); at.Visibility = 'Private'; at.Pos = i; at.Update()
@@ -241,32 +249,112 @@ def clases_cu(ea, raiz):
                     p.Update()
             e.Update(); el[n] = e
             largo = max([len(n) + 4] + [len(a) + 2 for a in x['atributos']] + [len(t) for t in x['metodos']])
-            medidas[n] = (max(120, int(6.3 * largo) + 24), 46 + 14 * (len(x['atributos']) + len(x['metodos'])))
-        for a, b in sorted(deps):
-            ea.conector(el[a], el[b], 'Dependency', '', 'use')
-        d = ea.diagrama(pkg, f'{cu}. {titulo}', 'Logical')
-        estilo = re.sub(r'OpParams=\d;?', '', d.ExtendedStyle or '')
-        d.ExtendedStyle = estilo + ('' if estilo.endswith(';') or not estilo else ';') + 'OpParams=2;'; d.Update()   # parámetros con nombre y tipo
-        # filas partidas a ANCHO_MAX; cada capa dentro de un marco «boundary» con el nombre de su paquete
-        y, pos, marcos, capa_ant = 30, {}, {}, None
-        for capa, sts in FILAS:
-            fila = [n for n in clases if clases[n]['capa'] == capa and clases[n]['estereotipo'] in sts]
-            if not fila: continue
-            if capa != capa_ant: y += 40; capa_ant = capa   # espacio para el nombre de la capa
-            y0, x, alto = y, 40, 0
-            for n in fila:
-                w, h = medidas[n]
-                if x + w > ANCHO_MAX and x > 40: x, y, alto = 40, y + alto + 30, 0
-                pos[n] = (x, y, w, h); x += w + 30; alto = max(alto, h)
-            y += alto + 40
-            marcos.setdefault(capa, [y0, y])[1] = y
-        ancho = max(x + w for x, _, w, _ in pos.values()) + 25
-        for capa, (y0, y1) in marcos.items():   # primero los marcos: quedan detrás de las clases
-            b = ea.elemento(capas[capa], f'Capa {CAPAS[capa]}', 'Boundary')
-            ea.poner(d, b, 15, y0 - 38, ancho, y1 - y0 + 18)
-        for n, (x, y_, w, h) in pos.items():
-            ea.poner(d, el[n], x, y_, w, h)
-        ea.exportar(d, f'cls-{cu.lower()}.png')
+            medidas[n] = (max(120, int(6.3 * largo) + 24), (40 if x['estereotipo'] in PLEGADAS else 46) + 14 * (len(x['atributos']) + len(x['metodos'])))
+        for (a, b), mensajes in sorted(deps.items()):   # el mensaje de cada «use»: lo que a llama de b
+            texto = '\r\n'.join(', '.join(mensajes[i:i + 2]) for i in range(0, len(mensajes), 2))
+            # «use» como primera línea del mensaje: EA dibuja el estereotipo del conector encima del texto
+            ea.conector(el[a], el[b], 'Dependency', '«use»' + ('\r\n' + texto if texto else ''))
+        marcos_el = {c: ea.elemento(capas[c], f'Capa {n}', 'Boundary') for c, n in CAPAS.items()}
+        for viejo in SALIDA.glob(f'cls-{cu.lower()}*.*'): viejo.unlink()   # el CU pudo tener otra cantidad de áreas
+        grupos = areas(clases, deps)
+        for k, (area, sub) in enumerate(grupos, 1):
+            solo = len(grupos) == 1
+            sc = {n: clases[n] for n in sub}
+            sd = {par: v for par, v in deps.items() if par[0] in sc and par[1] in sc}
+            d = ea.diagrama(pkg, f'{cu}. {titulo}' if solo else f'{cu}. {titulo} ({k}/{len(grupos)}: {area})', 'Logical')
+            estilo = re.sub(r'OpParams=\d;?', '', d.ExtendedStyle or '')
+            d.ExtendedStyle = estilo + ('' if estilo.endswith(';') or not estilo else ';') + 'OpParams=2;'; d.Update()   # parámetros con nombre y tipo
+            pos, marcos = ubicar(sc, sd, medidas)
+            ancho = max(x + w for x, _, w, _ in pos.values()) + 25
+            for capa, (y0, y1) in marcos.items():   # primero los marcos: quedan detrás de las clases
+                ea.poner(d, marcos_el[capa], 15, y0 - 38, ancho, y1 - y0 + 18)
+            for n, (x, y_, w, h) in pos.items():
+                ea.poner(d, el[n], x, y_, w, h)
+            ea.exportar(d, f'cls-{cu.lower()}.png' if solo else f'cls-{cu.lower()}-{k}.png')
+
+
+def areas(clases, deps):
+    """Una figura por área del CU (cada N que atiende a un módulo api/): su columna completa y lo que esa columna usa
+    directamente de fuera (N auxiliares, D o tablas compartidas). [(nombre de la N, [clases])]."""
+    res = []
+    for col in columnas(clases, deps):
+        entradas = [n for n in col[FILA['negocio']] if any(a for a, b in deps if b == n and clases[a]['estereotipo'] == 'module')]
+        if not entradas: continue   # la columna de auxiliares: aparecen dentro de las áreas que las usan
+        miembros = {n for fila in col for n in fila}
+        extra = {b for a, b in deps if a in miembros and b not in miembros}
+        res.append((entradas[0], [n for n in clases if n in miembros | extra]))
+    return res
+
+
+def ubicar(clases, deps, medidas):
+    """Posiciones: una columna por área (página → api → N → D → tablas, alineadas) y filas por capa. (pos, marcos)."""
+    cols = columnas(clases, deps)
+    # páginas separadas (sus mensajes convergen en el mismo módulo) y tablas en una sola fila (si se apilan, las
+    # flechas a las de abajo pasan por encima de las de arriba); el resto, dentro del ancho de la columna
+    sep = {FILA['client page']: 160}
+    sin_corte = {FILA['model'], FILA['client page']}
+    anchos = [max(medidas[n][0] for fila in col for n in fila) for col in cols]
+    celdas = [[flujo(col[i], 10 ** 6 if i in sin_corte else anchos[c], medidas, sep.get(i, 25)) for i in range(len(FILAS))]
+              for c, col in enumerate(cols)]
+    anchos = [max([anchos[c]] + [celda[2] for celda in celdas[c]]) for c in range(len(cols))]
+    altos = [max(celdas[c][i][1] for c in range(len(cols))) for i in range(len(FILAS))]
+    xs, x = [], 40
+    for a in anchos: xs.append(x); x += a + 70
+    y, pos, marcos, capa_ant = 30, {}, {}, None
+    for i, (capa, _) in enumerate(FILAS):
+        if not altos[i]: continue
+        if capa != capa_ant: y += 40; capa_ant = capa   # espacio para el nombre de la capa
+        for c in range(len(cols)):
+            for n, (dx, dy) in celdas[c][i][0].items(): pos[n] = (xs[c] + dx, y + dy, *medidas[n])
+        marcos.setdefault(capa, [y, 0])[1] = y + altos[i] + 40   # el marco cierra bajo la última fila de la capa
+        y += altos[i] + SEPARACION
+    return pos, marcos
+
+
+FILA = {st: i for i, (_, sts) in enumerate(FILAS) for st in sts}
+
+
+def columnas(clases, deps):
+    """Una columna por área: cada N que recibe una petición de un módulo api/ con sus módulos y páginas encima y sus D y
+    tablas debajo (lo compartido queda en la primera columna que lo usa). Las N auxiliares (alcance, conversión…) que
+    solo usan otras N van en la última columna con sus D. Devuelve [[fila0, fila1, …] por columna]."""
+    usa = {n: [b for a, b in deps if a == n] for n in clases}
+    usado_por = {n: [a for a, b in deps if b == n] for n in clases}
+    puesto, cols = set(), []
+
+    def nueva(ns):
+        col = [[] for _ in FILAS]
+        for n in ns:
+            if n in puesto: continue
+            puesto.add(n); col[FILA[clases[n]['estereotipo']]].append(n)
+        return col
+
+    def debajo(ns):   # D que usan las N, y tablas que usan esas D
+        ds = [d for n in ns for d in usa[n] if clases[d]['estereotipo'] == 'datos']
+        return ds + [m for d in ds for m in usa[d] if clases[m]['estereotipo'] == 'model']
+
+    entradas = [n for n in clases if clases[n]['estereotipo'] == 'negocio'
+                and any(clases[a]['estereotipo'] == 'module' for a in usado_por[n])]
+    for n in entradas:
+        mods = [a for a in usado_por[n] if clases[a]['estereotipo'] == 'module']
+        mods += [a for m in mods for a in usado_por[m] if clases[a]['estereotipo'] == 'module']   # servicios/auth.js
+        pags = [a for m in mods for a in usado_por[m] if clases[a]['estereotipo'] == 'client page']
+        cols.append(nueva(pags + mods + [n] + debajo([n])))
+    resto = [n for n in clases if n not in puesto]
+    resto_n = [n for n in resto if clases[n]['estereotipo'] == 'negocio']
+    cols.append(nueva(resto_n + debajo(resto_n) + resto))
+    return [c for c in cols if any(c)]
+
+
+def flujo(nombres, ancho, medidas, sep=25):
+    """Coloca las cajas de una celda de izquierda a derecha dentro del ancho de su columna.
+    ({n: (dx, dy)}, alto, ancho usado)."""
+    res, x, y, alto, usado = {}, 0, 0, 0, 0
+    for n in nombres:
+        w, h = medidas[n]
+        if x and x + w > ancho: x, y, alto = 0, y + alto + sep, 0
+        res[n] = (x, y); usado = max(usado, x + w); x += w + sep; alto = max(alto, h)
+    return res, (y + alto if nombres else 0), usado
 
 
 # ------------------------------------------------------------------------------------------------ 2.5 Organigrama

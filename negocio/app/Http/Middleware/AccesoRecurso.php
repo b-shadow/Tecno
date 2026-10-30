@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Services\AccesoService;
+use App\Negocio\NAcceso;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,12 +25,12 @@ class AccesoRecurso
         $lista = explode('|', $recursos);
 
         foreach ($lista as $recurso) {
-            if (AccesoService::permite($usuario, $recurso, $nivel)) {
+            if (NAcceso::permite($usuario, $recurso, $nivel)) {
                 return $next($request);
             }
         }
 
-        AccesoService::registrarDenegado($usuario, $lista[0], (string) $request->ip(), mb_substr((string) $request->userAgent(), 0, 255) ?: null);
+        NAcceso::registrarDenegado($usuario, $lista[0], (string) $request->ip(), mb_substr((string) $request->userAgent(), 0, 255) ?: null);
 
         return response()->json(['mensaje' => 'No tiene permiso para realizar esta acción.'], 403);
     }

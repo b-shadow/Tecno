@@ -28,27 +28,28 @@ def start():
     if existing: raise RuntimeError('El entorno QA ya existe; detenerlo con stop antes de recrearlo.')
     docker('compose','exec','-T','postgres','createdb','-U','crm_user',DB)
     mounts = json.loads(docker('inspect','crm-web-app-1','--format','{{json .Mounts}}'))
-    vendor = next(m['Name'] for m in mounts if m['Destination']=='/app/vendor')
+    vendor = next(m['Name'] for m in mounts if m['Destination'] in ('/repo/negocio/vendor', '/app/vendor'))
     network = next(iter(json.loads(docker('inspect','crm-web-app-1','--format','{{json .NetworkSettings.Networks}}'))))
     image = docker('inspect','crm-web-app-1','--format','{{.Config.Image}}').decode().strip()
     docker('create','--name',NAME,'--label','tecnotarea.qa=true','--network',network,'-p','127.0.0.1:18002:18002',
-        '-v',vendor+':/app/vendor:ro','-e','APP_ENV=testing','-e','APP_DEBUG=false',
+        '-v',vendor+':/repo/negocio/vendor:ro','-e','APP_ENV=testing','-e','APP_DEBUG=false',
         '-e','APP_KEY=base64:'+base64.b64encode(secrets.token_bytes(32)).decode(),
         '-e','APP_URL=http://localhost:18002','-e','APP_TIMEZONE=America/La_Paz',
         '-e','DB_CONNECTION=pgsql','-e','DB_HOST=postgres','-e','DB_DATABASE='+DB,
         '-e','DB_USERNAME=crm_user','-e','DB_PASSWORD=crm_password','-e','SESSION_DRIVER=file',
         '-e','CACHE_STORE=file','-e','MAIL_MAILER=log','-e','PHP_CLI_SERVER_WORKERS=4',image,
-        'sh','-c','cd /app && mkdir -p bootstrap/cache storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs && php artisan crm:preparar-bd && php artisan migrate --seed --force && cd public && php -S 0.0.0.0:18002 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php')
+        'sh','-c','cd /repo/negocio && mkdir -p bootstrap/cache storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs && php artisan crm:preparar-bd && php artisan migrate --seed --force && cd public && php -S 0.0.0.0:18002 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php')
     archive = io.BytesIO()
-    backend = ROOT/'backend'
+    # capas 2 y 3 (negocio + datos, que negocio carga como paquete de Composer) en /repo, como el compose de trabajo
     with tarfile.open(fileobj=archive, mode='w') as tar:
-        for path in backend.rglob('*'):
-            rel = path.relative_to(backend)
-            if any(p in ['vendor','node_modules','storage','.git'] for p in rel.parts): continue
-            if rel.as_posix().startswith('bootstrap/cache/'): continue
-            if path.name.startswith('.env') or path.name=='hot' or not path.is_file(): continue
-            tar.add(path, arcname=rel.as_posix())
-    docker('cp','-',NAME+':/app',data=archive.getvalue())
+        for capa in ('negocio', 'datos'):
+            for path in (ROOT/capa).rglob('*'):
+                rel = path.relative_to(ROOT/capa)
+                if any(p in ['vendor','node_modules','storage','.git','__pycache__'] for p in rel.parts): continue
+                if rel.as_posix().startswith('bootstrap/cache/'): continue
+                if path.name.startswith('.env') or path.name=='hot' or not path.is_file(): continue
+                tar.add(path, arcname=f'repo/{capa}/{rel.as_posix()}')
+    docker('cp','-',NAME+':/',data=archive.getvalue())
     docker('start',NAME)
     for _ in range(30):
         try:

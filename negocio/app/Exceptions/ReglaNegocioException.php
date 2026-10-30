@@ -5,7 +5,7 @@ namespace App\Exceptions;
 use RuntimeException;
 
 /**
- * Regla de negocio incumplida. La lanzan los Services (capa 2) sin saber de HTTP;
+ * Regla de negocio incumplida. La lanzan las clases N (capa 2, negocio);
  * bootstrap/app.php la convierte en una respuesta JSON con el mensaje en español.
  */
 class ReglaNegocioException extends RuntimeException

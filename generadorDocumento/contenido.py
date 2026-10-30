@@ -82,7 +82,7 @@ TEORIA = {   # solo lo que usa crm-web (verificado en composer.json, package.jso
 # 'ruta[:texto]' = el archivo existe (y contiene el texto). Rutas relativas a crm-web.
 EVIDENCIA = {
     'Fundamentos de la programación del lado del servidor': 'negocio/routes/api.php:Route::',
-    'Servicios Web': 'negocio/app/Http/Controllers/Api/MotivoController.php:response()->json(', 'Protocolo HTTP': 'presentacion/src/api/cliente.js:axios.create',
+    'Servicios Web': 'negocio/app/Negocio/NMotivo.php:response()->json(', 'Protocolo HTTP': 'presentacion/src/api/cliente.js:axios.create',
     'Lenguaje HTML': 'presentacion/index.html:<html', 'Lenguaje PHP': 'composer:php', 'Framework Laravel': 'composer:laravel/framework',
     'Arquitectura de 3 capas (Presentación, Lógica de Negocio y Datos)': 'datos/composer.json:grupo05sa/datos',
     'API RESTful': 'negocio/routes/api.php:Route::patch', 'Hojas de estilo CSS': 'presentacion/src/estilos/app.css',
