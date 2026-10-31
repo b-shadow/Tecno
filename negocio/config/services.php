@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'frontend' => [
+        'url' => rtrim((string) env('FRONTEND_URL', env('APP_URL', 'http://localhost:5173')), '/'),
+    ],
+
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'currency' => strtolower((string) env('STRIPE_CURRENCY', 'bob')),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
+
 ];
