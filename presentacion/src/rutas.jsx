@@ -7,12 +7,12 @@ import { fijarRouter } from './servicios/navigation'
 const pagina = (nombre) => () => import(`./paginas/${nombre}.jsx`).then((m) => ({ Component: m.default }))
 
 const PAGINAS = {
-  '/anuncios': 'Catalogo', '/gestion-anuncios': 'Catalogo', '/login': 'Login',
-  '/dashboard': 'Dashboard', '/inicio-vendedor': 'MiDia', '/embudo': 'Embudo',
-  '/prospectos': 'Prospectos', '/interesados': 'Asignacion', '/agenda': 'Agenda', '/motivos-perdida': 'Motivos',
-  '/validacion-pagos': 'ValidacionPagos', '/alumnos': 'Matriculas', '/seguimiento': 'Comisiones',
-  '/reportes': 'Reportes', '/notificaciones': 'Notificaciones',
-  '/usuarios': 'Usuarios', '/matriz-acceso': 'Matriz', '/bitacora': 'Bitacora',
+  '/anuncios': 'PCatalogo', '/gestion-anuncios': 'PCatalogo', '/login': 'PLogin',
+  '/dashboard': 'PDashboard', '/inicio-vendedor': 'PMiDia', '/embudo': 'PEmbudo',
+  '/prospectos': 'PProspectos', '/interesados': 'PAsignacion', '/agenda': 'PAgenda', '/motivos-perdida': 'PMotivos',
+  '/validacion-pagos': 'PValidacionPagos', '/alumnos': 'PMatriculas', '/seguimiento': 'PComisiones',
+  '/reportes': 'PReportes', '/notificaciones': 'PNotificaciones',
+  '/usuarios': 'PUsuarios', '/matriz-acceso': 'PMatriz', '/bitacora': 'PBitacora',
 }
 
 export const router = createBrowserRouter([{
@@ -21,7 +21,7 @@ export const router = createBrowserRouter([{
     { path: '/', element: <Navigate to="/anuncios" replace /> },
     ...Object.entries(PAGINAS).map(([path, nombre]) => ({ path, lazy: pagina(nombre) })),
     // Ruta inexistente: página de error con el contador del recurso /error.
-    { path: '*', lazy: pagina('Error404'), handle: { recurso: '/error' } },
+    { path: '*', lazy: pagina('PError404'), handle: { recurso: '/error' } },
   ],
 }], { basename: import.meta.env.BASE_URL.replace(/\/$/, '') || '/' })
 
