@@ -50,4 +50,10 @@ class DAlcance
             ->where('r.coordinador_correo', $correo)
             ->pluck('c.codigo');
     }
+
+    /** Escapa comodines LIKE/ILIKE de PostgreSQL (\, %, _) para tratar la búsqueda como texto literal. */
+    public static function escaparLike(string $texto): string
+    {
+        return '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], trim($texto)).'%';
+    }
 }

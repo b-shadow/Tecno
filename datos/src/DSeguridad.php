@@ -40,10 +40,18 @@ class DSeguridad
             ->leftJoin('usuarios as u', 'u.correo', '=', 'b.usuario_correo')
             ->leftJoin('recursos as r', 'r.codigo', '=', 'b.recurso_codigo')
             ->when($filtros['evento'] ?? null, fn ($query, $evento) => $query->where('b.evento', $evento))
-            ->when($filtros['usuario'] ?? null, fn ($query, $usuario) => $query->where(fn ($subquery) => $subquery
-                ->where('b.usuario_correo', 'ilike', "%{$usuario}%")
-                ->orWhere('b.correo_intentado', 'ilike', "%{$usuario}%")))
-            ->when($filtros['ip'] ?? null, fn ($query, $ip) => $query->where('b.ip', 'like', "{$ip}%"))
+            ->when(trim((string) ($filtros['usuario'] ?? '')) !== '', function ($query) use ($filtros) {
+                $like = DAlcance::escaparLike((string) $filtros['usuario']);
+
+                return $query->where(fn ($subquery) => $subquery
+                    ->where('b.usuario_correo', 'ilike', $like)
+                    ->orWhere('b.correo_intentado', 'ilike', $like));
+            })
+            ->when(trim((string) ($filtros['ip'] ?? '')) !== '', function ($query) use ($filtros) {
+                $ip = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], trim((string) $filtros['ip']));
+
+                return $query->where('b.ip', 'like', "{$ip}%");
+            })
             ->when($filtros['desde'] ?? null, fn ($query, $desde) => $query->where('b.fecha', '>=', $desde))
             ->when($filtros['hasta'] ?? null, fn ($query, $hasta) => $query->where('b.fecha', '<=', $hasta))
             ->orderByDesc('b.nro_registro')
