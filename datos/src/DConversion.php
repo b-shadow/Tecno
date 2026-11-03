@@ -23,6 +23,7 @@ class DConversion
     {
         return OrdenPago::query()->with('items')
             ->where('nro_tarjeta', $interes->nro_tarjeta)
+            ->where('estado', 'Activa')
             ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('pagos')
                 ->whereColumn('pagos.nro_orden', 'ordenes_pago.nro_orden')->where('pagos.estado', 'Pago aprobado'))
             ->latest('nro_orden')->first();
