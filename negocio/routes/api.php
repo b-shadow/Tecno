@@ -30,6 +30,9 @@ Route::post('/visitas', [NSitio::class, 'visita'])->middleware('throttle:120,1')
 Route::get('/buscar', [NSitio::class, 'buscar'])->middleware('throttle:90,1');
 Route::get('/fotos/{archivo}', [NSitio::class, 'foto']);
 
+// CU6 — webhook oficial de Stripe (autenticado por firma HMAC Stripe-Signature)
+Route::post('/stripe/webhook', [NPago::class, 'webhook']);
+
 Route::middleware('auth.token')->group(function (): void {
     // CU1 — sesión y perfil
     Route::get('/me', [NAuth::class, 'me']);
@@ -82,15 +85,19 @@ Route::middleware('auth.token')->group(function (): void {
     Route::post('/notificaciones', [NNotificacion::class, 'enviar'])->middleware('acceso:notificaciones|agenda,modificacion');
     Route::patch('/notificaciones/{notificacion}/leida', [NNotificacion::class, 'marcarLeida'])->middleware('acceso:notificaciones,lectura');
 
-    // CU6 — pagos (métodos, órdenes, cuotas) y matrícula
+    // CU6 — pagos (métodos, órdenes, cuotas), Stripe Checkout Sandbox y matrícula
     Route::get('/descuentos', [NPago::class, 'descuentos'])->middleware('acceso:agenda');
     Route::get('/prospectos/{prospecto}/metodos-pago', [NPago::class, 'metodos'])->middleware('acceso:agenda');
     Route::post('/prospectos/{prospecto}/metodos-pago', [NPago::class, 'registrarMetodo'])->middleware('acceso:agenda');
+    Route::post('/prospectos/{prospecto}/metodos-pago/stripe-setup', [NPago::class, 'crearSetupTarjeta'])->middleware('acceso:agenda');
     Route::patch('/metodos-pago/{metodo}/estado', [NPago::class, 'cambiarEstadoMetodo'])->middleware('acceso:agenda');
     Route::get('/ordenes-pago', [NPago::class, 'ordenes'])->middleware('acceso:agenda|validacion-pagos,lectura');
     Route::post('/intereses/{interes}/ordenes-pago', [NPago::class, 'crearOrden'])->middleware('acceso:agenda');
+    Route::patch('/ordenes-pago/{orden}/anular', [NPago::class, 'anularOrden'])->middleware('acceso:agenda')->whereNumber('orden');
     Route::post('/ordenes-pago/{orden}/cuotas/{cuota}/comprobante', [NPago::class, 'registrarComprobante'])->middleware('acceso:agenda')->whereNumber('cuota');
-    Route::post('/ordenes-pago/{orden}/cuotas/{cuota}/pagar', [NPago::class, 'pagarConTarjeta'])->middleware('acceso:agenda')->whereNumber('cuota');
+    Route::post('/ordenes-pago/{orden}/cuotas/{cuota}/checkout', [NPago::class, 'crearCheckout'])->middleware('acceso:agenda')->whereNumber('cuota');
+    Route::get('/pagos/stripe/sesiones/{sessionId}', [NPago::class, 'confirmarCheckout'])->middleware('acceso:agenda|validacion-pagos,lectura');
+    Route::post('/pagos/stripe/sesiones/{sessionId}/cancelar', [NPago::class, 'cancelarCheckout'])->middleware('acceso:agenda');
     Route::get('/cuotas', [NPago::class, 'cuotas'])->middleware('acceso:validacion-pagos');
     Route::patch('/ordenes-pago/{orden}/cuotas/{cuota}/aprobar', [NPago::class, 'aprobar'])->middleware('acceso:validacion-pagos')->whereNumber('cuota');
     Route::patch('/ordenes-pago/{orden}/cuotas/{cuota}/rechazar', [NPago::class, 'rechazar'])->middleware('acceso:validacion-pagos')->whereNumber('cuota');
