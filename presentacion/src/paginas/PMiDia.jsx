@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { go } from '../servicios/navigation'
 import { useAuth } from '../servicios/auth'
-import { Aviso, CabeceraPagina, Cargando, Etiqueta, Modal, Campo, bs, fecha, nombre, useAviso, useDatos, HISTORIAL } from '../componentes/ui'
+import { Aviso, CabeceraPagina, Cargando, Etiqueta, Modal, Campo, bs, fecha, hora, nombre, useAviso, useDatos, HISTORIAL } from '../componentes/ui'
 import * as reportesApi from '../api/reportes'
 import * as seguimientoApi from '../api/seguimiento'
 
@@ -76,7 +76,7 @@ export default function PMiDia() {
               <ol className={HISTORIAL.lista}>
                 {porDia[dia].map((r) => (
                   <li key={r.nro_recordatorio} className={HISTORIAL.item}>
-                    <span className={HISTORIAL.tipo}>{fecha(r.fecha_programada, true).split(' ').pop()} · <Etiqueta estado={r.estado} /></span>
+                    <span className={HISTORIAL.tipo}>{hora(r.fecha_programada)} · <Etiqueta estado={r.estado} /></span>
                     <p className={HISTORIAL.texto}><a href="#" onClick={(e) => { e.preventDefault(); go(`/agenda?interes=${r.nro_tarjeta}`) }}>{nombre(r.interes?.prospecto)}</a>: {r.descripcion}</p>
                     {['Pendiente', 'Atrasada'].includes(r.estado) && <small className={HISTORIAL.nota}><button type="button" className="btn btn-texto" onClick={() => setCompletar({ r, resultado: '' })}>Marcar realizada</button></small>}
                   </li>
