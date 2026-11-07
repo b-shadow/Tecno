@@ -145,18 +145,18 @@ async function audit(engine) {
         await card.getByRole('button',{name:'Cerrar',exact:true}).first().click()
         await page.setViewportSize({width:390,height:844})
         await page.goto(base+'/agenda'); await settle(page)
-        if(await page.locator('.chat-list-item').count()) {
-          await page.locator('.chat-list-item').first().click()
-          await page.locator('.agenda-detail-window').waitFor()
+        if(await page.locator('#lista-tarjetas ul button').count()) {
+          await page.locator('#lista-tarjetas ul button').first().click()
+          await page.locator('#ficha-detalle').waitFor()
           await page.waitForFunction(()=> {
-            const top=document.querySelector('.agenda-detail-window').getBoundingClientRect().top
+            const top=document.querySelector('#ficha-detalle').getBoundingClientRect().top
             return top>=-2 && top<140
           })
           await layout(page)
           await shot(page,`${engine}-${role.id}-agenda-detalle-movil`)
           await page.getByRole('button',{name:'Volver a los interesados',exact:true}).click()
-          await page.locator('.chat-list-item').first().waitFor()
-          await page.waitForFunction(()=>document.querySelector('.chat-list-item').getBoundingClientRect().top<innerHeight)
+          await page.locator('#lista-tarjetas ul button').first().waitFor()
+          await page.waitForFunction(()=>document.querySelector('#lista-tarjetas ul button').getBoundingClientRect().top<innerHeight)
         }
       })
       await test(role.id+' errores de ejecucion y servidor',async()=>{
