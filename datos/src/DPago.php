@@ -23,7 +23,7 @@ class DPago
     // Registros de la ruta por su identificador (404 si no existen): el negocio no consulta modelos por su cuenta.
     public function prospecto(string $documento): Prospecto { return Prospecto::query()->findOrFail($documento); }
     public function metodo(int $numero): MetodoPago { return MetodoPago::query()->findOrFail($numero); }
-    public function interes(int $numero): Interes { return Interes::query()->findOrFail($numero); }
+    public function interes(int $numero): Interes { return Interes::query()->with('prospecto')->findOrFail($numero); }
     public function orden(int $numero): OrdenPago { return OrdenPago::query()->findOrFail($numero); }
     public function comprobante(int $numero): ComprobantePago { return ComprobantePago::query()->findOrFail($numero); }
 
@@ -41,6 +41,7 @@ class DPago
     }
 
     public function modulos(array $codigos): Collection { return CatalogoCache::query()->with('programa')->whereIn('codigo', $codigos)->get(); }
+    public function cantidadModulosAbiertos(string $programaCodigo): int { return CatalogoCache::query()->where('programa_codigo', $programaCodigo)->where('estado', 'abierto')->count(); }
     public function descuentosPorCodigo(array $codigos): Collection { return Descuento::query()->whereIn('codigo', $codigos)->get(); }
     public function crearOrden(array $datos): OrdenPago { return OrdenPago::query()->create($datos); }
     public function insertarDescuentosOrden(array $filas): void { if ($filas) DB::table('orden_pago_descuentos')->insert($filas); }
@@ -51,6 +52,65 @@ class DPago
     public function registrarInteraccion(Interes $interes, array $datos): Interaccion { return $interes->interacciones()->create($datos); }
     public function actualizarInteres(Interes $interes, array $datos): void { $interes->update($datos); }
     public function ordenCompleta(OrdenPago $orden): OrdenPago { return $orden->load('items', 'descuentos.descuento', 'pago', 'cuotas'); }
+
+    public function asegurarTokenCuota(int $nroOrden, int $nroCuota): string
+    {
+        $actual = Cuota::query()->where('nro_orden', $nroOrden)->where('nro_cuota', $nroCuota)->value('token_pago');
+        if ($actual) {
+            return (string) $actual;
+        }
+        $token = bin2hex(random_bytes(24));
+        Cuota::query()->where('nro_orden', $nroOrden)->where('nro_cuota', $nroCuota)->update(['token_pago' => $token, 'updated_at' => now()]);
+
+        return $token;
+    }
+
+    public function cuotaPorToken(string $token): ?object
+    {
+        $fila = DB::table('cuotas as c')
+            ->join('ordenes_pago as o', 'o.nro_orden', '=', 'c.nro_orden')
+            ->join('intereses as i', 'i.nro_tarjeta', '=', 'o.nro_tarjeta')
+            ->where('c.token_pago', $token)
+            ->select(
+                'c.nro_orden', 'c.nro_cuota', 'c.monto', 'c.fecha_vencimiento', 'c.estado as cuota_estado',
+                'o.estado as orden_estado', 'o.vendedor_correo', 'i.programa_nombre', 'i.modulo_nombre', 'i.estado as interes_estado'
+            )->first();
+        if ($fila) {
+            $fila->total_cuotas = Cuota::query()->where('nro_orden', $fila->nro_orden)->count();
+        }
+
+        return $fila;
+    }
+
+    public function cuotasPendientesParaRecordatorio(): Collection
+    {
+        return Cuota::query()
+            ->join('ordenes_pago as o', 'o.nro_orden', '=', 'cuotas.nro_orden')
+            ->join('intereses as i', 'i.nro_tarjeta', '=', 'o.nro_tarjeta')
+            ->join('prospectos as p', 'p.documento', '=', 'i.documento')
+            ->where('o.estado', 'Activa')
+            ->where('o.envio_automatico', true)
+            ->where('cuotas.estado', 'Pendiente de pago')
+            ->where('i.estado', '!=', 'Perdido')
+            ->orderBy('cuotas.fecha_vencimiento')
+            ->orderBy('cuotas.nro_orden')
+            ->orderBy('cuotas.nro_cuota')
+            ->get([
+                'cuotas.nro_orden', 'cuotas.nro_cuota', 'cuotas.monto', 'cuotas.fecha_vencimiento', 'cuotas.token_pago',
+                'cuotas.primer_envio_en', 'cuotas.recordatorio_previo_en', 'cuotas.recordatorio_vencimiento_en', 'cuotas.recordatorio_mora_en',
+                'o.vendedor_correo', 'i.programa_nombre', 'i.modulo_nombre',
+                'p.nombre as prospecto_nombre', 'p.apellido as prospecto_apellido', 'p.correo as prospecto_correo',
+                DB::raw('(SELECT count(*) FROM cuotas c2 WHERE c2.nro_orden = cuotas.nro_orden) as total_cuotas'),
+            ]);
+    }
+
+    public function marcarEnvioCuota(int $nroOrden, int $nroCuota, string $columna): void
+    {
+        if (! in_array($columna, ['primer_envio_en', 'recordatorio_previo_en', 'recordatorio_vencimiento_en', 'recordatorio_mora_en'], true)) {
+            return;
+        }
+        Cuota::query()->where('nro_orden', $nroOrden)->where('nro_cuota', $nroCuota)->update([$columna => now(), 'updated_at' => now()]);
+    }
 
     public function cuotas(Usuario $usuario, ?string $estado): Collection
     {
@@ -78,10 +138,10 @@ class DPago
         return DB::table('cuotas')->where('nro_orden', $orden)->where('nro_cuota', $numero)->lockForUpdate()->first();
     }
     public function crearComprobante(array $datos): ComprobantePago { return ComprobantePago::query()->create($datos); }
-    public function metodoActivo(string $documento, int $numero, ?string $tipo = null): ?MetodoPago
+    public function metodoActivo(string $documento, int $numero, string|array|null $tipo = null): ?MetodoPago
     {
         return MetodoPago::query()->whereKey($numero)->where('documento', $documento)->where('estado', 'activo')
-            ->when($tipo, fn ($q, $valor) => $q->where('tipo', $valor))->first();
+            ->when($tipo, fn ($q, $valor) => is_array($valor) ? $q->whereIn('tipo', $valor) : $q->where('tipo', $valor))->first();
     }
 
     /** Orden de la tarjeta con su 1.ª cuota todavía abierta (pendiente o en revisión), excluyendo anuladas. */
