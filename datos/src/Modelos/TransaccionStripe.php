@@ -13,6 +13,8 @@ class TransaccionStripe extends Model
 
     protected $guarded = [];
 
+    protected $hidden = ['token_publico'];
+
     protected function casts(): array
     {
         return [
@@ -23,6 +25,7 @@ class TransaccionStripe extends Model
             'monto_confirmado' => 'decimal:2',
             'livemode' => 'boolean',
             'confirmado_en' => 'datetime',
+            'expira_en' => 'datetime',
         ];
     }
 

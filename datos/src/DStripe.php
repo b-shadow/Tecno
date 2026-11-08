@@ -79,7 +79,17 @@ class DStripe
             ->where('tipo', 'payment')
             ->where('nro_orden', $nroOrden)
             ->where('nro_cuota', $nroCuota)
-            ->where('estado_interno', 'pendiente')
+            ->whereIn('estado_interno', ['pendiente', 'cancelado'])
+            ->latest('nro_transaccion')
+            ->first();
+    }
+
+    public function transaccionSetupAbierta(string $documento): ?TransaccionStripe
+    {
+        return TransaccionStripe::query()
+            ->where('tipo', 'setup')
+            ->where('documento', $documento)
+            ->whereIn('estado_interno', ['pendiente', 'cancelado'])
             ->latest('nro_transaccion')
             ->first();
     }
@@ -121,6 +131,11 @@ class DStripe
             ['stripe_metodo' => $stripeMetodo],
             $datosSinClave + ['stripe_metodo' => $stripeMetodo]
         );
+    }
+
+    public function vencimientoMetodoStripe(?string $stripeMetodo): ?string
+    {
+        return $stripeMetodo ? MetodoPago::query()->where('stripe_metodo', $stripeMetodo)->value('vencimiento') : null;
     }
 
     public function marcarCuotaPagadaStripe(int $nroOrden, int $nroCuota, array $datosCuota, string $observacionOrden): void
