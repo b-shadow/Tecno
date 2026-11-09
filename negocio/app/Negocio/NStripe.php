@@ -26,14 +26,60 @@ class NStripe
     public function __construct(
         private readonly DStripe $datos,
         private readonly DPago $pagos,
+        private readonly NNotificacion $notificaciones,
     ) {
     }
 
     public function iniciarCheckoutCuota(int $nroOrden, int $nroCuota, Usuario $usuario): array
     {
         $orden = $this->datos->ordenConDetalle($nroOrden);
+        NAlcance::autorizarTarjeta($usuario, $orden->interes);
+
+        return $this->obtenerOCrearCheckoutCuota($orden, $nroCuota, $usuario->correo, $usuario);
+    }
+
+    public function resolverEnlacePublicoCuota(string $tokenPago): array
+    {
+        $info = $this->pagos->cuotaPorToken(trim($tokenPago));
+        ReglaNegocioException::si(! $info, 'El enlace de pago no es válido o no existe.', 404);
+
+        $base = [
+            'programa' => $info->programa_nombre,
+            'modulo' => $info->modulo_nombre,
+            'nro_cuota' => (int) $info->nro_cuota,
+            'total_cuotas' => max((int) $info->total_cuotas, 1),
+            'importe' => (float) $info->monto,
+            'moneda' => 'BOB',
+            'fecha_vencimiento' => $info->fecha_vencimiento,
+            'aviso_sandbox' => 'Operación de demostración mediante Stripe Sandbox (moneda BOB, sin movimiento real de dinero).',
+        ];
+
+        if ($info->orden_estado !== 'Activa') {
+            return $base + ['estado_link' => 'anulada', 'mensaje' => 'Esta orden de pago fue anulada y no admite cobros.'];
+        }
+        if ($info->cuota_estado === 'Pago aprobado') {
+            return $base + ['estado_link' => 'pagada', 'mensaje' => 'Esta cuota ya figura como pagada. No es posible realizar un cobro duplicado.'];
+        }
+        if ($info->cuota_estado === 'En revision') {
+            return $base + ['estado_link' => 'en_revision', 'mensaje' => 'Esta cuota ya tiene un pago pendiente de revisión.'];
+        }
+        if ($info->interes_estado === 'Perdido') {
+            return $base + ['estado_link' => 'cerrada', 'mensaje' => 'La oportunidad comercial asociada ya fue cerrada.'];
+        }
+
+        $orden = $this->datos->ordenConDetalle((int) $info->nro_orden);
+        $checkout = $this->obtenerOCrearCheckoutCuota($orden, (int) $info->nro_cuota, (string) ($info->vendedor_correo ?: 'sistema@crm-educativo.local'), null);
+
+        return $base + [
+            'estado_link' => 'pendiente',
+            'url_checkout' => $checkout['url'],
+            'reutilizada' => $checkout['reutilizada'],
+        ];
+    }
+
+    private function obtenerOCrearCheckoutCuota(OrdenPago $orden, int $nroCuota, string $actorCorreo, ?Usuario $actorUsuario = null): array
+    {
         $interes = $orden->interes;
-        NAlcance::autorizarTarjeta($usuario, $interes);
         ReglaNegocioException::si($orden->estado !== 'Activa', 'La orden de pago fue anulada y no admite cobros.');
         ReglaNegocioException::si($interes->estado === 'Perdido', 'La tarjeta fue marcada como Perdida.');
 
@@ -50,27 +96,49 @@ class NStripe
         ReglaNegocioException::si($centavos <= 0, 'El monto de la cuota debe ser mayor a cero.');
 
         $stripe = $this->cliente();
+        $frontend = $this->urlFrontend();
+        $tokenCuota = $this->pagos->asegurarTokenCuota($orden->nro_orden, $nroCuota);
+        $urlCuota = "{$frontend}/pagos/cuota?token={$tokenCuota}";
+
         $abierta = $this->datos->transaccionAbiertaPorCuota($orden->nro_orden, $nroCuota);
         if ($abierta) {
             $sesion = $this->recuperarSesion($stripe, $abierta->stripe_sesion);
             $this->validarSandbox($sesion->livemode);
 
             if ($sesion->payment_status === 'paid') {
-                $this->confirmarPagoDesdeSesion($sesion, $abierta, $usuario);
+                $this->confirmarPagoDesdeSesion($sesion, $abierta, $actorUsuario);
                 ReglaNegocioException::si(true, 'Esta cuota ya fue pagada en Stripe y acaba de confirmarse.', 409);
             }
 
-            if ($sesion->status === 'open' && (int) $sesion->amount_total === $centavos && $sesion->url) {
+            $expiraEn = isset($sesion->expires_at) ? Carbon::createFromTimestamp((int) $sesion->expires_at) : $abierta->expira_en;
+            if ($sesion->status === 'open' && (int) $sesion->amount_total === $centavos && $sesion->url && $abierta->token_publico && (! $expiraEn || $expiraEn->isFuture())) {
+                if ($abierta->estado_interno !== 'pendiente' || ! $abierta->expira_en) {
+                    $this->datos->actualizarTransaccion($abierta, [
+                        'estado_interno' => 'pendiente',
+                        'expira_en' => $expiraEn,
+                    ]);
+                }
+
                 return [
                     'url' => $sesion->url,
+                    'url_cuota' => $urlCuota,
                     'session_id' => $sesion->id,
                     'moneda' => 'BOB',
                     'monto' => (float) $cuota->monto,
+                    'expira_en' => $expiraEn?->toIso8601String(),
                     'reutilizada' => true,
                 ];
             }
 
-            if ($sesion->status === 'expired') {
+            if ($sesion->status === 'open' && ! $abierta->token_publico) {
+                try {
+                    $stripe->checkout->sessions->expire($abierta->stripe_sesion);
+                } catch (ApiErrorException) {
+                    // Si ya expiró en Stripe se continúa generando una nueva sesión con token público.
+                }
+            }
+
+            if ($sesion->status === 'expired' || ! $abierta->token_publico || ($expiraEn && $expiraEn->isPast())) {
                 $this->datos->actualizarTransaccion($abierta, [
                     'estado_sesion' => 'expired',
                     'estado_interno' => 'expirado',
@@ -82,19 +150,19 @@ class NStripe
         $customerId = $this->asegurarCustomer($stripe, $prospecto);
         $intento = $this->datos->contarIntentosCuota($orden->nro_orden, $nroCuota) + 1;
         $totalCuotas = max($orden->cuotas->count(), 1);
-        $frontend = $this->urlFrontend();
+        $claveIdemp = "unexo-chk-ord-{$orden->nro_orden}-cta-{$nroCuota}-i{$intento}";
+        $tokenPublico = $this->generarTokenPublico("pay-{$claveIdemp}-{$orden->fecha_generacion?->timestamp}");
         $meta = [
             'tipo' => 'payment',
             'nro_orden' => (string) $orden->nro_orden,
             'nro_cuota' => (string) $nroCuota,
             'nro_tarjeta' => (string) $interes->nro_tarjeta,
             'documento' => (string) $prospecto->documento,
-            'usuario_correo' => (string) $usuario->correo,
+            'usuario_correo' => $actorCorreo,
             'moneda' => 'bob',
             'monto_bob' => number_format((float) $cuota->monto, 2, '.', ''),
         ];
 
-        $claveIdemp = "unexo-chk-ord-{$orden->nro_orden}-cta-{$nroCuota}-i{$intento}";
         try {
             $sesion = $stripe->checkout->sessions->create([
                 'mode' => 'payment',
@@ -116,8 +184,8 @@ class NStripe
                     'setup_future_usage' => 'off_session',
                     'metadata' => $meta,
                 ],
-                'success_url' => "{$frontend}/pagos/confirmacion?session_id={CHECKOUT_SESSION_ID}",
-                'cancel_url' => "{$frontend}/pagos/cancelado?session_id={CHECKOUT_SESSION_ID}",
+                'success_url' => "{$frontend}/pagos/confirmacion?session_id={CHECKOUT_SESSION_ID}&token={$tokenPublico}",
+                'cancel_url' => "{$frontend}/pagos/cancelado?session_id={CHECKOUT_SESSION_ID}&token={$tokenPublico}",
                 'metadata' => $meta,
             ], ['idempotency_key' => $claveIdemp]);
         } catch (ApiErrorException $e) {
@@ -127,15 +195,16 @@ class NStripe
         $this->validarSandbox($sesion->livemode);
         ReglaNegocioException::si(strtolower((string) $sesion->currency) !== 'bob', 'Stripe devolvió una moneda distinta de BOB.', 502);
         ReglaNegocioException::si((int) $sesion->amount_total !== $centavos, 'El monto devuelto por Stripe no coincide con la cuota.', 502);
+        $expiraEn = isset($sesion->expires_at) ? Carbon::createFromTimestamp((int) $sesion->expires_at) : now()->addHours(24);
 
-        $this->datos->transaccion(function () use ($orden, $nroCuota, $prospecto, $usuario, $sesion, $customerId, $cuota, $centavos, $claveIdemp, $interes): void {
+        $this->datos->transaccion(function () use ($orden, $nroCuota, $prospecto, $actorCorreo, $sesion, $customerId, $cuota, $centavos, $claveIdemp, $tokenPublico, $expiraEn, $interes): void {
             if (! $this->datos->transaccionPorSesionBloqueada($sesion->id)) {
                 $this->datos->crearTransaccion([
                     'tipo' => 'payment',
                     'nro_orden' => $orden->nro_orden,
                     'nro_cuota' => $nroCuota,
                     'documento' => $prospecto->documento,
-                    'usuario_correo' => $usuario->correo,
+                    'usuario_correo' => $actorCorreo,
                     'stripe_sesion' => $sesion->id,
                     'stripe_pago_intent' => is_string($sesion->payment_intent) ? $sesion->payment_intent : $sesion->payment_intent?->id,
                     'stripe_cliente' => $customerId,
@@ -148,24 +217,28 @@ class NStripe
                     'livemode' => (bool) $sesion->livemode,
                     'url_checkout' => $sesion->url,
                     'clave_idempotencia' => $claveIdemp,
+                    'token_publico' => $tokenPublico,
+                    'expira_en' => $expiraEn,
                 ]);
             }
 
             $this->pagos->registrarInteraccion($interes, [
-                'usuario_correo' => $usuario->correo,
+                'usuario_correo' => $actorCorreo,
                 'tipo' => 'Pago informado',
                 'fecha' => now(),
-                'descripcion' => "Sesión Stripe Checkout iniciada para cuota {$nroCuota} de la orden #{$orden->nro_orden} (Bs ".number_format((float) $cuota->monto, 2, '.', '').").",
-                'resultado' => 'Checkout abierto',
+                'descripcion' => "Enlace Stripe Checkout generado para cuota {$nroCuota} de la orden #{$orden->nro_orden} (Bs ".number_format((float) $cuota->monto, 2, '.', '').").",
+                'resultado' => 'Enlace generado',
             ]);
             $this->pagos->actualizarInteres($interes, ['ultima_actividad_en' => now()]);
         });
 
         return [
             'url' => $sesion->url,
+            'url_cuota' => $urlCuota,
             'session_id' => $sesion->id,
             'moneda' => 'BOB',
             'monto' => (float) $cuota->monto,
+            'expira_en' => $expiraEn->toIso8601String(),
             'reutilizada' => false,
         ];
     }
@@ -176,8 +249,30 @@ class NStripe
         ReglaNegocioException::si(! $this->pagos->prospectoEnCartera($prospecto, $usuario), 'Este prospecto no está dentro de su cartera.', 403);
 
         $stripe = $this->cliente();
+        $abierta = $this->datos->transaccionSetupAbierta($prospecto->documento);
+        if ($abierta && $abierta->token_publico) {
+            $sesionExistente = $this->recuperarSesion($stripe, $abierta->stripe_sesion);
+            $this->validarSandbox($sesionExistente->livemode);
+            if ($sesionExistente->status === 'complete') {
+                $this->confirmarSetupDesdeSesion($sesionExistente, $abierta);
+            } elseif ($sesionExistente->status === 'open' && $sesionExistente->url) {
+                $expira = isset($sesionExistente->expires_at) ? Carbon::createFromTimestamp((int) $sesionExistente->expires_at) : $abierta->expira_en;
+                if (! $expira || $expira->isFuture()) {
+                    return [
+                        'url' => $sesionExistente->url,
+                        'session_id' => $sesionExistente->id,
+                        'expira_en' => $expira?->toIso8601String(),
+                        'reutilizada' => true,
+                    ];
+                }
+            } elseif ($sesionExistente->status === 'expired') {
+                $this->datos->actualizarTransaccion($abierta, ['estado_sesion' => 'expired', 'estado_interno' => 'expirado']);
+            }
+        }
+
         $customerId = $this->asegurarCustomer($stripe, $prospecto);
         $frontend = $this->urlFrontend();
+        $tokenPublico = bin2hex(random_bytes(24));
         $meta = [
             'tipo' => 'setup',
             'documento' => (string) $prospecto->documento,
@@ -192,8 +287,8 @@ class NStripe
                 'locale' => 'es',
                 'customer' => $customerId,
                 'setup_intent_data' => ['metadata' => $meta],
-                'success_url' => "{$frontend}/pagos/confirmacion?session_id={CHECKOUT_SESSION_ID}",
-                'cancel_url' => "{$frontend}/pagos/cancelado?session_id={CHECKOUT_SESSION_ID}",
+                'success_url' => "{$frontend}/pagos/confirmacion?session_id={CHECKOUT_SESSION_ID}&token={$tokenPublico}",
+                'cancel_url' => "{$frontend}/pagos/cancelado?session_id={CHECKOUT_SESSION_ID}&token={$tokenPublico}",
                 'metadata' => $meta,
             ]);
         } catch (ApiErrorException $e) {
@@ -201,6 +296,7 @@ class NStripe
         }
 
         $this->validarSandbox($sesion->livemode);
+        $expiraEn = isset($sesion->expires_at) ? Carbon::createFromTimestamp((int) $sesion->expires_at) : now()->addHours(24);
 
         $this->datos->crearTransaccion([
             'tipo' => 'setup',
@@ -215,9 +311,59 @@ class NStripe
             'estado_interno' => 'pendiente',
             'livemode' => (bool) $sesion->livemode,
             'url_checkout' => $sesion->url,
+            'token_publico' => $tokenPublico,
+            'expira_en' => $expiraEn,
         ]);
 
-        return ['url' => $sesion->url, 'session_id' => $sesion->id];
+        return [
+            'url' => $sesion->url,
+            'session_id' => $sesion->id,
+            'expira_en' => $expiraEn->toIso8601String(),
+            'reutilizada' => false,
+        ];
+    }
+
+    public function verificarRetornoPublico(string $sessionId, string $tokenPublico): array
+    {
+        $tx = $this->autorizarTokenPublico($sessionId, $tokenPublico);
+        $res = $this->verificarSesion($sessionId, null, false);
+        $actual = $this->datos->transaccionPorSesion($sessionId) ?? $tx;
+
+        return $this->armarRespuestaPublica($actual, $res['titulo'] ?? 'Resultado del pago');
+    }
+
+    public function cancelarRetornoPublico(string $sessionId, string $tokenPublico): array
+    {
+        $tx = $this->autorizarTokenPublico($sessionId, $tokenPublico);
+        $stripe = $this->cliente();
+        $sesion = $this->recuperarSesion($stripe, $sessionId);
+        $this->validarSandbox($sesion->livemode);
+
+        if ($sesion->mode === 'payment' && $sesion->payment_status === 'paid') {
+            $res = $this->confirmarPagoDesdeSesion($sesion, $tx, null);
+            $actual = $this->datos->transaccionPorSesion($sessionId) ?? $tx;
+
+            return $this->armarRespuestaPublica($actual, $res['titulo'] ?? 'Pago confirmado');
+        }
+        if ($sesion->mode === 'setup' && $sesion->status === 'complete') {
+            $res = $this->confirmarSetupDesdeSesion($sesion, $tx);
+            $actual = $this->datos->transaccionPorSesion($sessionId) ?? $tx;
+
+            return $this->armarRespuestaPublica($actual, $res['titulo'] ?? 'Tarjeta registrada correctamente');
+        }
+
+        if ($tx->estado_interno === 'pendiente') {
+            $nuevoEstado = $sesion->status === 'expired' ? 'expirado' : 'cancelado';
+            $this->datos->actualizarTransaccion($tx, [
+                'estado_sesion' => (string) $sesion->status,
+                'estado_pago' => (string) ($sesion->payment_status ?? 'unpaid'),
+                'estado_interno' => $nuevoEstado,
+            ]);
+        }
+
+        $actual = $this->datos->transaccionPorSesion($sessionId) ?? $tx;
+
+        return $this->armarRespuestaPublica($actual, $actual->tipo === 'setup' ? 'Registro de tarjeta no completado' : 'Pago no completado');
     }
 
     public function verificarSesion(string $sessionId, ?Usuario $actor = null, bool $exigirAutorizacion = true): array
@@ -482,7 +628,7 @@ class NStripe
                 422
             );
 
-            $faltantes = $this->datos->transaccion(function () use ($txInicial, $sesion, $piId, $pmId, $marca, $ultimos4, $vencimiento, $titular, $receiptUrl, $actor) {
+            $resultado = $this->datos->transaccion(function () use ($txInicial, $sesion, $piId, $pmId, $marca, $ultimos4, $vencimiento, $titular, $receiptUrl, $actor) {
                 $tx = $this->datos->transaccionPorSesionBloqueada($txInicial->stripe_sesion);
                 $cuota = $this->datos->cuotaBloqueada((int) $tx->nro_orden, (int) $tx->nro_cuota);
                 $orden = $this->datos->ordenConDetalle((int) $tx->nro_orden);
@@ -503,7 +649,7 @@ class NStripe
                             'confirmado_en' => $tx->confirmado_en ?? now(),
                         ]);
 
-                        return NConversion::faltantes($orden->interes);
+                        return ['faltantes' => NConversion::faltantes($orden->interes), 'recien_confirmado' => false];
                     }
 
                     // Segunda sesión paralela pagada sobre una cuota ya liquidada: registrar incidencia sin duplicar saldo.
@@ -527,7 +673,7 @@ class NStripe
                         'resultado' => 'Requiere reconciliación',
                     ]);
 
-                    return [];
+                    return ['faltantes' => [], 'recien_confirmado' => false];
                 }
 
                 $nroMetodo = null;
@@ -590,19 +736,23 @@ class NStripe
                 ]);
                 $this->pagos->actualizarInteres($interes, ['ultima_actividad_en' => now()]);
 
+                $faltan = [];
                 if ((int) $tx->nro_cuota === 1 && $interes->estado !== 'Convertido') {
                     $faltan = NConversion::faltantes($interes);
                     if (! $faltan) {
                         NConversion::procesar($interes, $responsable);
                     }
-
-                    return $faltan;
                 }
 
-                return [];
+                return ['faltantes' => $faltan, 'recien_confirmado' => true];
             });
 
-            return $this->armarRespuestaPago($this->datos->transaccionPorSesion($sesion->id), $faltantes, 'Pago confirmado');
+            $txConfirmada = $this->datos->transaccionPorSesion($sesion->id);
+            if ($resultado['recien_confirmado'] && $txConfirmada) {
+                $this->enviarNotificacionesPostPago($txConfirmada);
+            }
+
+            return $this->armarRespuestaPago($txConfirmada, $resultado['faltantes'], 'Pago confirmado');
         }
 
         // Sesión no pagada todavía: expirada, rechazada con error previo, o abierta esperando confirmación/reintento.
@@ -692,6 +842,7 @@ class NStripe
             'stripe_metodo' => $actual->stripe_metodo,
             'marca_tarjeta' => $actual->marca_tarjeta,
             'ultimos_digitos' => $actual->ultimos_digitos,
+            'vencimiento' => $this->datos->vencimientoMetodoStripe($actual->stripe_metodo),
             'prospecto' => $prospecto ? trim("{$prospecto->nombre} {$prospecto->apellido}") : null,
             'nro_tarjeta' => ($sesion->metadata['nro_tarjeta'] ?? '') !== '' ? (int) $sesion->metadata['nro_tarjeta'] : null,
             'fecha_confirmacion' => $actual->confirmado_en?->toIso8601String(),
@@ -818,6 +969,100 @@ class NStripe
 
             return $customer->id;
         });
+    }
+
+    private function autorizarTokenPublico(string $sessionId, string $tokenPublico): TransaccionStripe
+    {
+        $tx = $this->datos->transaccionPorSesion($sessionId);
+        $valido = $tx && $tx->token_publico && $tokenPublico !== '' && hash_equals((string) $tx->token_publico, $tokenPublico);
+        ReglaNegocioException::si(! $valido, 'El enlace de verificación no es válido o no está autorizado.', 403);
+
+        $limite = $tx->confirmado_en
+            ? $tx->confirmado_en->copy()->addDays(30)
+            : ($tx->expira_en ? $tx->expira_en->copy()->addDays(7) : $tx->created_at?->copy()->addDays(7));
+        ReglaNegocioException::si($limite && $limite->isPast(), 'La vigencia de este enlace ha caducado.', 410);
+
+        return $tx;
+    }
+
+    private function armarRespuestaPublica(TransaccionStripe $tx, string $titulo): array
+    {
+        if ($tx->tipo === 'setup') {
+            return [
+                'publico' => true,
+                'tipo' => 'setup',
+                'titulo' => $tx->estado_interno === 'confirmado' ? 'Tarjeta registrada correctamente' : $titulo,
+                'estado_interno' => $tx->estado_interno,
+                'estado_sesion' => $tx->estado_sesion,
+                'referencia_pago' => $tx->stripe_setup_intent ?: $tx->stripe_sesion,
+                'marca_tarjeta' => $tx->marca_tarjeta,
+                'ultimos_digitos' => $tx->ultimos_digitos,
+                'vencimiento' => $this->datos->vencimientoMetodoStripe($tx->stripe_metodo),
+                'fecha_confirmacion' => ($tx->confirmado_en ?? $tx->updated_at)?->toIso8601String(),
+                'url_checkout' => $tx->estado_sesion === 'open' && $tx->estado_interno !== 'confirmado' ? $tx->url_checkout : null,
+                'expira_en' => $tx->expira_en?->toIso8601String(),
+                'aviso_sandbox' => 'Operación de demostración en Stripe Sandbox sin movimiento real de dinero.',
+            ];
+        }
+
+        $orden = $tx->orden;
+        $interes = $orden?->interes;
+        $cuotas = $orden?->cuotas ?? collect();
+        $cuota = $cuotas->firstWhere('nro_cuota', $tx->nro_cuota);
+
+        return [
+            'publico' => true,
+            'tipo' => 'payment',
+            'titulo' => $titulo,
+            'estado_interno' => $tx->estado_interno,
+            'estado_sesion' => $tx->estado_sesion,
+            'estado_pago' => $tx->estado_pago,
+            'estado_cuota' => $cuota?->estado,
+            'programa' => $interes?->programa_nombre,
+            'modulo' => $interes?->modulo_nombre,
+            'importe' => (float) ($tx->monto_confirmado ?? $tx->monto_esperado ?? 0),
+            'moneda' => 'BOB',
+            'nro_cuota' => $tx->nro_cuota,
+            'total_cuotas' => $cuotas->count(),
+            'referencia_pago' => $tx->stripe_pago_intent ?: $tx->stripe_sesion,
+            'detalle_error' => $tx->detalle_error,
+            'url_checkout' => $tx->estado_sesion === 'open' && $tx->estado_interno !== 'confirmado' ? $tx->url_checkout : null,
+            'expira_en' => $tx->expira_en?->toIso8601String(),
+            'fecha_confirmacion' => ($tx->confirmado_en ?? $tx->updated_at)?->toIso8601String(),
+            'aviso_sandbox' => 'Operación de demostración mediante Stripe Sandbox (moneda BOB, sin movimiento real de dinero).',
+        ];
+    }
+
+    private function enviarNotificacionesPostPago(TransaccionStripe $tx): void
+    {
+        try {
+            $orden = $tx->orden;
+            $interes = $orden?->interes;
+            $prospecto = $interes?->prospecto ?? $tx->prospecto;
+            $vendedor = $orden?->vendedor;
+            $cuotas = $orden?->cuotas ?? collect();
+
+            $this->notificaciones->notificarPagoConfirmado([
+                'cliente_correo' => $prospecto?->correo,
+                'cliente_nombre' => $prospecto ? trim("{$prospecto->nombre} {$prospecto->apellido}") : 'Cliente',
+                'vendedor_correo' => $orden?->vendedor_correo ?? $tx->usuario_correo,
+                'vendedor_nombre' => $vendedor ? trim("{$vendedor->nombre} {$vendedor->apellido}") : '',
+                'programa' => $interes?->programa_nombre,
+                'modulo' => $interes?->modulo_nombre,
+                'nro_orden' => $tx->nro_orden,
+                'nro_cuota' => $tx->nro_cuota,
+                'total_cuotas' => max($cuotas->count(), 1),
+                'monto' => $tx->monto_confirmado ?? $tx->monto_esperado ?? 0,
+                'referencia' => $tx->stripe_pago_intent ?: $tx->stripe_sesion,
+            ]);
+        } catch (\Throwable) {
+            // Un error en correo electrónico nunca debe revertir ni fallar una confirmación de pago ya guardada.
+        }
+    }
+
+    private function generarTokenPublico(string $semilla): string
+    {
+        return substr(hash_hmac('sha256', $semilla, (string) config('app.key')), 0, 48);
     }
 
     private function traducirMarca(string $brand): string
