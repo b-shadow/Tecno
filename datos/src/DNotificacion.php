@@ -24,6 +24,16 @@ class DNotificacion
         return Notificacion::query()->create($datos);
     }
 
+    public function existeNotificacionEnviada(string $destinatario, string $tipo, string $referencia): bool
+    {
+        return Notificacion::query()
+            ->whereRaw('lower(destinatario) = ?', [mb_strtolower($destinatario)])
+            ->where('tipo', $tipo)
+            ->where('estado', 'enviada')
+            ->where('mensaje', 'ilike', DAlcance::escaparLike($referencia))
+            ->exists();
+    }
+
     public function listar(Usuario $usuario): Collection
     {
         return Notificacion::query()
