@@ -17,6 +17,7 @@ class CrearOrdenRequest extends ApiRequest
             'descuentos.*' => ['string', Rule::exists('descuentos', 'codigo')->where('estado', 'activo')],
             'cuotas' => ['required', 'integer', 'between:1,12'],
             'primer_vencimiento' => ['required', 'date', 'after_or_equal:today'],
+            'envio_automatico' => ['nullable', 'boolean'],
         ];
     }
 
