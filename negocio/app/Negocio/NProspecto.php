@@ -61,7 +61,7 @@ class NProspecto
         $modulos = $this->modulosSolicitados($datos);
 
         try {
-            $nuevo = $this->prospectos->transaccion(function () use ($datos, $modulos) {
+            $resultado = $this->prospectos->transaccion(function () use ($datos, $modulos) {
                 $prospecto = $this->prospectos->encontrarPorDocumentoOCorreoBloqueado($datos['documento'], $datos['correo']);
                 $creado = ! $prospecto;
 
@@ -71,16 +71,33 @@ class NProspecto
                     throw ValidationException::withMessages(['correo' => 'Ese correo o carnet ya está registrado con otros datos. Comuníquese con coordinación.']);
                 }
 
-                $this->crearIntereses($prospecto, $modulos);
+                $intereses = $this->crearIntereses($prospecto, $modulos);
+                $nuevos = $intereses->filter(fn ($interes) => $interes->wasRecentlyCreated)->values();
+                $repetidos = $intereses->reject(fn ($interes) => $interes->wasRecentlyCreated)->values();
 
-                return $creado;
+                if ($nuevos->isEmpty()) {
+                    $modulosTexto = $repetidos->pluck('modulo_nombre')->implode(', ');
+                    $mensaje = $repetidos->count() === 1
+                        ? "Ya registraste tu interés en {$modulosTexto}. Un asesor ya tiene tu solicitud en seguimiento."
+                        : "Ya tienes intereses registrados en los módulos seleccionados: {$modulosTexto}.";
+
+                    throw new ReglaNegocioException($mensaje, 422);
+                }
+
+                return [$creado, $nuevos, $repetidos];
             });
         } catch (UniqueConstraintViolationException) {
             throw ValidationException::withMessages(['correo' => 'Su registro se está procesando. Intente nuevamente en unos segundos.']);
         }
 
+        [$nuevo, $nuevos, $repetidos] = $resultado;
+        $mensaje = $repetidos->isEmpty()
+            ? 'Interés registrado correctamente.'
+            : 'Se registró su interés en '.$nuevos->pluck('modulo_nombre')->implode(', ')
+                .'. Ya estaba registrado: '.$repetidos->pluck('modulo_nombre')->implode(', ').'.';
+
         return response()->json([
-            'mensaje' => 'Interés registrado correctamente.',
+            'mensaje' => $mensaje,
             'detalle' => 'Un asesor se comunicará con usted por WhatsApp.',
             'nuevo_prospecto' => $nuevo,
         ], $nuevo ? 201 : 200);
