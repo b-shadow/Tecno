@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react'
 import { RotateCcw, XCircle } from 'lucide-react'
-import { Aviso, Boton, CabeceraPagina, Cargando, bs } from '../componentes/ui'
+import { Aviso, CabeceraPagina, Cargando, bs } from '../componentes/ui'
 import { apiErrorMessage } from '../servicios/errors'
+import { useAuth } from '../servicios/auth'
 import { go, useAppRoute } from '../servicios/navigation'
 import * as pagosApi from '../api/pagos'
 
-/** CU6: retorno cuando el usuario cancela o retrocede desde Stripe Checkout. */
+/** CU6: retorno seguro cuando el cliente cancela o retrocede desde Stripe Checkout. */
 export default function PPagoCancelado() {
   const { query } = useAppRoute()
+  const sesion = useAuth()
   const sessionId = query.session_id || ''
+  const token = query.token || ''
   const [estado, setEstado] = useState({ cargando: Boolean(sessionId), datos: null, error: null })
-  const [reintentando, setReintentando] = useState(false)
+  const esVistaPublica = Boolean(token) || !sesion.usuario
 
   useEffect(() => {
     let activo = true
@@ -18,36 +21,37 @@ export default function PPagoCancelado() {
       setEstado({ cargando: false, datos: null, error: null })
       return () => { activo = false }
     }
+    if (!token && !sesion.token) {
+      setEstado({ cargando: false, datos: null, error: 'El enlace de retorno requiere un token de verificación válido.' })
+      return () => { activo = false }
+    }
     ;(async () => {
       try {
-        const { data } = await pagosApi.cancelarCheckout(sessionId)
+        const { data } = token
+          ? await pagosApi.cancelarRetornoPublico(sessionId, token)
+          : await pagosApi.cancelarCheckout(sessionId)
         if (activo) setEstado({ cargando: false, datos: data, error: null })
       } catch (err) {
         if (activo) setEstado({ cargando: false, datos: null, error: apiErrorMessage(err) })
       }
     })()
     return () => { activo = false }
-  }, [sessionId])
-
-  async function reintentarPago() {
-    if (!estado.datos?.nro_orden || !estado.datos?.nro_cuota) return
-    setReintentando(true)
-    try {
-      const { data } = await pagosApi.crearCheckout(estado.datos.nro_orden, estado.datos.nro_cuota)
-      window.location.assign(data.url)
-    } catch (err) {
-      setEstado((prev) => ({ ...prev, error: apiErrorMessage(err) }))
-      setReintentando(false)
-    }
-  }
+  }, [sessionId, token, sesion.token])
 
   const d = estado.datos
-  const pendiente = d && d.tipo === 'payment' && !['Pago aprobado', 'En revision'].includes(d.estado_cuota || '')
+  const esSetup = d?.tipo === 'setup'
+  const pendiente = d && d.estado_interno !== 'confirmado' && d.estado_interno !== 'expirado'
+  const monto = d?.importe ?? d?.monto ?? 0
+  const rutaConfirmacion = token
+    ? `/pagos/confirmacion?session_id=${encodeURIComponent(sessionId)}&token=${encodeURIComponent(token)}`
+    : `/pagos/confirmacion?session_id=${encodeURIComponent(sessionId)}`
 
   return (
-    <>
-      <CabeceraPagina titulo="Pago no completado">
-        La operación en Stripe Checkout fue cancelada o quedó inconclusa. No se registró ningún cobro en UNEXO.
+    <div className="mx-auto w-full max-w-[920px] px-4 py-6">
+      <CabeceraPagina titulo={esSetup ? 'Registro de tarjeta no completado' : 'Pago no completado'}>
+        {esSetup
+          ? 'El registro de tarjeta en Stripe Checkout fue cancelado o quedó inconcluso. No se ha realizado ningún cobro.'
+          : 'La operación en Stripe Checkout fue cancelada o quedó inconclusa. No se registró ningún cobro en UNEXO y tu orden continúa activa.'}
       </CabeceraPagina>
 
       <section className="hoja hoja-cuerpo grid gap-4">
@@ -56,11 +60,17 @@ export default function PPagoCancelado() {
             <div className="flex items-center gap-3">
               <XCircle size={24} className="text-tinta-suave" aria-hidden="true" />
               <div>
-                <h2>{d?.estado_interno === 'confirmado' ? 'El pago ya figuraba confirmado' : 'Pago no completado'}</h2>
+                <h2>
+                  {d?.estado_interno === 'confirmado'
+                    ? (esSetup ? 'La tarjeta ya figuraba registrada' : 'El pago ya figuraba confirmado')
+                    : (esSetup ? 'Registro de tarjeta no completado' : 'Pago no completado')}
+                </h2>
                 <p className="text-sm text-tinta-suave">
                   {d?.estado_interno === 'confirmado'
-                    ? 'Stripe confirmó esta transacción antes de regresar.'
-                    : 'Puede volver a la orden de pago e intentarlo nuevamente mientras la cuota siga pendiente.'}
+                    ? 'Stripe confirmó esta operación antes de regresar.'
+                    : d?.estado_interno === 'expirado'
+                      ? 'Esta sesión expiró. Solicita un nuevo enlace a tu asesor en UNEXO.'
+                      : 'No se ha realizado ningún cobro. Puedes continuar utilizando el mismo enlace mientras la sesión siga vigente.'}
                 </p>
               </div>
             </div>
@@ -69,25 +79,29 @@ export default function PPagoCancelado() {
 
             {d?.tipo === 'payment' && (
               <dl className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-4 rounded-ui border border-filete p-4">
-                <div><dt className="text-xs text-tinta-suave">Prospecto</dt><dd className="font-semibold">{d.prospecto || '—'}</dd></div>
-                <div><dt className="text-xs text-tinta-suave">Orden · cuota</dt><dd className="tabular-nums">#{d.nro_orden} · cuota {d.nro_cuota} de {d.total_cuotas}</dd></div>
-                <div><dt className="text-xs text-tinta-suave">Monto ({d.moneda || 'BOB'})</dt><dd className="tabular-nums">{bs(d.monto)}</dd></div>
+                <div><dt className="text-xs text-tinta-suave">Programa educativo</dt><dd className="font-semibold">{d.programa || '—'}</dd></div>
+                <div><dt className="text-xs text-tinta-suave">Cuota</dt><dd className="tabular-nums">{d.nro_cuota} de {d.total_cuotas}</dd></div>
+                <div><dt className="text-xs text-tinta-suave">Importe ({d.moneda || 'BOB'})</dt><dd className="tabular-nums">{bs(monto)}</dd></div>
                 <div><dt className="text-xs text-tinta-suave">Estado actual</dt><dd>{d.estado_cuota || d.estado_interno}</dd></div>
-                <div><dt className="text-xs text-tinta-suave">Saldo pendiente</dt><dd className="tabular-nums">{bs(d.saldo_pendiente)}</dd></div>
               </dl>
             )}
 
+            <p className="rounded-ui border border-filete bg-niebla-2 px-3 py-2 text-xs text-tinta-suave">
+              {d?.aviso_sandbox || 'Operación de demostración mediante Stripe Sandbox (moneda BOB, sin movimiento real de dinero).'}
+            </p>
+
             <div className="acciones justify-start flex-wrap">
-              <button type="button" className="btn btn-secundario" onClick={() => go(d?.nro_tarjeta ? `/agenda?interes=${d.nro_tarjeta}` : '/agenda')}>
-                Volver a la orden
-              </button>
-              {pendiente && (
-                <Boton cargando={reintentando} onClick={reintentarPago}>
-                  <RotateCcw size={16} /> Intentar nuevamente
-                </Boton>
+              {esVistaPublica
+                ? <button type="button" className="btn btn-secundario" onClick={() => go('/anuncios')}>Volver al sitio web</button>
+                : <button type="button" className="btn btn-secundario" onClick={() => go(d?.nro_tarjeta ? `/agenda?interes=${d.nro_tarjeta}` : '/agenda')}>Volver a la orden</button>}
+
+              {pendiente && d?.url_checkout && (
+                <button type="button" className="btn btn-primario" onClick={() => window.location.assign(d.url_checkout)}>
+                  <RotateCcw size={16} /> {esSetup ? 'Continuar registro en Stripe' : 'Continuar pago en Stripe'}
+                </button>
               )}
               {d?.estado_interno === 'confirmado' && sessionId && (
-                <button type="button" className="btn btn-primario" onClick={() => go(`/pagos/confirmacion?session_id=${encodeURIComponent(sessionId)}`)}>
+                <button type="button" className="btn btn-primario" onClick={() => go(rutaConfirmacion)}>
                   Ver confirmación
                 </button>
               )}
@@ -95,6 +109,6 @@ export default function PPagoCancelado() {
           </>
         )}
       </section>
-    </>
+    </div>
   )
 }

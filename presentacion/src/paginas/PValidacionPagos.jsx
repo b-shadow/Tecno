@@ -7,10 +7,17 @@ import * as pagosApi from '../api/pagos'
 const ESTADOS = ['En revision', 'Pendiente de pago', 'Pago aprobado', 'Pago rechazado']
 const TEXTO = { 'En revision': 'En revisión' }
 
+function origenDeCuota(c) {
+  if (c.proveedor === 'stripe' || c.stripe_pago_intent) return 'Stripe Sandbox'
+  if (c.comprobantes?.length > 0 || c.estado === 'En revision') return 'QR / Transferencia'
+  if (c.estado === 'Pago aprobado' || c.observacion?.includes('SIM-')) return 'Manual / histórico'
+  return 'Pendiente de cobro'
+}
+
 /** CU6: coordinación revisa los comprobantes manuales de cada cuota; los cobros por Stripe muestran su referencia verificada. */
 export default function PValidacionPagos() {
   const [estado, setEstado] = useState('En revision')
-  const { datos, cargando, error, recargar } = useDatos(async () => (await pagosApi.cuotas({ estado: estado || undefined })).data.cuotas, [estado])
+  const { datos, cargando, error, recargar } = useDatos(async () => (await pagosApi.cuotas({ estado: estado || undefined })).data.cuotas, [estado], { intervaloMs: 4000, refrescarAlEnfocar: true })
   const [revisar, setRevisar] = useState(null)
   const aviso = useAviso()
 
@@ -34,7 +41,7 @@ export default function PValidacionPagos() {
                   <td><a href="#" onClick={(e) => { e.preventDefault(); go(`/agenda?interes=${c.nro_tarjeta}`) }}><strong>{c.prospecto}</strong></a><br /><small>{c.modulo_nombre}</small></td>
                   <td className="tabular-nums">#{c.nro_orden} · {c.nro_cuota}</td>
                   <td className="num">{bs(c.monto)}</td>
-                  <td>{c.proveedor === 'stripe' ? 'Stripe Sandbox' : 'Manual / histórico'}</td>
+                  <td>{origenDeCuota(c)}</td>
                   <td className="tabular-nums">{fecha(c.fecha_vencimiento)}</td>
                   <td>{c.vendedor}</td>
                   <td><Etiqueta estado={c.estado}>{TEXTO[c.estado] || c.estado}</Etiqueta></td>
