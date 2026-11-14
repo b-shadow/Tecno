@@ -230,6 +230,22 @@ if (-not $SinStripe -and $StripeExe -and $envCfg['STRIPE_SECRET'] -and $envCfg['
     }
 }
 
+# 6c. Laravel Scheduler (recordatorios automáticos de cuotas pendientes)
+$SchedulerActivo = $false
+$yaScheduler = Get-CimInstance Win32_Process -Filter "Name = 'php.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -match 'schedule:work' }
+if ($yaScheduler) {
+    $SchedulerActivo = $true
+    Write-Host '[OK] Laravel Scheduler ya está ejecutando recordatorios programados' -ForegroundColor Green
+} else {
+    $schOut = Join-Path $LogsDir 'scheduler.out.log'
+    $schErr = Join-Path $LogsDir 'scheduler.err.log'
+    $schProc = Start-Process -FilePath 'php' -ArgumentList 'artisan schedule:work' -WorkingDirectory $NegocioDir -RedirectStandardOutput $schOut -RedirectStandardError $schErr -WindowStyle Hidden -PassThru
+    $pids['scheduler'] = $schProc.Id
+    $pids | ConvertTo-Json | Set-Content -Path $PidsArchivo -Encoding UTF8
+    $SchedulerActivo = $true
+    Write-Host "[OK] Laravel Scheduler iniciado (PID $($schProc.Id))" -ForegroundColor Green
+}
+
 # 7. Comprobar /api/salud y frontend
 $saludOk = $false
 for ($i = 0; $i -lt 20; $i++) {
@@ -261,5 +277,10 @@ if ($StripeActiva) {
     Write-Host '  Stripe CLI Webhook:      http://127.0.0.1:8001/api/stripe/webhook (activo)' -ForegroundColor Green
 } else {
     Write-Host '  Stripe CLI Webhook:      stripe listen --all-snapshot --forward-to http://127.0.0.1:8001/api/stripe/webhook' -ForegroundColor Yellow
+}
+if ($SchedulerActivo) {
+    Write-Host '  Laravel Scheduler:       activo (php artisan schedule:work)' -ForegroundColor Green
+} else {
+    Write-Host '  Laravel Scheduler:       php artisan schedule:work' -ForegroundColor Yellow
 }
 Write-Host '  Para detener los procesos iniciados por este script: .\detener-proyecto.ps1'
