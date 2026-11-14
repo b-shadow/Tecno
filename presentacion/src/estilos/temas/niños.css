@@ -1,0 +1,363 @@
+/*
+ * UNEXO — Tema NIÑOS (educativo infantil, pastel, alegre y redondeado).
+ * Incluye:
+ *   1. Variables de Modo Día (#FFF6E0, #DBF0FF, #FFD34D, #D9F3DF, #FCE1EC, #3678AC).
+ *   2. Variables de Modo Noche (#172554 cielo nocturno amigable).
+ *   3. Componentes y bordes redondeados infantiles.
+ *   4. Decoraciones en CSS puro (.sol, .rayo, .nube, .luna, .estrella).
+ */
+
+/* ---------- 1. Niños — Modo Día ---------- */
+:root[data-audiencia='niños'] {
+  --color-primario: #3678ac;
+  --color-secundario: #ffd34d;
+  --color-fondo: #fff6e0;
+  --color-superficie: #fffdf8;
+  --color-texto: #1a2b40;
+
+  /* Colores pastel decorativos */
+  --niños-cielo: #dbf0ff;
+  --niños-amarillo: #ffd34d;
+  --niños-verde: #d9f3df;
+  --niños-rosa: #fce1ec;
+  --niños-sol: #ffd34d;
+  --niños-nube: #ffffff;
+  --niños-luna: #fde68a;
+  --niños-estrella: #fde047;
+  --niños-estrella-tamano: 14px;
+
+  --navy: var(--color-primario);
+  --navy-700: #295f8a;
+  --navy-950: #1a3f5e;
+  --turquesa: var(--color-secundario);
+  --turquesa-700: #1e5f92;
+  --turquesa-100: var(--niños-cielo);
+
+  --papel: var(--color-superficie);
+  --niebla: var(--niños-cielo);
+  --niebla-2: var(--color-fondo);
+  --tinta: var(--color-texto);
+  --tinta-suave: #3e556e;
+  --filete: #c2dcf0;
+  --filete-fuerte: #7fb2d9;
+  --portada: #3678ac;
+  --portada-tinta: #ffffff;
+  --portada-suave: #e6f4ff;
+  --enlace: #215b8a;
+  --acento: var(--niños-amarillo);
+  --acento-texto: #1e5f92;
+  --acento-suave: var(--niños-cielo);
+  --sobre-acento: #2c2100;
+  --foco: #295f8a;
+
+  /* Header, pie y menú lateral con colores pastel suaves */
+  --header-bg: #dbf0ff;
+  --header-borde: #9ccdf0;
+  --footer-bg: #d9f3df;
+  --riel: #dbf0ff;
+  --riel-marca: #1a3653;
+  --riel-tinta: #1a3653;
+  --riel-suave: #3e6082;
+  --riel-borde: #b5d9f4;
+  --riel-hover: rgb(54 120 172 / 0.14);
+  --riel-activo: #ffd34d;
+  --riel-activo-tinta: #2c2100;
+
+  /* Estados semánticos pastel con alto contraste */
+  --exito: #146c43;
+  --exito-suave: #d9f3df;
+  --aviso: #8a5300;
+  --aviso-suave: #fff0bf;
+  --peligro: #b42318;
+  --peligro-suave: #fce1ec;
+
+  /* Embudo y catálogo (pastel intenso con texto blanco legible >= 4.5:1) */
+  --etapa-nuevo: #3678ac;
+  --etapa-contacto: #1e7b6d;
+  --etapa-seguimiento: #5c4d9c;
+  --etapa-promesa: #94540a;
+  --etapa-convertido: #146c43;
+  --etapa-perdido: #b42318;
+
+  --programa-1: #3678ac;
+  --programa-2: #1e7b6d;
+  --programa-3: #6c46a8;
+  --programa-4: #b53f69;
+  --programa-5: #9c5600;
+
+  /* Tipografía infantil redondeada y amigable */
+  --fuente-titulo: 'Fredoka Variable', 'Fredoka', 'Nunito Variable', sans-serif;
+  --fuente-ui: 'Nunito Variable', 'Nunito', 'Segoe UI', sans-serif;
+  --titulo-peso: 650;
+  --radio: 18px;
+  --radio-grande: 26px;
+  --densidad: 1.15;
+  --escala: 1.05;
+  --acento-2: #fce1ec;
+  --acento-2-texto: #8a2c52;
+  --sombra: 0 6px 18px -6px rgb(54 120 172 / 0.16);
+  --sombra-capa: 0 12px 32px -10px rgb(54 120 172 / 0.24);
+  color-scheme: light;
+}
+
+/* ---------- 2. Niños — Modo Noche (cielo nocturno infantil) ---------- */
+:root[data-audiencia='niños'][data-theme='dark'] {
+  --color-primario: #fde047;
+  --color-secundario: #7dd3fc;
+  --color-fondo: #172554;
+  --color-superficie: #1e2f6b;
+  --color-texto: #f8fafc;
+
+  --navy: #2563eb;
+  --navy-700: #1d4ed8;
+  --navy-950: #111c44;
+  --papel: var(--color-superficie);
+  --niebla: #253a82;
+  --niebla-2: var(--color-fondo);
+  --tinta: var(--color-texto);
+  --tinta-suave: #cbd5e1;
+  --filete: #354e9e;
+  --filete-fuerte: #5673c9;
+  --portada: #243b84;
+  --portada-tinta: #ffffff;
+  --portada-suave: #dbeafe;
+  --enlace: #93c5fd;
+  --acento: #fde047;
+  --acento-texto: #7dd3fc;
+  --acento-suave: #253a82;
+  --sobre-acento: #172554;
+  --foco: #fde047;
+
+  --header-bg: #1b2c65;
+  --header-borde: #354e9e;
+  --footer-bg: #1b2c65;
+  --riel: #111c44;
+  --riel-marca: #fde68a;
+  --riel-tinta: #e2e8f0;
+  --riel-suave: #93c5fd;
+  --riel-borde: #2b428a;
+  --riel-hover: rgb(125 211 252 / 0.16);
+  --riel-activo: #fde047;
+  --riel-activo-tinta: #172554;
+
+  --exito: #86efac;
+  --exito-suave: #164434;
+  --aviso: #fde68a;
+  --aviso-suave: #423315;
+  --peligro: #fda4af;
+  --peligro-suave: #4a1e30;
+
+  --etapa-nuevo: #7dd3fc;
+  --etapa-contacto: #86efac;
+  --etapa-seguimiento: #ddd6fe;
+  --etapa-promesa: #fde68a;
+  --etapa-convertido: #6ee7b7;
+  --etapa-perdido: #fda4af;
+
+  --programa-1: #7dd3fc;
+  --programa-2: #fde68a;
+  --programa-3: #86efac;
+  --programa-4: #ddd6fe;
+  --programa-5: #fbcfe8;
+  --acento-2-texto: #fbcfe8;
+  --sombra: 0 8px 22px -8px rgb(8 14 40 / 0.55);
+  --sombra-capa: 0 16px 36px -10px rgb(8 14 40 / 0.72);
+  color-scheme: dark;
+}
+
+/* ---------- 3. Estilo visual infantil en botones, tarjetas y tablas ---------- */
+:root[data-audiencia='niños'] .hoja,
+:root[data-audiencia='niños'] .tabla-marco,
+:root[data-audiencia='niños'] .cifras {
+  border-width: 2px;
+  border-radius: var(--radio-grande);
+  box-shadow: var(--sombra);
+}
+
+:root[data-audiencia='niños'] .btn {
+  min-height: 46px;
+  border-radius: 999px;
+  padding-inline: 1.35rem;
+  font-weight: 700;
+}
+
+:root[data-audiencia='niños'] .btn-icono {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.55rem;
+}
+
+:root[data-audiencia='niños'][data-theme='light'] .tabla th {
+  background-color: var(--niños-cielo);
+  color: #1a3653;
+}
+
+:root[data-audiencia='niños'] .app-encabezado {
+  border-bottom-width: 2px;
+}
+
+:root[data-audiencia='niños'][data-theme='light'] .app-encabezado {
+  background-color: var(--header-bg);
+}
+
+:root[data-audiencia='niños'] .app-pie {
+  background-color: var(--footer-bg);
+}
+
+:root[data-audiencia='niños'][data-theme='light'] .app-marca {
+  color: #1a3653;
+}
+
+:root[data-audiencia='niños'][data-theme='light'] .app-riel .text-turquesa {
+  color: var(--color-primario);
+}
+
+/* ---------- 4. Decoración infantil en CSS puro (solo catálogo público) ---------- */
+:root[data-audiencia='niños'][data-theme='light'] .sol,
+:root[data-audiencia='niños'][data-theme='light'] .nube,
+:root[data-audiencia='niños'][data-theme='light'] .forma-pastel {
+  display: block;
+}
+
+:root[data-audiencia='niños'][data-theme='dark'] .luna,
+:root[data-audiencia='niños'][data-theme='dark'] .estrella {
+  display: block;
+}
+
+/* Sol amarillo con rayos sencillos */
+.sol {
+  display: none;
+  position: absolute;
+  top: 24px;
+  right: 44px;
+  width: 68px;
+  height: 68px;
+  background-color: var(--niños-sol, #ffd34d);
+  border-radius: 50%;
+  box-shadow: 0 0 24px rgb(255 211 77 / 0.55);
+}
+
+.rayo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 96px;
+  height: 6px;
+  border-radius: 999px;
+  background-color: inherit;
+  opacity: 0.85;
+}
+
+.rayo-1 { transform: translate(-50%, -50%) rotate(0deg); }
+.rayo-2 { transform: translate(-50%, -50%) rotate(45deg); }
+.rayo-3 { transform: translate(-50%, -50%) rotate(90deg); }
+.rayo-4 { transform: translate(-50%, -50%) rotate(135deg); }
+
+/* Nubes blancas creadas con un rectángulo redondeado y dos pseudoelementos */
+.nube {
+  display: none;
+  position: absolute;
+  width: 112px;
+  height: 34px;
+  border-radius: 999px;
+  background-color: var(--niños-nube, #ffffff);
+  box-shadow: 0 6px 14px rgb(54 120 172 / 0.14);
+}
+
+.nube::before,
+.nube::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background-color: inherit;
+}
+
+.nube::before {
+  width: 48px;
+  height: 48px;
+  top: -22px;
+  left: 16px;
+}
+
+.nube::after {
+  width: 60px;
+  height: 60px;
+  top: -28px;
+  right: 16px;
+}
+
+.nube-1 { top: 44px; right: 175px; }
+.nube-2 { top: 28px; left: 32%; opacity: 0.9; transform: scale(0.84); }
+
+/* Formas pastel decorativas suaves en bordes laterales */
+.forma-pastel {
+  display: none;
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.7;
+}
+
+.forma-pastel-1 {
+  bottom: 90px;
+  left: -45px;
+  width: 150px;
+  height: 150px;
+  background-color: var(--niños-rosa, #fce1ec);
+}
+
+.forma-pastel-2 {
+  bottom: 120px;
+  right: -40px;
+  width: 130px;
+  height: 130px;
+  background-color: var(--niños-verde, #d9f3df);
+}
+
+/* Luna creciente infantil para modo noche */
+.luna {
+  display: none;
+  position: absolute;
+  top: 22px;
+  right: 48px;
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  color: var(--niños-luna, #fde68a);
+  box-shadow: -14px 8px 0 0 currentColor;
+}
+
+/* Estrellas en CSS puro (dos cuadrados superpuestos rotados) */
+.estrella {
+  display: none;
+  position: absolute;
+  width: var(--niños-estrella-tamano, 14px);
+  height: var(--niños-estrella-tamano, 14px);
+  background-color: var(--niños-estrella, #fde047);
+  border-radius: 3px;
+  transform: rotate(45deg);
+}
+
+.estrella::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 3px;
+  background-color: inherit;
+  transform: rotate(45deg);
+}
+
+.estrella-1 { top: 26px; right: 170px; }
+.estrella-2 { top: 72px; right: 245px; width: 10px; height: 10px; opacity: 0.85; }
+.estrella-3 { top: 24px; left: 42%; width: 12px; height: 12px; opacity: 0.9; }
+.estrella-4 { top: 68px; left: 28%; width: 9px; height: 9px; opacity: 0.75; }
+.estrella-5 { bottom: 130px; left: 26px; width: 12px; height: 12px; opacity: 0.65; }
+
+/* En pantallas pequeñas se reserva espacio superior para el sol/nube y no cubrir los títulos */
+@media (max-width: 720px) {
+  :root[data-audiencia='niños'] [data-zona='oferta'] header { padding-top: 46px; }
+  .sol { top: 6px; right: 14px; width: 42px; height: 42px; }
+  .rayo { width: 60px; height: 4px; }
+  .luna { top: 6px; right: 16px; width: 42px; height: 42px; }
+  .nube-1 { top: 12px; right: 88px; transform: scale(0.62); }
+  .nube-2, .estrella-4 { display: none !important; }
+}

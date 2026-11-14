@@ -1,0 +1,288 @@
+/*
+ * UNEXO — Tema JÓVENES (tecnológico, moderno, violeta, degradados y geometría CSS).
+ * Incluye:
+ *   1. Variables de Modo Día (#F1EDFF, #7C3AED, #5427A5, #DDD6FE, #EC4899).
+ *   2. Variables de Modo Noche (#180F2C, #8B5CF6, #22D3EE, #F472B6).
+ *   3. Estilo moderno de tarjetas, botones, tablas y encabezados.
+ *   4. Decoraciones geométricas CSS (.geo-circulo, .geo-triangulo, .geo-rombo, .geo-lineas).
+ */
+
+/* ---------- 1. Jóvenes — Modo Día ---------- */
+:root[data-audiencia='jovenes'] {
+  --color-primario: #7c3aed;
+  --color-secundario: #ec4899;
+  --color-fondo: #f1edff;
+  --color-superficie: #ffffff;
+  --color-texto: #1e1338;
+
+  /* Degradados y acentos fáciles de modificar */
+  --jovenes-violeta: #7c3aed;
+  --jovenes-violeta-oscuro: #5427a5;
+  --jovenes-violeta-suave: #ddd6fe;
+  --jovenes-rosa: #ec4899;
+  --jovenes-gradiente-fondo: linear-gradient(135deg, #f1edff 0%, #ebe5ff 55%, #fce7f3 100%);
+  --jovenes-gradiente-btn: linear-gradient(135deg, #7c3aed 0%, #5427a5 100%);
+  --jovenes-gradiente-acento: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+
+  --navy: var(--color-primario);
+  --navy-700: var(--jovenes-violeta-oscuro);
+  --navy-950: #2b1759;
+  --turquesa: var(--jovenes-rosa);
+  --turquesa-700: #6d28d9;
+  --turquesa-100: var(--jovenes-violeta-suave);
+
+  --papel: var(--color-superficie);
+  --niebla: #e6dffe;
+  --niebla-2: var(--color-fondo);
+  --tinta: var(--color-texto);
+  --tinta-suave: #4c3f6e;
+  --filete: #d4cbfa;
+  --filete-fuerte: #a78bfa;
+  --portada: #4c1d95;
+  --portada-tinta: #ffffff;
+  --portada-suave: #ddd6fe;
+  --enlace: #6d28d9;
+  --acento: #db2777;
+  --acento-texto: #6d28d9;
+  --acento-suave: var(--jovenes-violeta-suave);
+  --sobre-acento: #ffffff;
+  --foco: #7c3aed;
+
+  --header-bg: #faf8ff;
+  --header-borde: #c4b5fd;
+  --footer-bg: #faf8ff;
+  --riel: #2b1759;
+  --riel-marca: #ffffff;
+  --riel-tinta: #ede9fe;
+  --riel-suave: #c4b5fd;
+  --riel-borde: rgb(255 255 255 / 0.14);
+  --riel-hover: rgb(167 139 250 / 0.22);
+  --riel-activo: #f472b6;
+  --riel-activo-tinta: #1e1338;
+
+  /* Estados semánticos */
+  --exito: #047857;
+  --exito-suave: #d1fae5;
+  --aviso: #9a4706;
+  --aviso-suave: #fef3c7;
+  --peligro: #be123c;
+  --peligro-suave: #ffe4e6;
+
+  /* Embudo y catálogo tecnológicos */
+  --etapa-nuevo: #7c3aed;
+  --etapa-contacto: #0e7490;
+  --etapa-seguimiento: #4338ca;
+  --etapa-promesa: #b45309;
+  --etapa-convertido: #047857;
+  --etapa-perdido: #be123c;
+
+  --programa-1: #7c3aed;
+  --programa-2: #0e7490;
+  --programa-3: #be185d;
+  --programa-4: #4338ca;
+  --programa-5: #047857;
+
+  /* Tipografía moderna geométrica */
+  --fuente-titulo: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', 'Public Sans Variable', sans-serif;
+  --fuente-ui: 'Public Sans Variable', 'Public Sans', system-ui, sans-serif;
+  --titulo-peso: 760;
+  --radio: 12px;
+  --radio-grande: 18px;
+  --densidad: 1;
+  --escala: 1;
+  --acento-2: #ec4899;
+  --acento-2-texto: #be185d;
+  --sombra: 0 4px 16px -6px rgb(124 58 237 / 0.16), 0 1px 3px rgb(30 19 56 / 0.06);
+  --sombra-capa: 0 14px 36px -12px rgb(84 39 165 / 0.28);
+  color-scheme: light;
+}
+
+/* ---------- 2. Jóvenes — Modo Noche ---------- */
+:root[data-audiencia='jovenes'][data-theme='dark'] {
+  --color-primario: #8b5cf6;
+  --color-secundario: #22d3ee;
+  --color-fondo: #180f2c;
+  --color-superficie: #22163d;
+  --color-texto: #f5f3ff;
+
+  --jovenes-gradiente-fondo: linear-gradient(135deg, #180f2c 0%, #221442 60%, #2d163c 100%);
+  --jovenes-gradiente-btn: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  --jovenes-gradiente-acento: linear-gradient(135deg, #22d3ee 0%, #8b5cf6 100%);
+
+  --navy: #7c3aed;
+  --navy-700: #6d28d9;
+  --navy-950: #110924;
+  --papel: var(--color-superficie);
+  --niebla: #2d1e52;
+  --niebla-2: var(--color-fondo);
+  --tinta: var(--color-texto);
+  --tinta-suave: #c4b5fd;
+  --filete: #3e2b6b;
+  --filete-fuerte: #6447a6;
+  --portada: #2d1959;
+  --portada-tinta: #ffffff;
+  --portada-suave: #ddd6fe;
+  --enlace: #22d3ee;
+  --acento: #22d3ee;
+  --acento-texto: #22d3ee;
+  --acento-suave: #2d1e52;
+  --sobre-acento: #180f2c;
+  --foco: #22d3ee;
+
+  --header-bg: #1e1237;
+  --header-borde: #3e2b6b;
+  --footer-bg: #1e1237;
+  --riel: #110924;
+  --riel-marca: #ffffff;
+  --riel-tinta: #ede9fe;
+  --riel-suave: #a78bfa;
+  --riel-borde: rgb(139 92 246 / 0.25);
+  --riel-hover: rgb(34 211 238 / 0.16);
+  --riel-activo: #22d3ee;
+  --riel-activo-tinta: #110924;
+
+  --exito: #34d399;
+  --exito-suave: #12382c;
+  --aviso: #fbbf24;
+  --aviso-suave: #3c2912;
+  --peligro: #fb7185;
+  --peligro-suave: #451a2a;
+
+  --etapa-nuevo: #a78bfa;
+  --etapa-contacto: #22d3ee;
+  --etapa-seguimiento: #818cf8;
+  --etapa-promesa: #fbbf24;
+  --etapa-convertido: #34d399;
+  --etapa-perdido: #fb7185;
+
+  --programa-1: #a78bfa;
+  --programa-2: #22d3ee;
+  --programa-3: #f472b6;
+  --programa-4: #818cf8;
+  --programa-5: #34d399;
+  --acento-2: #f472b6;
+  --acento-2-texto: #f472b6;
+  --sombra: 0 6px 20px -6px rgb(0 0 0 / 0.55);
+  --sombra-capa: 0 16px 38px -10px rgb(0 0 0 / 0.72);
+  color-scheme: dark;
+}
+
+/* ---------- 3. Estilo moderno y degradados de Jóvenes ---------- */
+:root[data-audiencia='jovenes'] body {
+  background-color: var(--color-fondo);
+  background-image: var(--jovenes-gradiente-fondo);
+}
+
+:root[data-audiencia='jovenes'] .hoja,
+:root[data-audiencia='jovenes'] .tabla-marco,
+:root[data-audiencia='jovenes'] .cifras {
+  box-shadow: var(--sombra);
+}
+
+:root[data-audiencia='jovenes'] .btn-primario {
+  background-color: #6d28d9;
+  background-image: var(--jovenes-gradiente-btn);
+  color: #ffffff;
+}
+
+:root[data-audiencia='jovenes'] .btn-acento {
+  background-image: var(--jovenes-gradiente-acento);
+}
+
+:root[data-audiencia='jovenes'] .app-encabezado {
+  border-bottom-width: 2px;
+  border-bottom-color: var(--header-borde);
+}
+
+:root[data-audiencia='jovenes'][data-theme='light'] .tabla th {
+  background-color: #ece6ff;
+  color: #4c3f6e;
+}
+
+/* ---------- 4. Decoraciones geométricas CSS (solo catálogo público) ---------- */
+:root[data-audiencia='jovenes'] .geo-circulo,
+:root[data-audiencia='jovenes'] .geo-triangulo,
+:root[data-audiencia='jovenes'] .geo-rombo,
+:root[data-audiencia='jovenes'] .geo-lineas {
+  display: block;
+}
+
+.geo-circulo {
+  display: none;
+  position: absolute;
+  border-radius: 50%;
+}
+
+.geo-circulo-1 {
+  top: -36px;
+  right: 40px;
+  width: 140px;
+  height: 140px;
+  background: linear-gradient(135deg, rgb(124 58 237 / 0.2), rgb(236 72 153 / 0.16));
+}
+
+.geo-circulo-2 {
+  bottom: 90px;
+  left: -30px;
+  width: 110px;
+  height: 110px;
+  background: linear-gradient(135deg, rgb(34 211 238 / 0.2), rgb(124 58 237 / 0.14));
+}
+
+.geo-triangulo {
+  display: none;
+  position: absolute;
+  top: 28px;
+  right: 210px;
+  width: 0;
+  height: 0;
+  border-left: 24px solid transparent;
+  border-right: 24px solid transparent;
+  border-bottom: 42px solid rgb(236 72 153 / 0.24);
+  transform: rotate(12deg);
+}
+
+.geo-rombo {
+  display: none;
+  position: absolute;
+  top: 66px;
+  left: 36%;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #7c3aed, #ec4899);
+  opacity: 0.22;
+  transform: rotate(45deg);
+}
+
+.geo-lineas {
+  display: none;
+  position: absolute;
+  bottom: 84px;
+  right: 24px;
+  width: 120px;
+  height: 64px;
+  opacity: 0.22;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-primario) 0,
+    var(--color-primario) 3px,
+    transparent 3px,
+    transparent 12px
+  );
+  border-radius: 8px;
+}
+
+:root[data-audiencia='jovenes'][data-theme='dark'] .geo-triangulo {
+  border-bottom-color: rgb(34 211 238 / 0.24);
+}
+
+:root[data-audiencia='jovenes'][data-theme='dark'] .geo-rombo {
+  background: linear-gradient(135deg, #22d3ee, #f472b6);
+  opacity: 0.28;
+}
+
+@media (max-width: 720px) {
+  .geo-circulo-1 { top: -40px; right: -20px; width: 95px; height: 95px; }
+  .geo-triangulo, .geo-lineas { display: none !important; }
+}

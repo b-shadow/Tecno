@@ -1,0 +1,128 @@
+/*
+ * UNEXO — Tema ADULTOS (corporativo institucional).
+ * Mantiene el diseño sobrio y profesional original del sistema.
+ * Incluye modos Día (#F4F7F9 / #083456) y Noche (#0B1F33 / #2CCFD5).
+ */
+
+/* ---------- 1. Adultos — Modo Día ---------- */
+:root,
+:root[data-audiencia='adultos'] {
+  --color-primario: #083456;
+  --color-secundario: #10aeb5;
+  --color-fondo: #f4f7f9;
+  --color-superficie: #ffffff;
+  --color-texto: #1d2733;
+
+  --navy: var(--color-primario);
+  --navy-700: #0b4268;
+  --navy-950: #041d31;
+  --turquesa: var(--color-secundario);
+  --turquesa-700: #0a7c82;
+  --turquesa-100: #dcf4f4;
+
+  --papel: var(--color-superficie);
+  --niebla: #e9eef2;
+  --niebla-2: var(--color-fondo);
+  --tinta: var(--color-texto);
+  --tinta-suave: #4e5d6b;
+  --filete: #cfd9e0;
+  --filete-fuerte: #9fb1bf;
+  --portada: var(--navy);
+  --portada-tinta: #ffffff;
+  --portada-suave: #c7d6e3;
+  --enlace: var(--navy-700);
+  --acento: var(--turquesa);
+  --acento-texto: var(--turquesa-700);
+  --acento-suave: var(--turquesa-100);
+  --sobre-acento: var(--navy-950);
+  --foco: #0a7c82;
+
+  --header-bg: #ffffff;
+  --header-borde: #cfd9e0;
+  --footer-bg: #ffffff;
+  --riel: #041d31;
+  --riel-marca: #ffffff;
+  --riel-tinta: #dbe7f0;
+  --riel-suave: #8fa9bd;
+  --riel-borde: rgb(255 255 255 / 0.1);
+  --riel-hover: rgb(255 255 255 / 0.08);
+  --riel-activo: #10aeb5;
+  --riel-activo-tinta: #041d31;
+
+  --fuente-titulo: 'Source Serif 4 Variable', 'Source Serif 4', Georgia, serif;
+  --fuente-ui: 'Public Sans Variable', 'Public Sans', 'Segoe UI', system-ui, sans-serif;
+  --titulo-peso: 650;
+  --radio: 4px;
+  --radio-grande: 6px;
+  --densidad: 1;
+  --escala: 1;
+  --sombra: 0 1px 2px rgb(4 29 49 / 0.06), 0 8px 24px -12px rgb(4 29 49 / 0.18);
+  color-scheme: light;
+}
+
+/* ---------- 2. Adultos — Modo Noche ---------- */
+:root[data-theme='dark'],
+:root[data-audiencia='adultos'][data-theme='dark'] {
+  --color-fondo: #0d2439;
+  --color-superficie: #0b1f33;
+  --color-texto: #e6eef4;
+
+  --papel: var(--color-superficie);
+  --niebla: #102a42;
+  --niebla-2: var(--color-fondo);
+  --tinta: var(--color-texto);
+  --tinta-suave: #a9bccb;
+  --filete: #24425c;
+  --filete-fuerte: #3a5d7a;
+  --portada: #0f3a5f;
+  --portada-tinta: #ffffff;
+  --portada-suave: #b9cde0;
+  --enlace: #9fd0ff;
+  --acento: #2ccfd5;
+  --acento-texto: #5fe0e4;
+  --acento-suave: #0f3b45;
+  --sobre-acento: #04202a;
+  --foco: #5fe0e4;
+
+  --header-bg: #0b1f33;
+  --header-borde: #24425c;
+  --footer-bg: #0b1f33;
+  --riel: #041d31;
+  --riel-marca: #ffffff;
+  --riel-tinta: #dbe7f0;
+  --riel-suave: #8fa9bd;
+  --riel-borde: rgb(255 255 255 / 0.1);
+  --riel-hover: rgb(255 255 255 / 0.08);
+  --riel-activo: #2ccfd5;
+  --riel-activo-tinta: #04202a;
+
+  --exito: #6fd39b;
+  --exito-suave: #123827;
+  --aviso: #f3b762;
+  --aviso-suave: #3a2a10;
+  --peligro: #ff8a80;
+  --peligro-suave: #401c1a;
+
+  --etapa-nuevo: #9fb3c5;
+  --etapa-contacto: #5fe0e4;
+  --etapa-seguimiento: #8db8f2;
+  --etapa-promesa: #f3b762;
+  --etapa-convertido: #6fd39b;
+  --etapa-perdido: #ff8a80;
+
+  --programa-1: #9fd0ff;
+  --programa-2: #5fe0e4;
+  --programa-3: #8db8f2;
+  --programa-4: #b8b2f5;
+  --programa-5: #8fd3c8;
+  --acento-2-texto: var(--acento-texto);
+  --sombra: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+  --sombra-capa: 0 2px 6px rgb(0 0 0 / 0.35), 0 24px 48px -16px rgb(0 0 0 / 0.7);
+  color-scheme: dark;
+}
+
+/* Catálogo y login del público adulto: títulos en grotesca firme */
+:root:not([data-audiencia='jovenes']):not([data-audiencia='niños']) [data-zona='oferta'] {
+  --fuente-titulo: var(--fuente-ui);
+  --titulo-peso: 800;
+}
