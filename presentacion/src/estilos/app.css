@@ -7,6 +7,10 @@
  */
 @import 'tailwindcss';
 @import './tokens.css';
+@import './temas/adultos.css';
+@import './temas/jovenes.css';
+@import './temas/niños.css';
+@import './pagos.css';
 
 /* ---------- Variantes de los ejes de tema (atributos en <html>, ver servicios/theme.js) ---------- */
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
@@ -46,10 +50,18 @@
   --color-peligro: var(--peligro);
   --color-peligro-suave: var(--peligro-suave);
   --color-etapa-seguimiento: var(--etapa-seguimiento);
-  /* Riel de navegación (siempre oscuro) */
-  --color-riel: var(--navy-950);
-  --color-riel-tinta: #dbe7f0;
-  --color-riel-suave: #8fa9bd;
+  /* Encabezado, pie y riel adaptables a cada tema */
+  --color-header-bg: var(--header-bg);
+  --color-header-borde: var(--header-borde);
+  --color-footer-bg: var(--footer-bg);
+  --color-riel: var(--riel);
+  --color-riel-marca: var(--riel-marca);
+  --color-riel-tinta: var(--riel-tinta);
+  --color-riel-suave: var(--riel-suave);
+  --color-riel-borde: var(--riel-borde);
+  --color-riel-hover: var(--riel-hover);
+  --color-riel-activo: var(--riel-activo);
+  --color-riel-activo-tinta: var(--riel-activo-tinta);
   /* Color de serie: etapa del embudo o área del catálogo, fijado por la clase de tono del elemento */
   --color-c: var(--c);
 
@@ -201,16 +213,46 @@
   .tabla .num { @apply text-right tabular-nums; }
 
   /* Índice de cifras (fila de valores sin tarjetas) */
-  .cifras { @apply grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] overflow-hidden rounded-hoja border border-filete bg-papel; }
-  .cifras > div { @apply border-r border-filete px-6 py-4 last:border-r-0 max-movil:border-r-0 max-movil:border-b; }
+  .cifras { @apply grid grid-cols-[repeat(auto-fit,minmax(175px,1fr))] overflow-hidden rounded-hoja border border-filete bg-papel; }
+  .cifras > div { @apply min-w-0 border-r border-filete px-5 py-4 last:border-r-0 max-movil:border-r-0 max-movil:border-b; }
   .cifras dt { @apply text-sm text-tinta-suave; }
-  .cifras dd { @apply mt-1 font-titulo text-[clamp(1.6rem,1.1rem+1vw,2.375rem)] leading-none font-(--titulo-peso) whitespace-nowrap tabular-nums; }
+  .cifras dd { @apply mt-1 font-titulo text-[clamp(1.35rem,1rem+0.7vw,1.95rem)] leading-none font-(--titulo-peso) tabular-nums; }
   .cifras dd small { @apply font-ui text-sm font-medium text-tinta-suave; }
 
   /* Selectores: pestañas y segmentos */
   .pestanas { @apply flex gap-0.5 overflow-x-auto border-b border-filete; }
   .pestanas button { @apply -mb-px border-b-3 border-transparent px-4 py-2.5 font-[650] whitespace-nowrap text-tinta-suave aria-selected:border-acento aria-selected:text-tinta; }
-  .segmentos { @apply inline-flex overflow-hidden rounded-ui border border-filete-fuerte; }
-  .segmentos button { @apply bg-papel px-3 py-2 text-sm font-[650] not-first:border-l not-first:border-filete-fuerte
-      aria-pressed:bg-navy aria-pressed:text-white dark:aria-pressed:bg-acento dark:aria-pressed:text-sobre-acento; }
+  .segmentos {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    border-radius: var(--radio);
+    border: 1px solid var(--filete-fuerte);
+  }
+  .segmentos button {
+    min-width: 0;
+    box-sizing: border-box;
+    background-color: var(--papel);
+    padding: 0.5rem 0.45rem;
+    font-size: 0.875rem;
+    font-weight: 650;
+    line-height: 1.2;
+    text-align: center;
+  }
+  .segmentos button + button {
+    border-left: 1px solid var(--filete-fuerte);
+  }
+  .segmentos button[aria-pressed='true'] {
+    background-color: var(--navy);
+    color: #ffffff;
+  }
+  :root[data-theme='dark'] .segmentos button[aria-pressed='true'] {
+    background-color: var(--acento);
+    color: var(--sobre-acento);
+  }
+
+  /* Contenedor de decoraciones en el catálogo público (nunca bloquea clics ni oculta texto) */
+  .decoracion-tema { @apply pointer-events-none absolute inset-0 z-0 overflow-hidden; }
 }
