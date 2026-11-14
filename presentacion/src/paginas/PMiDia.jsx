@@ -16,13 +16,13 @@ export default function PMiDia() {
   const [dia, setDia] = useState(clave(new Date()))
   const [completar, setCompletar] = useState(null)
   const aviso = useAviso()
-  const stats = useDatos(async () => (await reportesApi.estadisticasVendedor()).data.estadisticas)
+  const stats = useDatos(async () => (await reportesApi.estadisticasVendedor()).data.estadisticas, [], { intervaloMs: 5000, refrescarAlEnfocar: true })
   const celdas = useMemo(() => {
     const inicio = new Date(mes)
     inicio.setDate(1 - ((mes.getDay() + 6) % 7))
     return Array.from({ length: 42 }, (_, i) => new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + i))
   }, [mes])
-  const agenda = useDatos(async () => (await seguimientoApi.recordatorios({ desde: clave(celdas[0]), hasta: clave(celdas[41]) })).data.recordatorios, [celdas])
+  const agenda = useDatos(async () => (await seguimientoApi.recordatorios({ desde: clave(celdas[0]), hasta: clave(celdas[41]) })).data.recordatorios, [celdas], { intervaloMs: 5000, refrescarAlEnfocar: true })
   const porDia = useMemo(() => (agenda.datos || []).reduce((g, r) => {
     const k = clave(new Date(r.fecha_programada))
     return { ...g, [k]: [...(g[k] || []), r] }

@@ -10,7 +10,7 @@ import * as authApi from '../api/auth'
 import * as sitioApi from '../api/sitio'
 
 const LEYENDA = 'mb-1.5 text-sm font-bold'
-const SEGMENTOS = 'segmentos flex *:flex-1'
+const SEGMENTOS = 'segmentos'
 const OPCION = 'flex items-center gap-2.5 rounded-ui px-3 py-2.5 text-left hover:bg-niebla'
 
 /** Búsqueda global predictiva (enunciado 9): sin sesión busca en la oferta; con sesión, también datos del negocio. */
@@ -126,23 +126,24 @@ export function Apariencia() {
         <Palette size={20} />
       </button>
       {abierto && (
-        <div className="absolute top-[calc(100%+8px)] right-0 z-45 grid w-[min(340px,calc(100vw-24px))] gap-4 rounded-hoja border border-filete bg-papel p-6 shadow-capa max-movil:fixed max-movil:top-16 max-movil:right-3 max-movil:left-3 max-movil:max-h-[calc(100dvh-76px)] max-movil:w-auto max-movil:overflow-y-auto" role="dialog" aria-label="Apariencia y accesibilidad">
+        <div className="box-border absolute top-[calc(100%+8px)] right-0 z-45 grid w-[min(372px,calc(100vw-24px))] gap-4 rounded-hoja border border-filete bg-papel p-5 shadow-capa max-movil:fixed max-movil:top-16 max-movil:right-3 max-movil:left-3 max-movil:max-h-[calc(100dvh-76px)] max-movil:w-auto max-movil:overflow-y-auto" role="dialog" aria-label="Apariencia y accesibilidad">
           <h3 className="text-lg">Apariencia</h3>
-          <fieldset>
+          <fieldset className="min-w-0">
             <legend className={LEYENDA}>Tema según el público</legend>
-            <div className={SEGMENTOS}>{seg('audiencia', 'ninos', 'Niños')}{seg('audiencia', 'jovenes', 'Jóvenes')}{seg('audiencia', 'adultos', 'Adultos')}</div>
+            <div className={SEGMENTOS}>{seg('audiencia', 'niños', 'Niños')}{seg('audiencia', 'jovenes', 'Jóvenes')}{seg('audiencia', 'adultos', 'Adultos')}</div>
           </fieldset>
-          <fieldset>
+          <fieldset className="min-w-0">
             <legend className={LEYENDA}>Día o noche</legend>
             <div className={SEGMENTOS}>{seg('modo', 'auto', 'Según la hora')}{seg('modo', 'light', 'Día')}{seg('modo', 'dark', 'Noche')}</div>
-            <small className="text-tinta-suave">Automático: día de 07:00 a 19:00 en su reloj.</small>
+            <small className="text-tinta-suave">Automático: día de 07:00 a 19:00 (hora Bolivia).</small>
           </fieldset>
-          <fieldset>
+          <fieldset className="min-w-0">
             <legend id="letra-leyenda" className={LEYENDA}>Tamaño de letra</legend>
-            <div className="flex items-center gap-2">
-              <button type="button" className="btn btn-secundario btn-icono" aria-label="Letra más pequeña" disabled={ap.letra <= -1} onClick={() => cambiar({ letra: ap.letra - 1 })}>A−</button>
-              <input type="range" className="flex-1 accent-navy dark:accent-acento" min={-1} max={3} step={1} value={ap.letra} aria-labelledby="letra-leyenda" onChange={(e) => cambiar({ letra: Number(e.target.value) })} />
-              <button type="button" className="btn btn-secundario btn-icono" aria-label="Letra más grande" disabled={ap.letra>= 3} onClick={() => cambiar({ letra: ap.letra + 1 })}>A+</button>
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <button type="button" className="btn btn-secundario btn-icono shrink-0" aria-label="Letra más pequeña" disabled={ap.letra <= -1} onClick={() => cambiar({ letra: ap.letra - 1 })}>A−</button>
+              <input type="range" className="min-w-[84px] flex-1 accent-navy dark:accent-acento" min={-1} max={3} step={1} value={ap.letra} aria-labelledby="letra-leyenda" onChange={(e) => cambiar({ letra: Number(e.target.value) })} />
+              <button type="button" className="btn btn-secundario btn-icono shrink-0" aria-label="Letra más grande" disabled={ap.letra>= 3} onClick={() => cambiar({ letra: ap.letra + 1 })}>A+</button>
+              <button type="button" className="btn btn-texto shrink-0 px-2" aria-label="Restablecer tamaño de letra" title="Restablecer tamaño de letra" disabled={ap.letra === 0} onClick={() => cambiar({ letra: 0 })}>Normal</button>
             </div>
           </fieldset>
           <label className="check"><input type="checkbox" checked={ap.contraste === 'alto'} onChange={(e) => cambiar({ contraste: e.target.checked ? 'alto' : 'normal' })} /><Contrast size={16} aria-hidden="true" /> Alto contraste</label>
@@ -263,7 +264,7 @@ export function Pie() {
     return () => { vivo = false }
   }, [path])
   return (
-    <footer className="flex items-center justify-between gap-4 border-t border-filete bg-papel px-[clamp(16px,3vw,40px)] py-2 text-xs text-tinta-suave">
+    <footer className="app-pie flex items-center justify-between gap-4 border-t border-filete bg-footer-bg px-[clamp(16px,3vw,40px)] py-2 text-xs text-tinta-suave">
       <span className="min-w-0 truncate">UNEXO</span>
       <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap" aria-live="polite"><b className="font-bold text-tinta tabular-nums">{visitas == null ? '—' : visitas.toLocaleString('es-BO')}</b> visitas a esta página</span>
     </footer>

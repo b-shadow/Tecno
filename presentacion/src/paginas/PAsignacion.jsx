@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Shuffle } from 'lucide-react'
 import { go } from '../servicios/navigation'
-import { Aviso, Boton, CabeceraPagina, Campo, Cargando, Etiqueta, Vacio, fecha, nombre, useAviso, useDatos } from '../componentes/ui'
+import { Aviso, Boton, CabeceraPagina, Campo, Cargando, Etiqueta, Vacio, fechaHoraBolivia, nombre, useAviso, useDatos } from '../componentes/ui'
 import * as interesesApi from '../api/intereses'
 import * as usuariosApi from '../api/usuarios'
 
@@ -11,7 +11,7 @@ import * as usuariosApi from '../api/usuarios'
  */
 export default function PAsignacion() {
   const [filtro, setFiltro] = useState({ buscar: '', vendedor: '', sin_asignar: true })
-  const { datos, cargando, error, recargar } = useDatos(async () => (await interesesApi.index({ buscar: filtro.buscar || undefined, vendedor: filtro.vendedor || undefined, sin_asignar: filtro.sin_asignar ? 1 : undefined })).data, [filtro.buscar, filtro.vendedor, filtro.sin_asignar])
+  const { datos, cargando, error, recargar } = useDatos(async () => (await interesesApi.index({ buscar: filtro.buscar || undefined, vendedor: filtro.vendedor || undefined, sin_asignar: filtro.sin_asignar ? 1 : undefined, orden: 'registro' })).data, [filtro.buscar, filtro.vendedor, filtro.sin_asignar], { intervaloMs: 3000, refrescarAlEnfocar: true })
   const vendedores = useDatos(async () => (await usuariosApi.vendedores()).data.vendedores)
   const [repartiendo, setRepartiendo] = useState(false)
   const aviso = useAviso()
@@ -53,7 +53,7 @@ export default function PAsignacion() {
                     <td><a href="#" onClick={(e) => { e.preventDefault(); go(`/agenda?interes=${t.nro_tarjeta}`) }}><strong>{nombre(t.prospecto)}</strong></a><br /><small className="tabular-nums">CI {t.documento}</small></td>
                     <td>{t.modulo_nombre}<br /><small className="text-tinta-suave">{t.programa_nombre}</small></td>
                     <td><Etiqueta estado={t.estado} /></td>
-                    <td className="tabular-nums">{fecha(t.fecha)}</td>
+                    <td className="tabular-nums whitespace-nowrap">{fechaHoraBolivia(t.fecha)}</td>
                     <td>
                       <select className="control" aria-label={`Vendedor de la tarjeta ${t.nro_tarjeta}`} value={t.vendedor_correo || ''} onChange={(e) => asignar(t, e.target.value)} disabled={['Convertido', 'Perdido'].includes(t.estado)}>
                         <option value="">Sin asignar</option>

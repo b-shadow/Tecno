@@ -8,7 +8,7 @@ import * as notificacionesApi from '../api/notificaciones'
 export default function PNotificaciones() {
   const sesion = useAuth()
   const puedeEnviar = puede('notificaciones', 'modificacion', sesion) || puede('agenda', 'modificacion', sesion)
-  const { datos, cargando, error, recargar } = useDatos(async () => (await notificacionesApi.index()).data.notificaciones)
+  const { datos, cargando, error, recargar } = useDatos(async () => (await notificacionesApi.index()).data.notificaciones, [], { intervaloMs: 5000, refrescarAlEnfocar: true })
   const [form, setForm] = useState({ destinatario: '', tipo: '', mensaje: '' })
   const [errores, setErrores] = useState({})
   const [enviando, setEnviando] = useState(false)

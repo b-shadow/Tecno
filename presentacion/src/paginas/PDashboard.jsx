@@ -12,7 +12,7 @@ const dia = (d) => new Date(`${d}T12:00:00`).toLocaleDateString('es-BO', { day: 
 /** CU8 / enunciado 8: panel analítico del negocio y del flujo de accesos del sitio. */
 export default function PDashboard() {
   const { usuario } = useAuth()
-  const { datos, cargando, error, recargar } = useDatos(async () => (await reportesApi.dashboard()).data)
+  const { datos, cargando, error, recargar } = useDatos(async () => (await reportesApi.dashboard()).data, [], { intervaloMs: 10000, refrescarAlEnfocar: true })
   const ingresos = useMemo(() => datos && { etiquetas: datos.ingresos_por_dia.map((d) => dia(d.dia)), series: [{ nombre: 'Ingresos', datos: datos.ingresos_por_dia.map((d) => d.total), color: '--acento', relleno: true }] }, [datos])
   const accesos = useMemo(() => datos?.accesos && {
     etiquetas: datos.accesos.exitosos.map((d) => dia(d.dia)),

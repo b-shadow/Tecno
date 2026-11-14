@@ -17,7 +17,7 @@ export default function PEmbudo() {
   const esVendedor = sesion.usuario?.rol === 'vendedor'
   const editable = puede('embudo', 'modificacion', sesion)
   const [filtros, setFiltros] = useState({ buscar: '', vendedor: '' })
-  const { datos, cargando, error, recargar } = useDatos(async () => (await interesesApi.index({ buscar: filtros.buscar || undefined, vendedor: filtros.vendedor || undefined })).data, [filtros.buscar, filtros.vendedor])
+  const { datos, cargando, error, recargar } = useDatos(async () => (await interesesApi.index({ buscar: filtros.buscar || undefined, vendedor: filtros.vendedor || undefined })).data, [filtros.buscar, filtros.vendedor], { intervaloMs: 3000, refrescarAlEnfocar: true })
   const vendedores = useDatos(async () => (esVendedor ? [] : (await usuariosApi.vendedores()).data.vendedores), [esVendedor])
   const [arrastrada, setArrastrada] = useState(null)
   const [encima, setEncima] = useState(null)

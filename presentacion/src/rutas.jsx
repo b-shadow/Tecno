@@ -1,4 +1,5 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom'
+import { ErrorRuta } from './componentes/ErrorBoundary'
 import AppShell from './plantilla/AppShell'
 import { fijarRouter } from './servicios/navigation'
 
@@ -17,13 +18,15 @@ const PAGINAS = {
 
 export const router = createBrowserRouter([{
   element: <AppShell />,
+  errorElement: <ErrorRuta />,
   children: [
     { path: '/', element: <Navigate to="/anuncios" replace /> },
-    ...Object.entries(PAGINAS).map(([path, nombre]) => ({ path, lazy: pagina(nombre) })),
-    { path: '/pagos/confirmacion', lazy: pagina('PPagoConfirmacion'), handle: { recurso: '/agenda' } },
-    { path: '/pagos/cancelado', lazy: pagina('PPagoCancelado'), handle: { recurso: '/agenda' } },
+    ...Object.entries(PAGINAS).map(([path, nombre]) => ({ path, lazy: pagina(nombre), errorElement: <ErrorRuta /> })),
+    { path: '/pagos/cuota', lazy: pagina('PPagoCuota'), handle: { recurso: '/anuncios' }, errorElement: <ErrorRuta /> },
+    { path: '/pagos/confirmacion', lazy: pagina('PPagoConfirmacion'), handle: { recurso: '/anuncios' }, errorElement: <ErrorRuta /> },
+    { path: '/pagos/cancelado', lazy: pagina('PPagoCancelado'), handle: { recurso: '/anuncios' }, errorElement: <ErrorRuta /> },
     // Ruta inexistente: página de error con el contador del recurso /error.
-    { path: '*', lazy: pagina('PError404'), handle: { recurso: '/error' } },
+    { path: '*', lazy: pagina('PError404'), handle: { recurso: '/error' }, errorElement: <ErrorRuta /> },
   ],
 }], { basename: import.meta.env.BASE_URL.replace(/\/$/, '') || '/' })
 
