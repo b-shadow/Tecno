@@ -100,15 +100,16 @@ s, r = api('PUT', f"/prospectos/{p['documento']}", {k: p.get(k) for k in ('nombr
            | {'profesion': p.get('profesion') or 'Contador', 'ubicacion': p.get('ubicacion') or 'Santa Cruz'}, vend)
 caso('el vendedor completa los datos del prospecto', s == 200, r)
 
-# --- Enunciado 10: métodos de pago, plan de cuotas, Stripe Checkout Sandbox y comprobante manual
+# --- Enunciado 10: Stripe Checkout Sandbox obligatorio (QR/comprobante nuevos bloqueados en UI/API)
 doc = abierta['documento']
 s, r = api('POST', f'/prospectos/{doc}/metodos-pago', {'tipo': 'Tarjeta', 'titular': 'Prueba Demo'}, vend)
 caso('tarjeta manual sin Stripe Setup se rechaza', s == 422, r)
+s, r = api('POST', f'/prospectos/{doc}/metodos-pago', {'tipo': 'QR', 'titular': 'Prueba Demo'}, vend)
+caso('P32 nuevo método QR manual bloqueado (422)', s == 422, r)
+s, r = api('POST', f'/prospectos/{doc}/metodos-pago', {'tipo': 'Transferencia', 'titular': 'Prueba Demo'}, vend)
+caso('P32 nuevo método Transferencia manual bloqueado (422)', s == 422, r)
 s, r = api('POST', f'/prospectos/{doc}/metodos-pago/stripe-setup', {'nro_tarjeta': abierta['nro_tarjeta']}, vend)
 caso('registro de tarjeta genera sesión oficial Stripe Setup', s == 201 and str(r.get('url', '')).startswith('https://checkout.stripe.com/'), r)
-s, r = api('POST', f'/prospectos/{doc}/metodos-pago', {'tipo': 'QR', 'titular': 'Prueba Demo'}, vend)
-metodo = r.get('metodo', {})
-caso('método QR manual se registra correctamente', s == 201 and metodo.get('tipo') == 'QR', r)
 
 s, r = api('POST', f"/intereses/{abierta['nro_tarjeta']}/ordenes-pago", {'modulos': [abierta['modulo_codigo']], 'cuotas': 3, 'primer_vencimiento': '2030-01-10'}, vend)
 orden = r.get('orden', {})
@@ -122,17 +123,13 @@ s, r = api('POST', f"/ordenes-pago/{nro}/cuotas/1/checkout", {}, vend)
 caso('Stripe Checkout genera sesión auténtica en BOB', s == 201 and str(r.get('session_id', '')).startswith('cs_test_') and r.get('moneda') == 'BOB' and str(r.get('url', '')).startswith('https://checkout.stripe.com/'), r)
 
 png_1px = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
-s, r = api('POST', f"/ordenes-pago/{nro}/cuotas/1/comprobante", {'nro_metodo': metodo.get('nro_metodo'), 'archivo': png_1px, 'remitente': 'Prospecto Demo'}, vend)
-caso('comprobante manual queda En revisión (sin autoaprobar)', s == 201, r)
-s, r = api('GET', f"/intereses/{abierta['nro_tarjeta']}", token=vend)
-caso('el interés sigue en Promesa de Pago hasta validar', r.get('interes', {}).get('estado') == 'Promesa de Pago', r.get('interes', {}).get('estado'))
+s, r = api('POST', f"/ordenes-pago/{nro}/cuotas/1/comprobante", {'archivo': png_1px, 'remitente': 'Prospecto Demo'}, vend)
+caso('P32 comprobante manual para nuevas órdenes bloqueado (422)', s == 422, r)
 s, r = api('PATCH', f"/ordenes-pago/{nro}/cuotas/1/aprobar", {}, vend)
 caso('el vendedor no aprueba su propio pago', s == 403, (s, r))
 s, r = api('PATCH', f"/ordenes-pago/{nro}/cuotas/1/aprobar", {}, admin)
-caso('administración aprueba la cuota en revisión', s == 200, r)
-s, r = api('GET', f"/intereses/{abierta['nro_tarjeta']}", token=vend)
-caso('1.ª cuota aprobada + datos completos = Convertido', r.get('interes', {}).get('estado') == 'Convertido', r.get('interes', {}).get('estado'))
-s, r = api('GET', '/cuotas?estado=Pendiente de pago'.replace(' ', '%20'), token=coord)
+caso('administración no aprueba cuota Pendiente de pago sin revisión', s == 422, (s, r))
+s, r = api('GET', '/cuotas?estado=Pendiente%20de%20pago', token=coord)
 caso('coordinación ve las cuotas pendientes', s == 200, s)
 
 # --- Enunciado 7: contador de visitas persistente (trigger)
