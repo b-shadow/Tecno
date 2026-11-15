@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Api\SystemController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CatalogoController;
 use App\Http\Controllers\Api\ExportacionController;
@@ -11,11 +10,12 @@ use App\Http\Controllers\Api\PagoController;
 use App\Http\Controllers\Api\ProspectoController;
 use App\Http\Controllers\Api\ReporteController;
 use App\Http\Controllers\Api\SeguimientoController;
+use App\Http\Controllers\Api\SystemController;
 use App\Http\Controllers\Api\UsuarioController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', [SystemController::class, 'health']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:crm-login');
 Route::get('/ofertas', [CatalogoController::class, 'ofertas']);
 Route::get('/ofertas/{anuncio}', [CatalogoController::class, 'oferta']);
 Route::post('/registro-interes', [ProspectoController::class, 'registrarInteres']);
@@ -36,17 +36,15 @@ Route::middleware('auth.token')->group(function (): void {
     Route::get('/prospectos', [ProspectoController::class, 'index']);
     Route::post('/prospectos', [ProspectoController::class, 'store']);
     Route::put('/prospectos/{prospecto}', [ProspectoController::class, 'update']);
-    Route::patch('/prospectos/{prospecto}/asignar', [ProspectoController::class, 'asignarVendedor']);
     Route::patch('/prospectos/{prospecto}/estado', [ProspectoController::class, 'cambiarEstado']);
     Route::post('/prospectos/importar', [ProspectoController::class, 'importarCSV']);
     Route::post('/intereses', [ProspectoController::class, 'crearInteres']);
     Route::get('/intereses', [InteresController::class, 'index']);
     Route::get('/intereses/{interes}', [InteresController::class, 'show']);
-    Route::patch('/intereses/{interes}/tomar', [InteresController::class, 'tomar']);
+    Route::post('/intereses/distribuir', [InteresController::class, 'distribuir']);
+    Route::patch('/intereses/{interes}/asignar', [InteresController::class, 'asignar']);
     Route::patch('/intereses/{interes}/estado', [InteresController::class, 'cambiarEstado']);
     Route::get('/prospectos/{prospecto}/intereses', [ProspectoController::class, 'intereses']);
-    Route::post('/solicitudes-compra', [ProspectoController::class, 'crearSolicitud']);
-    Route::get('/solicitudes-compra', [PagoController::class, 'solicitudes']);
     Route::get('/pagos', [PagoController::class, 'consultarPagos']);
     Route::post('/pagos/generar', [PagoController::class, 'generarPagoQR']);
     Route::get('/pagos/{pago}', [PagoController::class, 'show']);
@@ -61,11 +59,12 @@ Route::middleware('auth.token')->group(function (): void {
     Route::post('/recordatorios', [SeguimientoController::class, 'crearRecordatorio']);
     Route::patch('/recordatorios/{recordatorio}/completar', [SeguimientoController::class, 'completarRecordatorio']);
     Route::patch('/recordatorios/{recordatorio}/cancelar', [SeguimientoController::class, 'cancelarRecordatorio']);
-    Route::post('/inscripciones/confirmar', [SeguimientoController::class, 'confirmarInscripcion']);
     Route::get('/inscripciones', [SeguimientoController::class, 'inscripciones']);
     Route::get('/comisiones', [SeguimientoController::class, 'comisiones']);
     Route::get('/comisiones/resumen', [SeguimientoController::class, 'resumenComisiones']);
     Route::patch('/comisiones/vendedores/{vendedor}/pagar', [SeguimientoController::class, 'pagarComisiones']);
+    Route::get('/configuracion/comision', [SeguimientoController::class, 'configuracionComision']);
+    Route::put('/configuracion/comision', [SeguimientoController::class, 'actualizarConfiguracionComision']);
 
     Route::get('/descuentos', [OrdenPagoController::class, 'descuentos']);
     Route::get('/ordenes-pago', [OrdenPagoController::class, 'index']);

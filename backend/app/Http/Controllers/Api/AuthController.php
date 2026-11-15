@@ -19,7 +19,7 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $usuario = Usuario::query()->where('correo', $data['correo'])->first();
+        $usuario = Usuario::query()->whereRaw('lower(correo) = ?', [mb_strtolower(trim($data['correo']))])->first();
 
         if (! $usuario || ! Hash::check($data['password'], $usuario->password)) {
             return response()->json(['mensaje' => 'Credenciales incorrectas.'], 422);
@@ -82,7 +82,7 @@ class AuthController extends Controller
 
         $data = $request->validate([
             'password_actual' => ['required', 'string'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'string', 'min:8', 'regex:/(?=.*[A-Za-z])(?=.*\d)/', 'confirmed'],
         ]);
 
         if (! Hash::check($data['password_actual'], $usuario->password)) {
@@ -90,6 +90,7 @@ class AuthController extends Controller
         }
 
         $usuario->update(['password' => Hash::make($data['password'])]);
+        $usuario->tokens()->where('id', '!=', $request->attributes->get('auth_token')->id)->delete();
 
         return response()->json(['mensaje' => 'Contrasena actualizada correctamente.']);
     }

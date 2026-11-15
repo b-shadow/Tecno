@@ -1,7 +1,6 @@
 services:
   postgres:
     image: postgres:18-alpine
-    container_name: crm_educativo_postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: crm_educativo
@@ -17,5 +16,56 @@ services:
       timeout: 5s
       retries: 5
 
+  # Laravel (API + paginas Inertia). No pisa un .env existente; php -S con el router de Laravel
+  # respeta las variables de entorno del contenedor (artisan serve no se las pasa al proceso hijo).
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      # php -S atiende varias peticiones a la vez (la pagina pide API e imagenes en paralelo).
+      - PHP_CLI_SERVER_WORKERS=4
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=crm_educativo
+      - DB_USERNAME=crm_user
+      - DB_PASSWORD=crm_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      # vendor/ en un volumen Linux: leerlo desde la carpeta de Windows hacia cada peticion ~3 s.
+      - vendor:/app/vendor
+    command: >
+      sh -c "cd /app
+      && ([ -f .env ] || cp .env.example .env)
+      && composer install --no-interaction
+      && (grep -q '^APP_KEY=base64' .env || php artisan key:generate --force)
+      && php artisan migrate --force
+      && cd public
+      && php -S 0.0.0.0:8001 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"
+
+  # Vite en modo desarrollo para las paginas Vue (laravel-vite-plugin escribe public/hot).
+  vite:
+    image: node:22-alpine
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./backend:/app
+      # node_modules propio del contenedor (binarios Linux), separado del node_modules del host.
+      - /app/node_modules
+    command: sh -c "npm ci && npm run dev"
+
 volumes:
+  vendor:
+  # Reusa la base de la demo creada desde Desktop/Tecno (proyecto compose "tecno").
   postgres_data:
+    external: true
+    name: tecno_postgres_data

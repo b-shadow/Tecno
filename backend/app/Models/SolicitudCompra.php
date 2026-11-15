@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
-    'prospecto_id',
+    'orden_pago_id',
     'external_anuncio_id',
     'external_modulo_id',
     'programa_nombre',
@@ -31,14 +31,9 @@ class SolicitudCompra extends Model
         ];
     }
 
-    public function prospecto(): BelongsTo
+    public function ordenPago(): BelongsTo
     {
-        return $this->belongsTo(Prospecto::class);
-    }
-
-    public function pago(): HasOne
-    {
-        return $this->hasOne(Pago::class);
+        return $this->belongsTo(OrdenPago::class);
     }
 
     public function inscripcionComercial(): HasOne
@@ -48,11 +43,6 @@ class SolicitudCompra extends Model
 
     public function comision(): HasOne
     {
-        return $this->hasOne(Comision::class, 'venta_id');
-    }
-
-    public function ordenItem(): HasOne
-    {
-        return $this->hasOne(OrdenPagoItem::class);
+        return $this->hasOne(Comision::class);
     }
 }

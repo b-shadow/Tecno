@@ -7,6 +7,7 @@ use App\Models\Exportacion;
 use App\Models\InscripcionComercial;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ExportacionController extends Controller
 {
@@ -26,40 +27,44 @@ class ExportacionController extends Controller
     {
         $this->authorizeRoles($request, ['administrador', 'coordinador']);
 
-        $usuario = $request->attributes->get('auth_usuario');
-        $inscripciones = $this->inscripcionesExportables()->get();
-        $filas = [];
+        return DB::transaction(function () use ($request): JsonResponse {
+            $usuario = $request->attributes->get('auth_usuario');
+            // Serializa exportaciones concurrentes y vuelve a consultar los pendientes.
+            DB::table('inscripciones_comerciales')->orderBy('id')->lockForUpdate()->get();
+            $inscripciones = $this->inscripcionesExportables()->get();
+            $filas = [];
 
-        $exportaciones = $inscripciones->map(function (InscripcionComercial $inscripcion) use ($usuario, &$filas) {
-            $filas[] = $this->filaCSV($inscripcion);
+            $exportaciones = $inscripciones->map(function (InscripcionComercial $inscripcion) use ($usuario, &$filas) {
+                $filas[] = $this->filaCSV($inscripcion);
 
-            $payload = [
-                'prospecto' => $inscripcion->prospecto,
-                'modulo' => [
-                    'external_modulo_id' => $inscripcion->solicitudCompra->external_modulo_id,
-                    'programa_nombre' => $inscripcion->solicitudCompra->programa_nombre,
-                    'nombre' => $inscripcion->solicitudCompra->modulo_nombre,
-                    'descripcion' => $inscripcion->solicitudCompra->modulo_descripcion,
-                ],
-                'pago' => $inscripcion->solicitudCompra->pago
-                    ?? $inscripcion->solicitudCompra->ordenItem?->ordenPago?->pago,
-                'inscripcion' => $inscripcion,
-            ];
+                $payload = [
+                    'prospecto' => $inscripcion->alumno(),
+                    'modulo' => [
+                        'external_modulo_id' => $inscripcion->solicitudCompra->external_modulo_id,
+                        'programa_nombre' => $inscripcion->solicitudCompra->programa_nombre,
+                        'nombre' => $inscripcion->solicitudCompra->modulo_nombre,
+                        'descripcion' => $inscripcion->solicitudCompra->modulo_descripcion,
+                    ],
+                    'pago' => $inscripcion->solicitudCompra->ordenPago->pago,
+                    'inscripcion' => $inscripcion,
+                ];
 
-            return Exportacion::query()->create([
-                'usuario_id' => $usuario->id,
-                'prospecto_id' => $inscripcion->prospecto_id,
-                'fecha_exportacion' => now(),
-                'estado' => 'exportada',
-                'respuesta' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+                return Exportacion::query()->create([
+                    'inscripcion_comercial_id' => $inscripcion->id,
+                    'usuario_id' => $usuario->id,
+                    'prospecto_id' => $inscripcion->alumno()?->id,
+                    'fecha_exportacion' => now(),
+                    'estado' => 'exportada',
+                    'respuesta' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+                ]);
+            });
+
+            return response()->json([
+                'archivo' => 'alumnos_inscritos_'.now()->format('Ymd_His').'.csv',
+                'filas' => $filas,
+                'exportaciones' => $exportaciones,
             ]);
         });
-
-        return response()->json([
-            'archivo' => 'alumnos_inscritos_'.now()->format('Ymd_His').'.csv',
-            'filas' => $filas,
-            'exportaciones' => $exportaciones,
-        ]);
     }
 
     public function registrarResultadoExportacion(Request $request, Exportacion $exportacion): JsonResponse
@@ -88,21 +93,18 @@ class ExportacionController extends Controller
     private function inscripcionesExportables()
     {
         return InscripcionComercial::query()
-            ->with('prospecto', 'solicitudCompra.pago', 'solicitudCompra.ordenItem.ordenPago.pago')
+            ->with('solicitudCompra.ordenPago.prospecto', 'solicitudCompra.ordenPago.pago')
             ->where('estado', 'Confirmada')
-            ->whereHas('prospecto', fn ($query) => $query->where('estado', 'Convertido'))
-            ->where(function ($query): void {
-                $query
-                    ->whereHas('solicitudCompra.pago', fn ($subquery) => $subquery->where('estado', 'Pago aprobado'))
-                    ->orWhereHas('solicitudCompra.ordenItem.ordenPago.pago', fn ($subquery) => $subquery->where('estado', 'Pago aprobado'));
-            });
+            ->whereDoesntHave('exportaciones', fn ($query) => $query->whereIn('estado', ['preparada', 'exportada', 'recibida']))
+            ->whereHas('solicitudCompra.ordenPago.prospecto', fn ($query) => $query->where('prospectos.estado', 'Convertido'))
+            ->whereHas('solicitudCompra.ordenPago.pago', fn ($query) => $query->where('estado', 'Pago aprobado'));
     }
 
     private function filaCSV(InscripcionComercial $inscripcion): array
     {
-        $prospecto = $inscripcion->prospecto;
+        $prospecto = $inscripcion->alumno();
         $solicitud = $inscripcion->solicitudCompra;
-        $pago = $solicitud->pago ?? $solicitud->ordenItem?->ordenPago?->pago;
+        $pago = $solicitud->ordenPago->pago;
 
         return [
             'nombres' => $prospecto?->nombre,

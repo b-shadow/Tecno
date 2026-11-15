@@ -98,3 +98,37 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 qa-screenshots-*/
+graphify
+
+# Respaldos locales de la base
+backups/
+
+# Laravel + Vite (Inertia)
+backend/node_modules/
+backend/public/build/
+backend/public/hot
+
+# Private data, generated analysis and temporary artifacts
+.secrets/
+graphify-out/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+tmp/
+temp/
+*.tmp
+*.bak
+*.orig
+*.rej
+*.dump
+*.backup
+*.sqlite
+*.sqlite3
+*.pem
+*.key
+*.p12
+*.pfx
+*.local.md
+qa-artifacts/
+playwright-report/
+test-results/

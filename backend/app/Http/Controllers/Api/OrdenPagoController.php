@@ -7,7 +7,6 @@ use App\Models\Descuento;
 use App\Models\Interes;
 use App\Models\OrdenPago;
 use App\Models\Pago;
-use App\Models\SolicitudCompra;
 use App\Services\CatalogoExternoDemo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -35,7 +34,7 @@ class OrdenPagoController extends Controller
         $usuario = $request->attributes->get('auth_usuario');
 
         $ordenes = OrdenPago::query()
-            ->with('interes', 'prospecto', 'vendedor', 'items.solicitudCompra', 'descuentos.descuento', 'pago.comprobantes')
+            ->with('interes', 'prospecto', 'vendedor', 'items', 'descuentos.descuento', 'pago.comprobantes')
             ->when($usuario->rol === 'vendedor', fn ($query) => $query->where('vendedor_id', $usuario->id))
             ->latest('fecha_generacion')
             ->get();
@@ -78,7 +77,6 @@ class OrdenPagoController extends Controller
 
             $orden = OrdenPago::query()->create([
                 'interes_id' => $interes->id,
-                'prospecto_id' => $interes->prospecto_id,
                 'vendedor_id' => $usuario->id,
                 'subtotal' => $subtotal,
                 'descuento_total' => 0,
@@ -100,10 +98,10 @@ class OrdenPagoController extends Controller
             $total = max(round($subtotal - $descuentoTotal, 2), 0);
             $orden->update(['descuento_total' => $descuentoTotal, 'total' => $total]);
 
+            // Cada modulo de la orden es una solicitud de compra (linea de la orden).
             foreach ($ofertas as $oferta) {
                 $modulo = $oferta['modulo'];
-                $solicitud = SolicitudCompra::query()->create([
-                    'prospecto_id' => $interes->prospecto_id,
+                $orden->items()->create([
                     'external_anuncio_id' => $oferta['external_anuncio_id'],
                     'external_modulo_id' => $oferta['external_modulo_id'],
                     'programa_nombre' => $oferta['programa']['nombre'],
@@ -113,15 +111,6 @@ class OrdenPagoController extends Controller
                     'precio_acordado' => $oferta['precio'],
                     'estado' => 'pendiente',
                     'fecha' => now(),
-                ]);
-
-                $orden->items()->create([
-                    'solicitud_compra_id' => $solicitud->id,
-                    'external_modulo_id' => $oferta['external_modulo_id'],
-                    'programa_nombre' => $oferta['programa']['nombre'],
-                    'modulo_nombre' => $modulo['nombre'],
-                    'modulo_descripcion' => $modulo['descripcion'],
-                    'precio' => $oferta['precio'],
                 ]);
             }
 
@@ -135,7 +124,6 @@ class OrdenPagoController extends Controller
             ]);
 
             $interes->interacciones()->create([
-                'prospecto_id' => $interes->prospecto_id,
                 'usuario_id' => $usuario->id,
                 'tipo' => 'Orden de pago enviada',
                 'descripcion' => 'Orden de pago generada por '.$total.' Bs para '.$ofertas->count().' modulo(s). El QR se envia por WhatsApp fuera del sistema.',
@@ -152,7 +140,7 @@ class OrdenPagoController extends Controller
         });
 
         return response()->json([
-            'orden' => $orden->load('interes', 'items.solicitudCompra', 'descuentos.descuento', 'pago.comprobantes', 'prospecto', 'vendedor'),
+            'orden' => $orden->load('interes', 'items', 'descuentos.descuento', 'pago.comprobantes', 'prospecto', 'vendedor'),
         ], 201);
     }
 
