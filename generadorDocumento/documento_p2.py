@@ -51,6 +51,7 @@ for i, (tema, texto) in enumerate(C.TEORIA.items(), 1):
 # ------------------------------------------------------------------ Capítulo III
 d.h('Capítulo III: Organización', 1)
 d.h('2. Empresa', 2)
+d.texto(C.ORGANIZACION_CONTEXTO, 'Contexto de la organización')
 for i, (t, v) in enumerate((('Misión', C.MISION), ('Visión', C.VISION), ('Objetivo', C.OBJETIVO_EMPRESA),
                             ('Ubicación', C.UBICACION)), 1):
     d.h(f'2.{i}. {t}', 3); d.texto(v, t)

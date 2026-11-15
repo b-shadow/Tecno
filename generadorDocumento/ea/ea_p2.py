@@ -394,6 +394,10 @@ PARTES = {'datos': lambda ea, m: conceptual(ea, ea.paquete(m, 'Diseño de Datos'
 
 def main():
     if '--guardar-posiciones' in sys.argv: return guardar_posiciones()
+    if EAPX.exists() and '--recrear' not in sys.argv:
+        raise SystemExit('El EAPX existente contiene diagramas y cambios manuales. '
+                         'Use ea_faltantes.py para completar/exportar los diagramas, '
+                         'o --recrear solo después de respaldar crm-p2.eapx.')
     solo = sys.argv[sys.argv.index('--solo') + 1].split(',') if '--solo' in sys.argv else list(PARTES)
     SALIDA.mkdir(exist_ok=True)
     ea = ea_base.EA('CRM vía web (P2, Grupo 05 SA)')
