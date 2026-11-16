@@ -12,4 +12,12 @@ class CrearInteresRequest extends ProspectoRequest
             'programa_codigo' => ['nullable', 'string'],
         ];
     }
+
+    public function attributes(): array
+    {
+        return [
+            'modulo_codigo' => 'módulo',
+            'programa_codigo' => 'programa',
+        ];
+    }
 }

@@ -16,10 +16,14 @@ class DUsuario
         return [
             'usuarios' => Usuario::query()
                 ->with('programasACargo:programa_codigo,coordinador_correo')
-                ->when(($filtros['buscar'] ?? '') !== '', fn ($query) => $query->where(fn ($subquery) => $subquery
-                    ->where('nombre', 'ilike', '%'.$filtros['buscar'].'%')
-                    ->orWhere('apellido', 'ilike', '%'.$filtros['buscar'].'%')
-                    ->orWhere('correo', 'ilike', '%'.$filtros['buscar'].'%')))
+                ->when(trim((string) ($filtros['buscar'] ?? '')) !== '', function ($query) use ($filtros) {
+                    $like = DAlcance::escaparLike((string) $filtros['buscar']);
+
+                    return $query->where(fn ($subquery) => $subquery
+                        ->where('nombre', 'ilike', $like)
+                        ->orWhere('apellido', 'ilike', $like)
+                        ->orWhere('correo', 'ilike', $like));
+                })
                 ->when($filtros['rol'] ?? null, fn ($query, $rol) => $query->where('rol', $rol))
                 ->when($filtros['estado'] ?? null, fn ($query, $estado) => $query->where('estado', $estado))
                 ->orderBy('rol')->orderBy('nombre')->get(),
@@ -89,6 +93,17 @@ class DUsuario
 
     public function fresco(Usuario $usuario, bool $conProgramas = false): Usuario
     {
-        return $usuario->fresh($conProgramas ? 'programasACargo' : null) ?? $usuario;
+        return $usuario->fresh($conProgramas ? ['programasACargo'] : []) ?? $usuario;
+    }
+
+    /** Regla del formulario de asignación: el correo es de un vendedor activo. */
+    public function esVendedorActivo(string $correo): bool
+    {
+        return Usuario::query()->whereKey($correo)->where('rol', 'vendedor')->where('estado', 'activo')->exists();
+    }
+
+    public function existeCorreo(string $correo): bool
+    {
+        return Usuario::query()->whereKey($correo)->exists();
     }
 }

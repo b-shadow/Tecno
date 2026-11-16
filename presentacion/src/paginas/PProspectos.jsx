@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Download, FileUp, UserPlus, UsersRound } from 'lucide-react'
+import { Download, FileUp, Plus, UserPlus, UsersRound } from 'lucide-react'
 import { descargarCsv } from '../servicios/archivos'
 import { go } from '../servicios/navigation'
 import { puede, useAuth } from '../servicios/auth'
-import { Aviso, CabeceraPagina, Campo, Cargando, Etiqueta, Modal, Persona, Vacio, erroresDe, fecha, nombre, useAviso, useDatos } from '../componentes/ui'
+import { Aviso, Boton, CabeceraPagina, Campo, Cargando, Etiqueta, Modal, Persona, Vacio, erroresDe, fecha, nombre, useAviso, useDatos } from '../componentes/ui'
 import { apiErrorMessage } from '../servicios/errors'
 import * as catalogoApi from '../api/catalogo'
 import * as prospectosApi from '../api/prospectos'
@@ -12,6 +12,7 @@ import * as prospectosApi from '../api/prospectos'
 export default function PProspectos() {
   const sesion = useAuth()
   const puedeAlta = puede('interesados', 'modificacion', sesion)
+  const puedeAgregarInteres = puede('prospectos', 'modificacion', sesion) || puede('embudo', 'modificacion', sesion)
   const [filtro, setFiltro] = useState({ buscar: '', origen: '' })
   const { datos, cargando, error, recargar } = useDatos(async () => (await prospectosApi.index({ buscar: filtro.buscar || undefined, origen: filtro.origen || undefined })).data, [filtro.buscar, filtro.origen])
   const [modal, setModal] = useState(null)
@@ -45,7 +46,13 @@ export default function PProspectos() {
                     <div key={i.nro_tarjeta} className="my-0.5 flex items-center gap-2">
                       <a href="#" onClick={(e) => { e.preventDefault(); go(`/agenda?interes=${i.nro_tarjeta}`) }}>{i.modulo_nombre}</a><Etiqueta estado={i.estado} />
                     </div>
-                  )) : <small className="text-tinta-suave">Sin interés registrado</small>}</td>
+                  )) : <small className="text-tinta-suave block">Sin interés registrado</small>}
+                    {puedeAgregarInteres && (
+                      <button type="button" className="btn btn-texto mt-1 h-auto min-h-0 px-0 py-0.5 text-xs" onClick={() => setModal({ tipo: 'interes', prospecto: p })}>
+                        <Plus size={14} /> Agregar interés
+                      </button>
+                    )}
+                  </td>
                   <td className="tabular-nums">{fecha(p.fecha_registro)}</td>
                 </tr>
               ))}
@@ -55,6 +62,7 @@ export default function PProspectos() {
       )}
       {modal === 'nuevo' && <NuevoProspecto origenes={datos?.origenes || []} onCerrar={() => setModal(null)} onListo={(m) => { aviso.ok(m); setModal(null); recargar() }} />}
       {modal === 'csv' && <ImportarCsv onCerrar={() => setModal(null)} onListo={(m) => { aviso.ok(m); setModal(null); recargar() }} />}
+      {modal?.tipo === 'interes' && <NuevoInteres prospecto={modal.prospecto} onCerrar={() => setModal(null)} onListo={(m) => { aviso.ok(m); setModal(null); recargar() }} />}
       {aviso.nodo}
     </>
   )
@@ -130,6 +138,59 @@ function ImportarCsv({ onCerrar, onListo }) {
           {Array.isArray(resultado.errores) && resultado.errores.length> 0 && <ul>{resultado.errores.slice(0, 12).map((e, i) => <li key={i}>{e.fila ? `Fila ${e.fila}: ` : ''}{e.columna ? `${e.columna} — ` : ''}{e.error}</li>)}</ul>}
         </Aviso>
       )}
+    </Modal>
+  )
+}
+
+function NuevoInteres({ prospecto, onCerrar, onListo }) {
+  const catalogo = useDatos(async () => (await catalogoApi.programas()).data.programas)
+  const [interes, setInteres] = useState('')
+  const [errores, setErrores] = useState({})
+  const [enviando, setEnviando] = useState(false)
+  const existentes = new Set((prospecto.intereses || []).map((i) => i.modulo_codigo))
+
+  async function guardar(e) {
+    e.preventDefault()
+    if (!interes) {
+      setErrores({ modulo_codigo: 'Seleccione un programa o módulo.' })
+      return
+    }
+    const [tipo, codigo] = interes.split(':')
+    const datos = tipo === 'p' ? { programa_codigo: codigo } : { modulo_codigo: codigo }
+    setEnviando(true)
+    setErrores({})
+    try {
+      onListo((await prospectosApi.crearInteres(prospecto.documento, datos)).data.mensaje)
+    } catch (err) {
+      setErrores({ ...erroresDe(err), general: apiErrorMessage(err) })
+      setEnviando(false)
+    }
+  }
+
+  return (
+    <Modal titulo="Agregar interés" descripcion={`${nombre(prospecto)} · CI ${prospecto.documento}`} onCerrar={onCerrar}>
+      <form className="grid gap-4" onSubmit={guardar}>
+        <Campo etiqueta="Programa o módulo (RF2.2)" requerido error={errores.modulo_codigo || errores.programa_codigo} ayuda="Crea una nueva tarjeta en el embudo para este prospecto.">
+          <select required value={interes} onChange={(e) => setInteres(e.target.value)}>
+            <option value="">Elija un programa o módulo…</option>
+            {(catalogo.datos || []).map((p) => (
+              <optgroup key={p.codigo} label={p.nombre}>
+                <option value={`p:${p.codigo}`}>Programa completo ({p.modulos.length} módulos)</option>
+                {p.modulos.map((m) => (
+                  <option key={m.codigo} value={`m:${m.codigo}`} disabled={existentes.has(m.codigo)}>
+                    {m.nombre}{existentes.has(m.codigo) ? ' (ya registrado)' : ''}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </Campo>
+        {errores.general && <Aviso tipo="error">{errores.general}</Aviso>}
+        <div className="acciones">
+          <button type="button" className="btn btn-secundario" onClick={onCerrar}>Cancelar</button>
+          <Boton type="submit" cargando={enviando}>Agregar interés</Boton>
+        </div>
+      </form>
     </Modal>
   )
 }

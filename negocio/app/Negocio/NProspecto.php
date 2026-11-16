@@ -134,6 +134,12 @@ class NProspecto
             return $this->crearIntereses($registro, $this->modulosSolicitados($datos), $vendedor);
         });
 
+        if ($intereses->every(fn ($interes) => ! $interes->wasRecentlyCreated)) {
+            throw ValidationException::withMessages([
+                'modulo_codigo' => 'El prospecto ya tiene registrado ese interés.',
+            ]);
+        }
+
         return response()->json(['mensaje' => 'Interés registrado.', 'intereses' => $intereses], 201);
     }
 

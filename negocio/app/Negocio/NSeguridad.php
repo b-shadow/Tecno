@@ -46,10 +46,10 @@ class NSeguridad
     {
         $filtros = $r->query();
         if (! empty($filtros['desde'])) {
-            $filtros['desde'] = Carbon::parse($filtros['desde'], 'America/La_Paz')->startOfDay()->utc();
+            $filtros['desde'] = Carbon::parse($filtros['desde'], 'America/La_Paz')->startOfDay()->setTimezone(config('app.timezone'));
         }
         if (! empty($filtros['hasta'])) {
-            $filtros['hasta'] = Carbon::parse($filtros['hasta'], 'America/La_Paz')->endOfDay()->utc();
+            $filtros['hasta'] = Carbon::parse($filtros['hasta'], 'America/La_Paz')->endOfDay()->setTimezone(config('app.timezone'));
         }
 
         return response()->json(['registros' => $this->seguridad->bitacora($filtros)]);

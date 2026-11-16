@@ -20,14 +20,18 @@ class DInteres
             ->when($filtros['estado'] ?? null, fn ($query, $estado) => $query->where('estado', $estado))
             ->when($filtros['vendedor'] ?? null, fn ($query, $correo) => $query->where('vendedor_correo', $correo))
             ->when($filtros['sin_asignar'] ?? null, fn ($query) => $query->whereNull('vendedor_correo'))
-            ->when(($filtros['buscar'] ?? '') !== '', fn ($query) => $query->where(fn ($subquery) => $subquery
-                ->where('programa_nombre', 'ilike', '%'.$filtros['buscar'].'%')
-                ->orWhere('modulo_nombre', 'ilike', '%'.$filtros['buscar'].'%')
-                ->orWhereHas('prospecto', fn ($prospecto) => $prospecto
-                    ->where('nombre', 'ilike', '%'.$filtros['buscar'].'%')
-                    ->orWhere('apellido', 'ilike', '%'.$filtros['buscar'].'%')
-                    ->orWhere('documento', 'ilike', '%'.$filtros['buscar'].'%')
-                    ->orWhere('telefono', 'ilike', '%'.$filtros['buscar'].'%'))))
+            ->when(($filtros['buscar'] ?? '') !== '', function ($query) use ($filtros) {
+                $like = DAlcance::escaparLike((string) $filtros['buscar']);
+
+                return $query->where(fn ($subquery) => $subquery
+                    ->where('programa_nombre', 'ilike', $like)
+                    ->orWhere('modulo_nombre', 'ilike', $like)
+                    ->orWhereHas('prospecto', fn ($prospecto) => $prospecto
+                        ->where('nombre', 'ilike', $like)
+                        ->orWhere('apellido', 'ilike', $like)
+                        ->orWhere('documento', 'ilike', $like)
+                        ->orWhere('telefono', 'ilike', $like)));
+            })
             ->orderByRaw('vendedor_correo is not null')
             ->orderByDesc('ultima_actividad_en')->orderByDesc('nro_tarjeta')->get();
     }
@@ -48,7 +52,7 @@ class DInteres
             'interacciones' => fn ($query) => $query->with('usuario:correo,nombre,apellido')->orderByDesc('fecha'),
             'recordatorios' => fn ($query) => $query->with('usuario:correo,nombre,apellido')->orderBy('fecha_programada'),
             'movimientos' => fn ($query) => $query->with('usuario:correo,nombre,apellido')->orderByDesc('fecha'),
-            'ordenesPago' => fn ($query) => $query->with('items', 'descuentos.descuento', 'pago.comprobantes', 'cuotas.metodo')->orderByDesc('nro_orden'),
+            'ordenesPago' => fn ($query) => $query->with('items', 'descuentos.descuento', 'pago.comprobantes', 'cuotas.metodo', 'anuladaPor:correo,nombre,apellido', 'transaccionesStripe')->orderByDesc('nro_orden'),
             'prospecto.metodosPago' => fn ($query) => $query->orderByDesc('nro_metodo'),
         ])->findOrFail($numero);
     }

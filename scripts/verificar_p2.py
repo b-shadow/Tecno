@@ -100,13 +100,15 @@ s, r = api('PUT', f"/prospectos/{p['documento']}", {k: p.get(k) for k in ('nombr
            | {'profesion': p.get('profesion') or 'Contador', 'ubicacion': p.get('ubicacion') or 'Santa Cruz'}, vend)
 caso('el vendedor completa los datos del prospecto', s == 200, r)
 
-# --- Enunciado 10: métodos de pago, plan de cuotas y pasarela simulada
+# --- Enunciado 10: métodos de pago, plan de cuotas, Stripe Checkout Sandbox y comprobante manual
 doc = abierta['documento']
-s, r = api('POST', f'/prospectos/{doc}/metodos-pago', {'tipo': 'Tarjeta', 'titular': 'Prueba Demo', 'numero': '4111 1111 1111 1112', 'vencimiento': '12/30'}, vend)
-caso('tarjeta con número inválido rechazada', s == 422, r)
-s, r = api('POST', f'/prospectos/{doc}/metodos-pago', {'tipo': 'Tarjeta', 'titular': 'Prueba Demo', 'numero': '4111 1111 1111 1111', 'vencimiento': '12/30'}, vend)
+s, r = api('POST', f'/prospectos/{doc}/metodos-pago', {'tipo': 'Tarjeta', 'titular': 'Prueba Demo'}, vend)
+caso('tarjeta manual sin Stripe Setup se rechaza', s == 422, r)
+s, r = api('POST', f'/prospectos/{doc}/metodos-pago/stripe-setup', {'nro_tarjeta': abierta['nro_tarjeta']}, vend)
+caso('registro de tarjeta genera sesión oficial Stripe Setup', s == 201 and str(r.get('url', '')).startswith('https://checkout.stripe.com/'), r)
+s, r = api('POST', f'/prospectos/{doc}/metodos-pago', {'tipo': 'QR', 'titular': 'Prueba Demo'}, vend)
 metodo = r.get('metodo', {})
-caso('tarjeta registrada guarda solo marca y últimos 4', s == 201 and metodo.get('ultimos_digitos') == '1111' and metodo.get('marca') == 'Visa' and 'numero' not in metodo, r)
+caso('método QR manual se registra correctamente', s == 201 and metodo.get('tipo') == 'QR', r)
 
 s, r = api('POST', f"/intereses/{abierta['nro_tarjeta']}/ordenes-pago", {'modulos': [abierta['modulo_codigo']], 'cuotas': 3, 'primer_vencimiento': '2030-01-10'}, vend)
 orden = r.get('orden', {})
@@ -116,10 +118,14 @@ s, r = api('POST', f"/intereses/{abierta['nro_tarjeta']}/ordenes-pago", {'modulo
 caso('segunda orden con otra abierta se rechaza (venta duplicada)', s == 422, r)
 
 nro = orden.get('nro_orden')
-s, r = api('POST', f"/ordenes-pago/{nro}/cuotas/1/pagar", {'nro_metodo': metodo.get('nro_metodo')}, vend)
-caso('pasarela simulada cobra la 1.ª cuota', s == 200 and r.get('transaccion', '').startswith('SIM-'), r)
+s, r = api('POST', f"/ordenes-pago/{nro}/cuotas/1/checkout", {}, vend)
+caso('Stripe Checkout genera sesión auténtica en BOB', s == 201 and str(r.get('session_id', '')).startswith('cs_test_') and r.get('moneda') == 'BOB' and str(r.get('url', '')).startswith('https://checkout.stripe.com/'), r)
+
+png_1px = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+s, r = api('POST', f"/ordenes-pago/{nro}/cuotas/1/comprobante", {'nro_metodo': metodo.get('nro_metodo'), 'archivo': png_1px, 'remitente': 'Prospecto Demo'}, vend)
+caso('comprobante manual queda En revisión (sin autoaprobar)', s == 201, r)
 s, r = api('GET', f"/intereses/{abierta['nro_tarjeta']}", token=vend)
-caso('el cobro con tarjeta queda En revisión (no se autoaprueba)', r.get('interes', {}).get('estado') == 'Promesa de Pago', r.get('interes', {}).get('estado'))
+caso('el interés sigue en Promesa de Pago hasta validar', r.get('interes', {}).get('estado') == 'Promesa de Pago', r.get('interes', {}).get('estado'))
 s, r = api('PATCH', f"/ordenes-pago/{nro}/cuotas/1/aprobar", {}, vend)
 caso('el vendedor no aprueba su propio pago', s == 403, (s, r))
 s, r = api('PATCH', f"/ordenes-pago/{nro}/cuotas/1/aprobar", {}, admin)

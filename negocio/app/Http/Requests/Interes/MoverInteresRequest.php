@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Interes;
 
 use App\Http\Requests\ApiRequest;
+use Datos\DMotivo;
 use Datos\Modelos\Interes;
 use Illuminate\Validation\Rule;
 
@@ -13,7 +14,7 @@ class MoverInteresRequest extends ApiRequest
     {
         return [
             'estado' => ['required', Rule::in(Interes::ESTADOS)],
-            'motivo_perdida' => ['nullable', 'required_if:estado,Perdido', 'exists:motivos_perdida,nombre', Rule::notIn(['Sin clasificar (web)'])],
+            'motivo_perdida' => ['nullable', 'required_if:estado,Perdido', $this->segun(fn ($v) => app(DMotivo::class)->existeNombre($v)), Rule::notIn(['Sin clasificar (web)'])],
             'observacion' => ['nullable', 'string', 'max:2000'],
         ];
     }

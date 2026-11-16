@@ -35,10 +35,15 @@ export default function AppShell() {
   }, [])
 
   const recurso = useRecursoActual()
-  const actual = sesion.menu?.find((m) => m.ruta === ruta.path)
+  const actual = sesion.menu?.find((m) => m.ruta === recurso)
   const interno = Boolean(sesion.usuario && actual)
   const Layout = interno ? Interno : Publico
-  const titulo = actual?.nombre || { '/login': 'Iniciar sesión', '/error': 'Página no encontrada' }[recurso] || 'Programas y módulos'
+  const titulo = {
+    '/pagos/confirmacion': 'Confirmación de pago',
+    '/pagos/cancelado': 'Pago cancelado',
+    '/login': 'Iniciar sesión',
+    '/error': 'Página no encontrada',
+  }[ruta.path] || actual?.nombre || 'Programas y módulos'
   useEffect(() => { document.title = `${titulo} · UNEXO` }, [titulo])
   return (
     <Layout actual={actual}>

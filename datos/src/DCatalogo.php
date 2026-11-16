@@ -44,4 +44,14 @@ class DCatalogo
             }
         });
     }
+
+    public function esModuloAbierto(string $codigo): bool
+    {
+        return CatalogoCache::query()->where('codigo', $codigo)->where('estado', 'abierto')->exists();
+    }
+
+    public function existePrograma(string $codigo): bool
+    {
+        return Programa::query()->whereKey($codigo)->exists();
+    }
 }
