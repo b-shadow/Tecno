@@ -75,4 +75,15 @@ class DSeguridad
                 ->selectRaw("u.nombre || ' ' || u.apellido as usuario, count(*) as total")->get(),
         ];
     }
+
+    public function existeRol(string $nombre): bool
+    {
+        return DB::table('roles')->where('nombre', $nombre)->exists();
+    }
+
+    /** Recurso de la matriz de acceso (los públicos no llevan permiso). */
+    public function esRecursoPrivado(string $codigo): bool
+    {
+        return DB::table('recursos')->where('codigo', $codigo)->where('publico', false)->exists();
+    }
 }

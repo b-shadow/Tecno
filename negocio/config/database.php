@@ -97,6 +97,8 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // Los DEFAULT now() de PostgreSQL usan la misma zona que PHP (si no, la bitácora queda desfasada).
+            'timezone' => env('APP_TIMEZONE', 'UTC'),
         ],
 
         'sqlsrv' => [

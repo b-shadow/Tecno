@@ -12,7 +12,8 @@ import urllib.request
 
 BASE = (sys.argv[1] if len(sys.argv) > 1 else 'http://127.0.0.1:8001').rstrip('/')
 API = f'{BASE}/api'
-PSQL = r'C:\Program Files\PostgreSQL\17\bin\psql.exe'
+# PHP para la prueba de centavos: el del sistema o el del contenedor, p. ej. QA_PHP="docker exec -w /repo crm-web-app-1 php"
+PHP = os.environ.get('QA_PHP', 'php').split()
 
 
 def leer_env(clave):
@@ -168,8 +169,8 @@ assert st == 201 and abs(float(chk2['monto']) - monto2) < 0.01
 ok(f'P25 nueva orden #{nro_orden2} con descuento tras anular -> Checkout por Bs {monto2:.2f} BOB')
 
 # Verificar conversión BOB 499.99 -> 49999 centavos vía PHP unit test sobre NStripe::aCentavos
-out_php = subprocess.check_output([
-    'php', '-r',
+out_php = subprocess.check_output(PHP + [
+    '-r',
     "require 'negocio/vendor/autoload.php'; $app=require 'negocio/bootstrap/app.php'; $app->make(Illuminate\\Contracts\\Console\\Kernel::class)->bootstrap(); "
     "$r=new ReflectionMethod(App\\Negocio\\NStripe::class,'aCentavos'); $r->setAccessible(true); $s=$app->make(App\\Negocio\\NStripe::class); "
     "echo json_encode(['499.99'=>$r->invoke($s,'499.99'),'350.00'=>$r->invoke($s,350.00),'1200.00'=>$r->invoke($s,1200)]);"
