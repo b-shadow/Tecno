@@ -56,8 +56,8 @@ def colocar(ea, d, elementos, medidas, guardadas):
 
 # ------------------------------------------------------------------------------------------------ 7.1 Conceptual
 def conceptual(ea, pkg):
-    """Una clase por tabla con sus atributos solo por nombre (sin tipos ni marcas PK/FK, como G07 pág. 63); la PK va
-    subrayada (docente, revisión del P1). Las FK no se
+    """Una clase por tabla con sus atributos solo por nombre y la PK identificada con «PK» y subrayado.
+    Las FK no se
     listan: son asociaciones con multiplicidad. Las N-N son clase de asociación con línea punteada (clase 06)."""
     T, F, NN, pk, uq = esquema.tablas(), esquema.fks(), esquema.intermedias(), esquema.pks(), esquema.unicas()
     fkcols = esquema.columnas_fk()
@@ -67,7 +67,8 @@ def conceptual(ea, pkg):
         e = ea.elemento(pkg, t, 'Class')
         for i, c in enumerate(attrs[t]):
             a = e.Attributes.AddNew(c, ''); a.Visibility = 'Public'; a.Pos = i
-            # PK subrayada (pedido del docente en la revisión del P1). EA solo subraya un atributo static: IsID pinta "{id}"
+            # El estereotipo «PK» hace explícita la clave sin cambiar el nombre real de la columna.
+            if c in pk[t]: a.Stereotype = 'PK'
             a.IsStatic = c in pk[t]
             a.Update()
         e.Update(); ent[t] = e
@@ -87,7 +88,8 @@ def conceptual(ea, pkg):
         ea.conector(ent[h], ent[p], 'Association', rol, card=(hija, '0..1' if nulo else '1'))
         relaciones.append((h, p))
     d = ea.diagrama(pkg, 'Diseño Conceptual de Base de Datos', 'Logical')
-    medidas = {t: (int(44 + 5.0 * max(len(t), *(len(x) + 4 for x in attrs[t]))), 40 + 12 * len(attrs[t])) for t in T}
+    medidas = {t: (int(44 + 5.0 * max(len(t), *(len(x) + 4 for x in attrs[t]))),
+                   40 + 12 * (len(attrs[t]) + len(pk[t]))) for t in T}
     guardadas = cargar_posiciones().get(d.Name, {})
     if all(t in guardadas for t in T):
         for t, (l, tp, r, b) in guardadas.items():
@@ -223,10 +225,11 @@ def _miembro(texto):
     return vis, m.group(1), params, (m.group(3) or '').strip()
 
 
-def clases_cu(ea, raiz):
+def clases_cu(ea, raiz, solo_cu=None):
     """Un diagrama de clases por CU con las 3 capas reales (REGLAS §4 5.3.2 y §6b), leído del código por codigo.py:
     «client page» → «module» api/<area>.js → «controller» → «request» / «service» → «repository» → «model»."""
     for cu, titulo in contenido.CU.items():
+        if solo_cu and cu != solo_cu: continue
         clases, deps, errores = codigo.cadena(cu)
         assert not errores, errores
         pkg = ea.paquete(raiz, f'{cu} Clases')

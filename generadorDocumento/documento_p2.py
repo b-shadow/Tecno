@@ -83,7 +83,9 @@ for cu, nombre in C.CU.items():
         ('Propósito', x.get('proposito')), ('Descripción', x.get('descripcion')),
         ('Actores', ', '.join(x.get('actores') or C.actores_cu(cu)) + '.'), ('Actor Iniciador', x.get('iniciador')),
         ('Precondición', x.get('precondicion')), ('Proceso', x.get('proceso')),
-        ('Postcondición', x.get('postcondicion')), ('Excepciones', '\n'.join(x.get('excepciones', [])))])
+        ('Postcondición', x.get('postcondicion')),
+        *(([('Flujos Alternativos', '\n'.join(x['alternativos']))]) if x.get('alternativos') else []),
+        ('Excepciones', '\n'.join(x.get('excepciones', [])))])
 d.h('4.5. Diagrama General de Caso de Uso', 3)
 d.imagen(DIAG / 'uc-general.png')
 
@@ -118,7 +120,7 @@ d.imagen(DIAG / 'despliegue.png')
 d.seccion(False, MARGEN_NAV)   # el conceptual en una sola página, casi a todo el ancho (como G07 pág. 63)
 d.h('7. Diseño de Datos', 2)
 d.h('7.1. Diseño Conceptual de Base de Datos', 3)
-d.imagen(DIAG / 'conceptual.png', ancho=19.5, alto_max=21.4)
+d.imagen(DIAG / 'conceptual.png', ancho=19.5, alto_max=19.5)
 d.seccion(False, MARGEN_NAV)   # Mapeo con 1 cm de margen lateral: cada tabla entera y horizontal (decisión del usuario)
 d.h('7.2. Diseño Lógico', 3)   # el lógico es el mapeo (pedido del usuario: título 7.2 Diseño Lógico, luego Mapeo)
 d.h('7.2.1. Mapeo', 4)
@@ -224,7 +226,7 @@ def textos():
     """Lo escrito a mano en contenido.py que se puede verificar contra crm-web."""
     errores, codigo_neg = [], chr(10).join(f.read_text(encoding='utf-8') for d_ in (NEGOCIO / 'app', CRM_WEB / 'datos' / 'src')
                                         for f in d_.rglob('*.php'))
-    for cu, x in C.DETALLE.items():   # cada mensaje citado en Excepciones existe tal cual en el backend
+    for cu, x in C.DETALLE.items():   # cada mensaje citado en Excepciones existe en negocio/ o datos/
         for e in x.get('excepciones', []):
             for msg in re.findall(r'"([^"]+)"', e):
                 if msg not in codigo_neg: errores.append(f'4.4 {cu}: el mensaje "{msg}" no está en negocio/ ni en datos/')

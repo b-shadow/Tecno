@@ -79,6 +79,6 @@ También avisa (sin fallar) de las rutas de `api.php` que ninguna pantalla llama
   **PostgreSQL** (datos). Nunca MVC, Vue, Inertia ni JWT (eso era G07).
 - Nada inventado: cada dato sale de crm-web, de la BD o de `../P2_WEB.md` / `../PRODUCT.md`; lo que falta queda `[PENDIENTE]`.
 - Diagramas solo en EA 15 Trial real por COM; nunca una copia crackeada. UML exacto: cada elemento existe de verdad.
-- Conceptual sin PK/FK; navegación en franjas apaisadas (como G07); 5.3.2 en 3 capas, no MVC.
+- Conceptual con el atributo de clave primaria identificado como «PK» y subrayado; las FK se representan mediante asociaciones. Navegación en franjas apaisadas (como G07); 5.3.2 en 3 capas, no MVC.
 - Organización: UNEXO. No reutilizar textos del P1 (Unidad de Capacitación de la FICCT).
 - Nombre del entregable: `P2-INF513-GRUPO05SA` (.doc). Credenciales jamás en el documento ni en esta carpeta.
