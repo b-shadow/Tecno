@@ -11,11 +11,12 @@ El documento habitual `documento/P2-INF513-GRUPO05SA.docx` ya integra la teoría
 - Pruebas: `scripts/verificar_p2.py` TODO OK; `verificar_navegadores.mjs` 321/321 en Chromium; `verificar_integridad.sql` OK.
 - `scripts/qa_local.py` adaptado a las 3 carpetas; el seeder apuntaba a `App\Services\Conversion` (no existía): corregido.
 
-## Falta en el documento
-- **Cap. II completado el 25/11/2026:** 19 apartados investigados, citas en texto y 20 referencias primarias en la bibliografía. Todo queda integrado en `contenido.py` y en el DOCX habitual.
-- **Cap. I y III:** antecedentes, planteamiento del problema y ubicación física exacta de UNEXO (datos reales de la clienta). El capítulo III incorpora contexto del campus virtual UNEXO documentado en la web institucional, sin atribuirle una dirección no verificada.
-  Misión, visión, objetivo y organigrama son propuesta del grupo: confirmarlos y vaciar `contenido.POR_CONFIRMAR`.
-- **Prioridad de los CU** (Alta/Media) en `contenido.PRIORIDAD`: decisión del grupo.
+## Pendientes del documento
+- **Ubicación e infraestructura (Cap. III):** copiadas del P1 aprobado. La dirección, las coordenadas, el mapa y las áreas de trabajo ya están en `contenido.py`; el mapa se conserva como `diagramas/ubicacion.png` para regenerar sin `proyectocorreo/`.
+- **Organigrama (Cap. III):** se exporta con proporción natural y ya no queda aplastado.
+- **Prioridad de los ocho CU:** cargada en `contenido.PRIORIDAD`.
+- **Conclusiones:** hay cinco, una por objetivo específico, en `contenido.CONCLUSIONES`.
+- **7.6 Interfaces:** faltan las capturas reales del sistema en el documento.
 - **Diagramas en EA (completados el 25/11/2026):** actores, CU (8 + general), paquetes (6 + general),
   comunicación (8), secuencia (8) y despliegue. `ea/ea_faltantes.py` los guarda en `ea/crm-p2.eapx` y exporta
   PNG + EMF; `insertar_diagramas.py` sustituyó los 34 marcadores del DOCX conservando las ediciones manuales.

@@ -55,8 +55,13 @@ d.texto(C.ORGANIZACION_CONTEXTO, 'Contexto de la organización')
 for i, (t, v) in enumerate((('Misión', C.MISION), ('Visión', C.VISION), ('Objetivo', C.OBJETIVO_EMPRESA),
                             ('Ubicación', C.UBICACION)), 1):
     d.h(f'2.{i}. {t}', 3); d.texto(v, t)
+    if t == 'Ubicación':
+        d.imagen(DIAG / 'ubicacion.png', pie=C.UBICACION_FIGURA, ancho=15.5, alto_max=7.5)
+        d.p(C.UBICACION_FUENTE)
+        d.texto(C.INFRAESTRUCTURA, 'Infraestructura')
+        d.vinetas(C.INFRAESTRUCTURA_AREAS)
 d.h('2.5. Organigrama', 3)
-d.imagen(DIAG / 'organigrama.png', pie=C.ORGANIGRAMA)
+d.imagen(DIAG / 'organigrama.png', pie=C.ORGANIGRAMA, ancho=11.0, alto_max=14.5)
 
 # ------------------------------------------------------------------ Capítulo IV
 d.h('Capítulo IV: Especificación de Requerimientos', 1)
@@ -74,6 +79,7 @@ d.tabla_gris(['Usuario', 'Características'], [(a, c or '[PENDIENTE]') for a, c 
 d.h('4.2. Identificación de casos de uso', 3)
 d.tabla_gris(['ID', 'NOMBRE'], list(C.CU.items()), anchos=(2.0, 13.6))
 d.h('4.3. Priorización de casos de uso', 3)
+d.p(C.PRIORIDAD_CRITERIO)
 d.tabla_gris(['ID', 'NOMBRE', 'PRIORIDAD'], [(cu, n, C.PRIORIDAD.get(cu, '[PENDIENTE]')) for cu, n in C.CU.items()], anchos=(2.0, 10.6, 3.0))
 d.h('4.4. Detalle de Casos de Uso', 3)
 for cu, nombre in C.CU.items():
@@ -189,6 +195,11 @@ d.p(f'**URL Proyecto GitHub:** {URL_GITHUB}') if URL_GITHUB else d.pendiente('UR
 # ------------------------------------------------------------------ coherencia del documento (falla si algo no cuadra)
 def coherencia():
     errores = []
+    if set(C.PRIORIDAD) != set(C.CU):
+        errores.append(f'4.3: las prioridades deben cubrir exactamente los ocho casos de uso ({sorted(set(C.CU) ^ set(C.PRIORIDAD))})')
+    for cu, prioridad in C.PRIORIDAD.items():
+        if prioridad not in {'Alta', 'Media', 'Baja'}:
+            errores.append(f'4.3 {cu}: prioridad no válida: {prioridad}')
     actores = [a for a, _ in C.ACTORES]
     if list(navegacion.ACTORES) != actores:
         errores.append(f'7.5 debe tener un diagrama de navegación por actor de 4.1 y en ese orden: {actores} vs {list(navegacion.ACTORES)}')
@@ -274,5 +285,5 @@ coherencia()
 DOCUMENTO.parent.mkdir(exist_ok=True)
 d.guardar(DOCUMENTO)
 print(f'\n{len(PENDIENTES)} PENDIENTES:'); [print(' -', x) for x in PENDIENTES]
-print(f'\n{len(C.POR_CONFIRMAR)} POR CONFIRMAR con UNEXO (propuesta del grupo, ya en el documento):')
+print(f'\n{len(C.POR_CONFIRMAR)} POR CONFIRMAR con UNEXO:')
 [print(' -', x) for x in C.POR_CONFIRMAR]
