@@ -119,10 +119,11 @@ for i, (cu, nombre) in enumerate(C.CU.items()):   # una figura por área del CU 
         d.imagen(fig, f'{cu}. {nombre}' + (f' ({k}/{len(figs)})' if len(figs) > 1 else ''), alto_max=20)
 
 # ------------------------------------------------------------------ Capítulo VII
+d.seccion(True)   # 6.1 apaisada para imprimir el despliegue legible: títulos y diagrama en la misma página
 d.h('Capítulo VII: Diseño', 1)
 d.h('6. Diseño de la Arquitectura', 2)
 d.h('6.1. Diseño Físico de la Arquitectura (Diagrama de Despliegue)', 3)
-d.imagen(DIAG / 'despliegue.png')
+d.imagen(DIAG / 'despliegue.png', ancho=25.9, alto_max=13.2)   # 13,2 cm: lo que dejan los tres títulos
 d.seccion(False, MARGEN_NAV)   # el conceptual en una sola página, casi a todo el ancho (como G07 pág. 63)
 d.h('7. Diseño de Datos', 2)
 d.h('7.1. Diseño Conceptual de Base de Datos', 3)

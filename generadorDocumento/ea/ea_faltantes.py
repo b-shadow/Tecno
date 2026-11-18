@@ -4,6 +4,7 @@ Usa la notación del generador de proyectocorreo/doc/ea/ea_p1.py y extrae
 actores, CU, paquetes y llamadas entre capas de contenido.py y codigo.py.
 No recrea el proyecto ni borra diagramas que se hayan movido manualmente.
 """
+import json
 import pathlib
 import re
 import sys
@@ -16,6 +17,7 @@ sys.path[:0] = [str(DOC), str(HERE)]
 import codigo
 import contenido as C
 import ea_base
+from rutas import CRM_WEB
 
 PREFERIDAS = {
     'CU1': ['POST /login', 'POST /usuarios', 'PUT /matriz'],
@@ -318,34 +320,117 @@ def diagrama_interaccion(ea, raiz, cu, tipo, archivo):
 
 
 def despliegue(ea, modelo):
-    raiz = paquete(ea, modelo, 'Diseño de Despliegue')
-    d = diagrama(ea, raiz, 'Diagrama de despliegue del sistema', 'Deployment', 'despliegue.png')
-    if not d: return
-    # El compose actual corre localmente. El VPS Contabo es destino previsto,
-    # sin atribuir al proyecto un despliegue de producción inexistente.
-    especificaciones = [
-        ('Usuario', 'Device', None, 35, 300, 145, 100),
-        ('Navegador web', 'ExecutionEnvironment', 'Usuario', 50, 350, 115, 45),
-        ('Servidor local Docker', 'Device', None, 230, 35, 950, 510),
-        ('Presentación React + Vite :5173', 'ExecutionEnvironment', 'Servidor local Docker', 270, 110, 240, 145),
-        ('Negocio Laravel API REST :8001', 'ExecutionEnvironment', 'Servidor local Docker', 590, 110, 240, 145),
-        ('Datos PostgreSQL :5432', 'ExecutionEnvironment', 'Servidor local Docker', 900, 110, 240, 145),
-        ('VPS Contabo (despliegue previsto)', 'Device', None, 260, 610, 850, 150),
+    """6.1 calcado de G07 (pág. 62): servidor tecnoweb, router, switch, una PC por actor, BD y pasarela.
+    Cada valor es real: versiones de los lock, PostgreSQL 18.6 (medido en el P1), Apache + PHP 8.4 y la ruta
+    del P2 (P2_WEB.md); de Stripe, solo los recursos que llama negocio/app/Negocio/NStripe.php
+    (checkout->sessions, customers, Webhook::constructEvent)."""
+    for i in range(modelo.Packages.Count):   # se rehace entero: sus elementos no aparecen en otros diagramas
+        if modelo.Packages.GetAt(i).Name == 'Diseño de Despliegue':
+            modelo.Packages.DeleteAt(i, False); modelo.Packages.Refresh(); break
+    raiz = ea.paquete(modelo, 'Diseño de Despliegue')
+    d = ea.diagrama(raiz, 'Diagrama de Despliegue', 'Deployment')
+    laravel = next(p['version'].lstrip('v') for p in json.loads((CRM_WEB / 'negocio/composer.lock').read_text(encoding='utf-8'))['packages']
+                   if p['name'] == 'laravel/framework')
+    react = json.loads((CRM_WEB / 'presentacion/package-lock.json').read_text(encoding='utf-8'))['packages']['node_modules/react']['version']
+    NARANJA, AZUL, AZUL2, ROSA, VERDE = 0x9CD4FF, 0xF8E8D8, 0xF0D4B8, 0xCCC8F8, 0xE0ECCF   # COLORREF 0xBBGGRR
+    # Cuadrícula: arriba el servidor; franja central router + switch, a la altura del centro de la columna de PCs
+    # (así las cuatro líneas del switch entran por el lado izquierdo de cada PC); abajo la BD y la pasarela (G07).
+    # Letra de 11 pt para imprimir; las medidas están pensadas para ella: cada caja anidada deja CAB arriba para
+    # el rótulo «estereotipo» + nombre (dos líneas) y PAD a los lados y abajo, y ningún nombre obliga a EA a
+    # agrandar una caja (si lo hiciera, las anidadas se montarían).
+    CAB, PAD = 60, 20
+    LETRA = 110   # décimas de punto
+
+    def dentro(x, y, w, h):
+        return x + PAD, y + CAB, w - 2 * PAD, h - CAB - PAD
+
+    def fila(x, y, w, h, n, ancho, alto):
+        """n cajas de ancho × alto con el mismo espacio entre ellas, centradas bajo el rótulo de (x, y, w, h)."""
+        hueco = (w - n * ancho) / (n + 1)
+        arriba = round(y + CAB + (h - CAB - PAD - alto) / 2)
+        return [(round(x + hueco + i * (ancho + hueco)), arriba, ancho, alto) for i in range(n)]
+
+    PC_W, PC_H, PC_GAP = 240, 210, 15
+    alto = 4 * PC_H + 3 * PC_GAP                                      # la columna de PCs marca el alto (885)
+    SRV = (40, 40, 500, 350)
+    SO = dentro(*SRV)
+    WEB = dentro(*SO)
+    BD = (40, 40 + alto - 350, 500, 350)                              # termina con la última PC
+    SO_BD = dentro(*BD)
+    PG = dentro(*SO_BD)
+    PAS = (700, BD[1], 400, 350)                                      # abajo, junto a la BD, como G07
+    API = dentro(*PAS)
+    centro = round(40 + alto / 2)                                     # centro de la columna de PCs
+    ROUTER = (700, centro - 40, 130, 80)                              # alineado con la pasarela
+    SWITCH = (950, centro - 40, 130, 80)
+    PC_X = SWITCH[0] + SWITCH[2] // 2 + 280   # a 280 del centro del switch: las líneas entran por el lado izquierdo
+    espec = [
+        ('srv', 'www.tecnoweb.org.bo', 'Device', None, *SRV, NARANJA),
+        ('so', 'Sistema Operativo Fedora Linux', 'Device', 'srv', *SO, AZUL),
+        ('web', 'Apache con PHP 8.4 (/inf513/grupo05sa/proyecto2)', 'ExecutionEnvironment', 'so', *WEB, AZUL),
+        *[(k, n, 'Component', 'web', *r, ROSA) for (k, n), r in zip(
+            [('p', f'presentacion (React {react})'), ('n', f'negocio (Laravel {laravel}, API REST)'),
+             ('d', 'datos (paquete Composer)')], fila(*WEB, 3, 125, 95))],
+        ('router', 'Router', 'Device', None, *ROUTER, NARANJA),
+        ('switch', 'Switch', 'Device', None, *SWITCH, NARANJA),
+        ('pas', 'Pasarela de Pago Stripe', 'Device', None, *PAS, AZUL2),
+        ('api', 'API REST Stripe (Sandbox)', 'ExecutionEnvironment', 'pas', *API, AZUL),
+        *[(k, n, 'Component', 'api', *r, ROSA) for (k, n), r in zip(
+            [('chk', 'Checkout Sessions'), ('cus', 'Customers'), ('whk', 'Webhooks firmados')], fila(*API, 3, 105, 70))],
+        ('bd', 'Database Server db.tecnoweb.org.bo', 'Device', None, *BD, AZUL2),
+        ('so_bd', 'Sistema Operativo Linux', 'Device', 'bd', *SO_BD, AZUL),
+        ('pg', 'PostgreSQL 18.6', 'ExecutionEnvironment', 'so_bd', *PG, AZUL),
+        ('base', 'db_grupo05sa (esquema public)', 'Artifact', 'pg', *fila(*PG, 1, 250, 60)[0], VERDE),
     ]
-    el = {}
-    for n, tipo, padre, x, y, w, h in especificaciones:
-        el[n] = ea.elemento(raiz, n, tipo, padre=el.get(padre))
-        ea.poner(d, el[n], x, y, w, h, seq=8 if tipo == 'Device' else 1)
-    for a, b, protocolo in [
-        ('Navegador web', 'Presentación React + Vite :5173', 'HTTP 5173'),
-        ('Presentación React + Vite :5173', 'Negocio Laravel API REST :8001', 'HTTP/JSON REST'),
-        ('Negocio Laravel API REST :8001', 'Datos PostgreSQL :5432', 'SQL TCP 5432'),
-    ]: ea.conector(el[a], el[b], 'CommunicationPath', protocolo, dirigido=True)
+    for i, (actor, _) in enumerate(C.ACTORES):   # una PC por rol, como «PC Cliente» y «PC Administrador» de G07
+        pc = (PC_X, 40 + i * (PC_H + PC_GAP), PC_W, PC_H)
+        so_pc = dentro(*pc)
+        espec += [(actor, f'PC {actor}', 'Device', None, *pc, NARANJA),
+                  (actor + 'so', 'S. O. Windows, Linux, MacOS', 'Device', actor, *so_pc, AZUL),
+                  (actor + 'nav', 'Navegador web (Chrome, Firefox, Edge)', 'Component', actor + 'so',
+                   *fila(*so_pc, 1, 170, 55)[0], ROSA)]
+    caja = {k: (x, y, w, h) for k, _, _, _, x, y, w, h, _ in espec}
+    for k, _, _, padre, x, y, w, h, _ in espec:   # ninguna caja se sale de su padre
+        if padre:
+            px, py, pw, ph = caja[padre]
+            assert px < x and py < y and x + w < px + pw and y + h < py + ph, f'{k} se sale de {padre}'
+    el, nivel = {}, {}
+    for k, nombre, tipo, padre, x, y, w, h, color in espec:
+        nivel[k] = nivel[padre] + 1 if padre else 0
+        el[k] = ea.elemento(raiz, nombre, tipo, padre=el.get(padre))
+        ea.poner(d, el[k], x, y, w, h, seq=10 - 2 * nivel[k])   # lo anidado, delante
+        # color y letra grande (el diagrama se imprime en una página apaisada): fontsz va en décimas de punto
+        ea.r.Execute(f"UPDATE t_diagramobjects SET ObjectStyle='BCol={color};font=Calibri;fontsz={LETRA};' "
+                     f"WHERE Diagram_ID={d.DiagramID} AND Object_ID={el[k].ElementID}")
+    # Enlaces y rótulos de G07: solo servidor-router lleva el protocolo web; la pasarela cuelga solo del servidor
+    enlaces = [('srv', 'router', 'HTTPS'), ('router', 'switch', 'TCP/IP'), ('srv', 'bd', 'TCP/IP'), ('srv', 'pas', 'TCP/IP')]
+    enlaces += [('switch', a, 'TCP/IP') for a, _ in C.ACTORES]
+    for a, b, protocolo in enlaces:
+        c = ea.conector(el[a], el[b], 'CommunicationPath', protocolo)
+        c.Direction = 'Unspecified'; c.Update()   # sin flecha, como G07
     ea.exportar(d, 'despliegue.png')
+
+
+def solo_despliegue():
+    """Rehace solo 6.1. Los rótulos de las líneas usan la letra por defecto de EA (opción del usuario, 8 pt):
+    se sube a 11 pt mientras se exporta este diagrama, para imprimirlo legible, y se restaura al terminar."""
+    import winreg
+    clave = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Sparx Systems\EA400\EA\OPTIONS', 0,
+                           winreg.KEY_READ | winreg.KEY_SET_VALUE)
+    antes = winreg.QueryValueEx(clave, 'FONTSIZE13')
+    winreg.SetValueEx(clave, 'FONTSIZE13', 0, antes[1], 11 if antes[1] == winreg.REG_DWORD else '11')
+    try:
+        ea = ea_base.EA.abrir_existente()
+        try: despliegue(ea, ea.modelo)
+        finally: ea.cerrar()
+    finally:
+        winreg.SetValueEx(clave, 'FONTSIZE13', 0, antes[1], antes[0]); winreg.CloseKey(clave)
 
 
 def main():
     ea_base.SALIDA.mkdir(exist_ok=True)
+    if sys.argv[1:] == ['--despliegue']:   # solo 6.1
+        return solo_despliegue()
     ea = ea_base.EA.abrir_existente()
     try:
         _, actores, casos = requisitos(ea, ea.modelo)
@@ -355,10 +440,10 @@ def main():
         for cu in C.CU:
             diagrama_interaccion(ea, col, cu, 'Comunicación', f'com-{cu.lower()}.png')
             diagrama_interaccion(ea, seq, cu, 'Secuencia', f'sd-{cu.lower()}.png')
-        despliegue(ea, ea.modelo)
     finally:
         ea.cerrar()
     print(f'Exportados {len(ea.exportados)} diagramas PNG y EMF en {ea_base.SALIDA}')
+    solo_despliegue()   # aparte: necesita abrir EA con la letra de rótulos a 11 pt
 
 
 if __name__ == '__main__': main()
