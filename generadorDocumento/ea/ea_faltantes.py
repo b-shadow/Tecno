@@ -320,7 +320,7 @@ def diagrama_interaccion(ea, raiz, cu, tipo, archivo):
 
 
 def despliegue(ea, modelo):
-    """6.1 calcado de G07 (pág. 62): servidor tecnoweb, router, switch, una PC por actor, BD y pasarela.
+    """6.1 calcado de G07 (pág. 62): servidor tecnoweb, router, switch, PC Administrador y PC Cliente, BD y pasarela.
     Cada valor es real: versiones de los lock, PostgreSQL 18.6 (medido en el P1), Apache + PHP 8.4 y la ruta
     del P2 (P2_WEB.md); de Stripe, solo los recursos que llama negocio/app/Negocio/NStripe.php
     (checkout->sessions, customers, Webhook::constructEvent)."""
@@ -333,8 +333,8 @@ def despliegue(ea, modelo):
                    if p['name'] == 'laravel/framework')
     react = json.loads((CRM_WEB / 'presentacion/package-lock.json').read_text(encoding='utf-8'))['packages']['node_modules/react']['version']
     NARANJA, AZUL, AZUL2, ROSA, VERDE = 0x9CD4FF, 0xF8E8D8, 0xF0D4B8, 0xCCC8F8, 0xE0ECCF   # COLORREF 0xBBGGRR
-    # Cuadrícula: arriba el servidor; franja central router + switch, a la altura del centro de la columna de PCs
-    # (así las cuatro líneas del switch entran por el lado izquierdo de cada PC); abajo la BD y la pasarela (G07).
+    # Cuadrícula: arriba el servidor; franja central router + switch, centrada con las dos PCs; abajo la BD y la
+    # pasarela (G07).
     # Letra de 11 pt para imprimir; las medidas están pensadas para ella: cada caja anidada deja CAB arriba para
     # el rótulo «estereotipo» + nombre (dos líneas) y PAD a los lados y abajo, y ningún nombre obliga a EA a
     # agrandar una caja (si lo hiciera, las anidadas se montarían).
@@ -350,20 +350,25 @@ def despliegue(ea, modelo):
         arriba = round(y + CAB + (h - CAB - PAD - alto) / 2)
         return [(round(x + hueco + i * (ancho + hueco)), arriba, ancho, alto) for i in range(n)]
 
+    # Equipos de usuario como G07 y como pide el docente en la clase de diseño («usuarios dentro de la red» y
+    # «usuarios de internet»): se agrupan por tipo de acceso, no uno por rol. Deben cubrir todos los actores.
+    PCS = [('adm', 'PC Administrador', ['Administrador', 'Coordinador', 'Vendedor']),   # panel con sesión
+           ('cli', 'PC Cliente', ['Visitante'])]                                       # catálogo público, sin sesión
+    assert sorted(a for _, _, g in PCS for a in g) == sorted(a for a, _ in C.ACTORES), 'PCs ≠ actores de contenido'
     PC_W, PC_H, PC_GAP = 240, 210, 15
-    alto = 4 * PC_H + 3 * PC_GAP                                      # la columna de PCs marca el alto (885)
     SRV = (40, 40, 500, 350)
     SO = dentro(*SRV)
     WEB = dentro(*SO)
-    BD = (40, 40 + alto - 350, 500, 350)                              # termina con la última PC
+    BD = (40, 520, 500, 310)
     SO_BD = dentro(*BD)
     PG = dentro(*SO_BD)
-    PAS = (700, BD[1], 400, 350)                                      # abajo, junto a la BD, como G07
+    PAS = (700, BD[1], 400, 310)                                      # abajo, junto a la BD, como G07
     API = dentro(*PAS)
-    centro = round(40 + alto / 2)                                     # centro de la columna de PCs
+    centro = (SRV[1] + SRV[3] + BD[1]) // 2                           # franja entre el servidor y la BD
     ROUTER = (700, centro - 40, 130, 80)                              # alineado con la pasarela
     SWITCH = (950, centro - 40, 130, 80)
-    PC_X = SWITCH[0] + SWITCH[2] // 2 + 280   # a 280 del centro del switch: las líneas entran por el lado izquierdo
+    PC_X = SWITCH[0] + SWITCH[2] // 2 + 215
+    PC_Y = centro - (len(PCS) * PC_H + (len(PCS) - 1) * PC_GAP) // 2   # PCs centradas con el switch
     espec = [
         ('srv', 'www.tecnoweb.org.bo', 'Device', None, *SRV, NARANJA),
         ('so', 'Sistema Operativo Fedora Linux', 'Device', 'srv', *SO, AZUL),
@@ -382,12 +387,12 @@ def despliegue(ea, modelo):
         ('pg', 'PostgreSQL 18.6', 'ExecutionEnvironment', 'so_bd', *PG, AZUL),
         ('base', 'db_grupo05sa (esquema public)', 'Artifact', 'pg', *fila(*PG, 1, 250, 60)[0], VERDE),
     ]
-    for i, (actor, _) in enumerate(C.ACTORES):   # una PC por rol, como «PC Cliente» y «PC Administrador» de G07
-        pc = (PC_X, 40 + i * (PC_H + PC_GAP), PC_W, PC_H)
+    for i, (k, nombre, _) in enumerate(PCS):
+        pc = (PC_X, PC_Y + i * (PC_H + PC_GAP), PC_W, PC_H)
         so_pc = dentro(*pc)
-        espec += [(actor, f'PC {actor}', 'Device', None, *pc, NARANJA),
-                  (actor + 'so', 'S. O. Windows, Linux, MacOS', 'Device', actor, *so_pc, AZUL),
-                  (actor + 'nav', 'Navegador web (Chrome, Firefox, Edge)', 'Component', actor + 'so',
+        espec += [(k, nombre, 'Device', None, *pc, NARANJA),
+                  (k + 'so', 'S. O. Windows, Linux, MacOS', 'Device', k, *so_pc, AZUL),
+                  (k + 'nav', 'Navegador web (Chrome, Firefox, Edge)', 'Component', k + 'so',
                    *fila(*so_pc, 1, 170, 55)[0], ROSA)]
     caja = {k: (x, y, w, h) for k, _, _, _, x, y, w, h, _ in espec}
     for k, _, _, padre, x, y, w, h, _ in espec:   # ninguna caja se sale de su padre
@@ -404,7 +409,7 @@ def despliegue(ea, modelo):
                      f"WHERE Diagram_ID={d.DiagramID} AND Object_ID={el[k].ElementID}")
     # Enlaces y rótulos de G07: solo servidor-router lleva el protocolo web; la pasarela cuelga solo del servidor
     enlaces = [('srv', 'router', 'HTTPS'), ('router', 'switch', 'TCP/IP'), ('srv', 'bd', 'TCP/IP'), ('srv', 'pas', 'TCP/IP')]
-    enlaces += [('switch', a, 'TCP/IP') for a, _ in C.ACTORES]
+    enlaces += [('switch', k, 'TCP/IP') for k, _, _ in PCS]
     for a, b, protocolo in enlaces:
         c = ea.conector(el[a], el[b], 'CommunicationPath', protocolo)
         c.Direction = 'Unspecified'; c.Update()   # sin flecha, como G07

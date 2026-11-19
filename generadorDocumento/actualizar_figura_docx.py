@@ -18,10 +18,12 @@ W = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
 R = '{http://schemas.openxmlformats.org/officeDocument/2006/relationships}'
 A = '{http://schemas.openxmlformats.org/drawingml/2006/main}'
 V = '{urn:schemas-microsoft-com:vml}'
-# figura: (archivo en diagramas/, encabezado donde está, encabezado siguiente) sin tildes y en minúsculas
+# figura: (archivo en diagramas/, encabezado donde está, encabezado siguiente, caja máxima en cm o None)
+# Encabezados sin tildes y en minúsculas. Con caja, la figura ocupa lo más que entra en ella (6.1: página apaisada
+# bajo los tres títulos, como documento_p2.py); sin caja, conserva su ancho.
 FIGURAS = {
-    'conceptual': ('conceptual', '7.1. diseno conceptual de base de datos', '7.2. diseno logico'),
-    'despliegue': ('despliegue', '6.1. diseno fisico de la arquitectura', '7. diseno de datos'),
+    'conceptual': ('conceptual', '7.1. diseno conceptual de base de datos', '7.2. diseno logico', None),
+    'despliegue': ('despliegue', '6.1. diseno fisico de la arquitectura', '7. diseno de datos', (25.9, 13.2)),
 }
 
 
@@ -56,18 +58,24 @@ def localizar_imagen(z, encabezado, fin):
     raise RuntimeError(f'No encontré la imagen bajo «{encabezado}».')
 
 
-def proporcion(xml, rid, png):
-    """Mantiene el ancho de la figura y ajusta su alto al nuevo PNG, para que no salga estirada."""
+def proporcion(xml, rid, png, caja=None):
+    """Ajusta el tamaño de la figura al nuevo PNG para que no salga estirada: sin caja conserva el ancho;
+    con caja (ancho, alto en cm) toma lo más grande que entra en ella."""
     ancho, alto = struct.unpack('>II', png.read_bytes()[16:24])
-    patron = re.compile(r'(<v:shape [^>]*?style="width:([\d.]+)pt;height:)[^;"]+(;?[^"]*"[^>]*>\s*<v:imagedata r:id="%s")' % rid)
-    xml, n = patron.subn(lambda m: f'{m.group(1)}{float(m.group(2)) * alto / ancho:.1f}pt{m.group(3)}', xml)
+    patron = re.compile(r'(<v:shape [^>]*?style="width:)([\d.]+)(pt;height:)[^;"]+(;?[^"]*"[^>]*>\s*<v:imagedata r:id="%s")' % rid)
+
+    def medida(m):
+        w = float(m.group(2))
+        if caja: w = min(caja[0], caja[1] * ancho / alto) / 2.54 * 72
+        return f'{m.group(1)}{w:.1f}{m.group(3)}{w * alto / ancho:.1f}pt{m.group(4)}'
+    xml, n = patron.subn(medida, xml)
     if n != 1: raise RuntimeError(f'No pude ajustar el tamaño de la figura {rid} ({n} coincidencias).')
     return xml
 
 
 def main():
     clave = sys.argv[1] if len(sys.argv) > 1 else 'conceptual'
-    archivo, encabezado, fin = FIGURAS[clave]
+    archivo, encabezado, fin, caja = FIGURAS[clave]
     figura = DIAGRAMAS / f'{archivo}.emf'
     if not figura.is_file():
         raise FileNotFoundError(figura)
@@ -84,7 +92,7 @@ def main():
                 for item in origen.infolist():
                     contenido = figura.read_bytes() if item.filename == nombre else origen.read(item.filename)
                     if item.filename == 'word/document.xml':
-                        contenido = proporcion(contenido.decode('utf-8'), rid, figura.with_suffix('.png')).encode('utf-8')
+                        contenido = proporcion(contenido.decode('utf-8'), rid, figura.with_suffix('.png'), caja).encode('utf-8')
                     salida.writestr(item, contenido)
         os.replace(temporal, DOCUMENTO)
     finally:
