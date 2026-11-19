@@ -163,33 +163,43 @@ class NStripe
             'monto_bob' => number_format((float) $cuota->monto, 2, '.', ''),
         ];
 
-        try {
-            $sesion = $stripe->checkout->sessions->create([
-                'mode' => 'payment',
-                'allowed_payment_method_types' => ['card'],
-                'locale' => 'es',
-                'customer' => $customerId,
-                'line_items' => [[
-                    'price_data' => [
-                        'currency' => $this->moneda(),
-                        'product_data' => [
-                            'name' => "{$interes->modulo_nombre} ({$interes->programa_nombre})",
-                            'description' => "Orden #{$orden->nro_orden} · Cuota {$nroCuota} de {$totalCuotas} · {$prospecto->nombre} {$prospecto->apellido}",
-                        ],
-                        'unit_amount' => $centavos,
+        // El instante de la orden separa las claves de cada base que comparte la cuenta Sandbox (nro_orden se repite entre ellas).
+        $claveIdemp = "unexo-chk-ord-{$orden->nro_orden}-{$orden->fecha_generacion?->timestamp}-cta-{$nroCuota}-i{$intento}";
+        $parametros = [
+            'mode' => 'payment',
+            'allowed_payment_method_types' => ['card'],
+            'locale' => 'es',
+            'customer' => $customerId,
+            'line_items' => [[
+                'price_data' => [
+                    'currency' => $this->moneda(),
+                    'product_data' => [
+                        'name' => "{$interes->modulo_nombre} ({$interes->programa_nombre})",
+                        'description' => "Orden #{$orden->nro_orden} · Cuota {$nroCuota} de {$totalCuotas} · {$prospecto->nombre} {$prospecto->apellido}",
                     ],
-                    'quantity' => 1,
-                ]],
-                'payment_intent_data' => [
-                    'setup_future_usage' => 'off_session',
-                    'metadata' => $meta,
+                    'unit_amount' => $centavos,
                 ],
-                'success_url' => "{$frontend}/pagos/confirmacion?session_id={CHECKOUT_SESSION_ID}&token={$tokenPublico}",
-                'cancel_url' => "{$frontend}/pagos/cancelado?session_id={CHECKOUT_SESSION_ID}&token={$tokenPublico}",
+                'quantity' => 1,
+            ]],
+            'payment_intent_data' => [
+                'setup_future_usage' => 'off_session',
                 'metadata' => $meta,
-            ], ['idempotency_key' => $claveIdemp]);
-        } catch (ApiErrorException $e) {
-            throw new ReglaNegocioException('Stripe no pudo iniciar la sesión de pago: '.$e->getMessage(), 502);
+            ],
+            'success_url' => "{$frontend}/pagos/confirmacion?session_id={CHECKOUT_SESSION_ID}&token={$tokenPublico}",
+            'cancel_url' => "{$frontend}/pagos/cancelado?session_id={CHECKOUT_SESSION_ID}&token={$tokenPublico}",
+            'metadata' => $meta,
+        ];
+        for ($reintento = 0; ; $reintento++) {
+            try {
+                $sesion = $stripe->checkout->sessions->create($parametros, ['idempotency_key' => $claveIdemp]);
+                break;
+            } catch (ApiErrorException $e) {
+                // 409 = doble clic: la otra petición con la misma clave sigue en curso; al terminar, Stripe repite su sesión.
+                if ($e->getHttpStatus() !== 409 || $reintento >= 5) {
+                    throw new ReglaNegocioException('Stripe no pudo iniciar la sesión de pago: '.$e->getMessage(), 502);
+                }
+                usleep(500_000);
+            }
         }
 
         $this->validarSandbox($sesion->livemode);
@@ -429,7 +439,7 @@ class NStripe
         $interes = $orden->interes;
         NAlcance::autorizarTarjeta($actor, $interes);
         ReglaNegocioException::si($orden->estado !== 'Activa', 'La orden ya fue anulada previamente.');
-        ReglaNegocioException::si($this->datos->tienePagosNoAnulables($orden->nro_orden), 'No se puede anular una orden que ya tiene cuotas pagadas o en revisión.');
+        ReglaNegocioException::si($this->tienePagosNoAnulables($orden->nro_orden), 'No se puede anular una orden que ya tiene cuotas pagadas o en revisión.');
 
         $pendientes = $this->datos->transaccionesPendientesDeOrden($orden->nro_orden);
         if ($pendientes->isNotEmpty()) {
@@ -455,7 +465,7 @@ class NStripe
         $this->datos->transaccion(function () use ($orden, $actor, $motivo, $pendientes, $interes): void {
             $bloqueada = $this->datos->ordenBloqueada($orden->nro_orden);
             ReglaNegocioException::si($bloqueada->estado !== 'Activa', 'La orden ya fue anulada.');
-            ReglaNegocioException::si($this->datos->tienePagosNoAnulables($bloqueada->nro_orden), 'No se puede anular una orden con pagos confirmados.');
+            ReglaNegocioException::si($this->tienePagosNoAnulables($bloqueada->nro_orden), 'No se puede anular una orden con pagos confirmados.');
 
             foreach ($pendientes as $tx) {
                 $this->datos->actualizarTransaccion($tx, [
@@ -697,19 +707,16 @@ class NStripe
                 $descMetodo = $marca && $ultimos4 ? "{$marca} •••• {$ultimos4}" : 'Tarjeta Stripe';
                 $observacion = "Stripe Sandbox {$piId} · {$descMetodo}";
 
-                $this->datos->marcarCuotaPagadaStripe(
-                    (int) $tx->nro_orden,
-                    (int) $tx->nro_cuota,
-                    [
-                        'nro_metodo' => $nroMetodo,
-                        'stripe_sesion' => $sesion->id,
-                        'stripe_pago_intent' => $piId,
-                        'stripe_metodo' => $pmId,
-                        'stripe_recibo_url' => $receiptUrl,
-                        'observacion' => $observacion,
-                    ],
-                    "Pago confirmado por Stripe Sandbox ({$piId})"
-                );
+                NPago::estadoCuota($this->pagos, (int) $tx->nro_orden, (int) $tx->nro_cuota, 'Pago aprobado', [
+                    'proveedor' => 'stripe',
+                    'moneda' => 'BOB',
+                    'nro_metodo' => $nroMetodo,
+                    'stripe_sesion' => $sesion->id,
+                    'stripe_pago_intent' => $piId,
+                    'stripe_metodo' => $pmId,
+                    'stripe_recibo_url' => $receiptUrl,
+                    'observacion' => $observacion,
+                ], "Pago confirmado por Stripe Sandbox ({$piId})");
 
                 $this->datos->actualizarTransaccion($tx, [
                     'stripe_pago_intent' => $piId,
@@ -857,7 +864,7 @@ class NStripe
         $prospecto = $interes?->prospecto ?? $tx->prospecto;
         $cuotas = $orden?->cuotas ?? collect();
         $cuota = $cuotas->firstWhere('nro_cuota', $tx->nro_cuota);
-        $saldo = $orden ? $this->datos->cuotaConSaldoOrden($orden->nro_orden) : 0.0;
+        $saldo = $orden ? max(round((float) $orden->total - $this->pagos->montoCuotasEnEstado($orden->nro_orden, 'Pago aprobado'), 2), 0.0) : 0.0;
 
         return [
             'tipo' => 'payment',
@@ -892,6 +899,13 @@ class NStripe
     }
 
     // ---------------------------------------------------------------- utilidades Stripe
+
+    /** Una orden no se anula si alguna cuota ya se pagó o está en revisión, o si Stripe ya confirmó un cobro. */
+    private function tienePagosNoAnulables(int $nroOrden): bool
+    {
+        return $this->pagos->hayCuotasEnEstados($nroOrden, ['Pago aprobado', 'En revision'])
+            || $this->datos->hayTransaccionesEnEstado($nroOrden, 'confirmado');
+    }
 
     private function cliente(): StripeClient
     {

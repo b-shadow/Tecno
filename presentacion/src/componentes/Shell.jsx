@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Contrast, KeyRound, LogOut, Moon, Palette, Search, Sun, UserCog } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
 import { go, useRecursoActual } from '../servicios/navigation'
 import { logout, updateProfile, useAuth } from '../servicios/auth'
 import { cambiar, temaEfectivo, useApariencia } from '../servicios/theme'
@@ -255,14 +256,19 @@ function ModalClave({ onCerrar }) {
 }
 
 /** Contador de visitas persistente de la página (enunciado 7), en el pie de cada vista. */
+// Una visita por navegación: en desarrollo, StrictMode monta el efecto dos veces y sin esto cada página sumaba 2.
+let ultimaVisita = { clave: null, peticion: null }
+
 export function Pie() {
   const path = useRecursoActual()
+  const { key } = useLocation()
   const [visitas, setVisitas] = useState(null)
   useEffect(() => {
     let vivo = true
-    sitioApi.visita(path).then(({ data }) => vivo && setVisitas(data.visitas)).catch(() => vivo && setVisitas(null))
+    if (ultimaVisita.clave !== `${key}|${path}`) ultimaVisita = { clave: `${key}|${path}`, peticion: sitioApi.visita(path) }
+    ultimaVisita.peticion.then(({ data }) => vivo && setVisitas(data.visitas)).catch(() => vivo && setVisitas(null))
     return () => { vivo = false }
-  }, [path])
+  }, [key, path])
   return (
     <footer className="app-pie flex items-center justify-between gap-4 border-t border-filete bg-footer-bg px-[clamp(16px,3vw,40px)] py-2 text-xs text-tinta-suave">
       <span className="min-w-0 truncate">UNEXO</span>

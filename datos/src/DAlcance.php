@@ -34,15 +34,6 @@ class DAlcance
         return self::prospectos(Prospecto::query()->whereKey($prospecto->documento), $usuario)->exists();
     }
 
-    public static function veTarjeta(Usuario $usuario, object $interes): bool
-    {
-        return match ($usuario->rol) {
-            'vendedor' => $interes->vendedor_correo === $usuario->correo,
-            'coordinador' => self::codigosModuloCoordinador($usuario->correo)->contains($interes->modulo_codigo),
-            default => true,
-        };
-    }
-
     public static function codigosModuloCoordinador(string $correo): Collection
     {
         return DB::table('catalogo_cache as c')

@@ -1,6 +1,6 @@
 # Pendientes del documento P2 y del código (25/11/2026)
 
-`python documento_p2.py` genera sin incoherencias y lista al final los 59 `[PENDIENTE]` del documento.
+El documento habitual `documento/P2-INF513-GRUPO05SA.docx` ya integra la teoría y bibliografía investigadas. Su contenido fuente reside en `contenido.py` y sale en cada generación con `documento_p2.py`. Los pendientes de otros capítulos se mantienen. La reconstrucción completa del Word reemplaza las ediciones manuales posteriores; conservar una copia antes de ejecutarla.
 
 ## Hecho en este corte
 - **Código en 3 capas estricto (P / N / D, como la Agenda 3C del docente):** `negocio/app/Negocio/N*.php` (antes
@@ -11,13 +11,17 @@
 - Pruebas: `scripts/verificar_p2.py` TODO OK; `verificar_navegadores.mjs` 321/321 en Chromium; `verificar_integridad.sql` OK.
 - `scripts/qa_local.py` adaptado a las 3 carpetas; el seeder apuntaba a `App\Services\Conversion` (no existía): corregido.
 
-## Falta en el documento
-- **Cap. II:** los 19 temas de teoría y la bibliografía (cada tema ya tiene su evidencia en `contenido.EVIDENCIA`).
-- **Cap. I y III:** antecedentes, planteamiento del problema y ubicación de UNEXO (datos reales de la clienta).
-  Misión, visión, objetivo y organigrama son propuesta del grupo: confirmarlos y vaciar `contenido.POR_CONFIRMAR`.
-- **Prioridad de los CU** (Alta/Media) en `contenido.PRIORIDAD`: decisión del grupo.
-- **Diagramas en EA:** actores, CU (8 + general), paquetes (6 + general), colaboración (8), secuencia (8), despliegue.
-  La colaboración y la secuencia deben usar las clases P/N/D reales (`codigo.cadena(cu)` ya da la cadena y los mensajes).
+## Pendientes del documento
+- **Ubicación e infraestructura (Cap. III):** copiadas del P1 aprobado. La dirección, las coordenadas, el mapa y las áreas de trabajo ya están en `contenido.py`; el mapa se conserva como `diagramas/ubicacion.png` para regenerar sin `proyectocorreo/`.
+- **Organigrama (Cap. III):** se exporta con proporción natural y ya no queda aplastado.
+- **Prioridad de los ocho CU:** cargada en `contenido.PRIORIDAD`.
+- **Conclusiones:** hay cinco, una por objetivo específico, en `contenido.CONCLUSIONES`.
+- **7.6 Interfaces:** faltan las capturas reales del sistema en el documento.
+- **Diagramas en EA (completados el 25/11/2026):** actores, CU (8 + general), paquetes (6 + general),
+  comunicación (8), secuencia (8) y despliegue. `ea/ea_faltantes.py` los guarda en `ea/crm-p2.eapx` y exporta
+  PNG + EMF; `insertar_diagramas.py` sustituyó los 34 marcadores del DOCX conservando las ediciones manuales.
+  Las secuencias muestran llamadas reales P→N→D, retornos con los tipos declarados en PHP y fragmentos `opt`;
+  `actualizar_secuencias.py` reemplaza solo esas ocho imágenes en el Word existente.
 - **7.6:** capturas de pantalla (`scripts/capturas_p2.mjs`) y **11. Conclusión** (una por objetivo, tras las pruebas finales).
 
 ## Falta en textos y scripts (quedaron con nombres viejos)

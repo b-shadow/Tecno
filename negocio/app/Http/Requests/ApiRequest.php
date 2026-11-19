@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use Closure;
 use Datos\Modelos\Usuario;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -20,6 +21,19 @@ abstract class ApiRequest extends FormRequest
     public function usuario(): ?Usuario
     {
         return $this->attributes->get('auth_usuario');
+    }
+
+    /**
+     * Regla que consulta la BD a través de la capa de datos (los exists/unique de Laravel irían directo a la BD):
+     * $cumple recibe el valor y responde con un método de una clase D*; si no cumple, $mensaje en español.
+     */
+    protected function segun(callable $cumple, string $mensaje = 'validation.exists'): Closure
+    {
+        return function (string $atributo, mixed $valor, Closure $fail) use ($cumple, $mensaje): void {
+            if (! is_scalar($valor) || ! $cumple((string) $valor)) {
+                $fail($mensaje)->translate();
+            }
+        };
     }
 
     /** Navegador del cliente, recortado a la columna de la bitácora. */

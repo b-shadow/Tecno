@@ -37,8 +37,39 @@ INTRODUCCION = [
     'El acceso se controla por roles (Administrador, Coordinador y Vendedor) con una matriz de acceso guardada en la base '
     'de datos, de la que se arma el menú de cada usuario, y cada acceso queda registrado en una bitácora. El desarrollo '
     'sigue el Proceso Unificado de Desarrollo de Software (PUDS) y se modela con UML en Enterprise Architect.']
-ANTECEDENTES = None          # 3 párrafos; el 3.º: justificación teórica, metodológica y práctica
-PROBLEMA = None              # situación, causas, pronóstico, solución
+ANTECEDENTES = [
+    'El Grupo 05 SA abordó primero el dominio de captación y seguimiento de prospectos en el Proyecto 1 de INF513. '
+    'Aquel sistema utilizó comandos enviados por correo electrónico para registrar interesados, asignarlos a vendedores, '
+    'seguir sus oportunidades en un embudo y tramitar la conversión a matrícula. El Proyecto 2 conserva los ocho casos de '
+    'uso del proceso comercial y la base de datos compartida, pero ofrece una interfaz web y una API RESTful '
+    '(Grupo 05 SA, 2026).',
+    'El alcance web responde a cuatro formas de trabajo documentadas para este proyecto: el visitante consulta programas '
+    'y módulos y comunica su interés; el vendedor atiende su cartera desde el celular; coordinación distribuye prospectos '
+    'y revisa pagos; y administración gestiona cuentas, permisos y auditoría. Cada interés se trata como una oportunidad '
+    'con estado, historial, contactos y condiciones de pago, de modo que las acciones de estos actores se consulten '
+    'desde un mismo sistema (Grupo 05 SA, «Product», 2026).',
+    'La justificación teórica se apoya en la separación entre presentación, lógica de negocio y persistencia, con '
+    'validación y autorización en el servidor. En lo metodológico, el PUDS y los modelos UML permiten relacionar '
+    'requisitos, casos de uso, diseño, implementación y pruebas. En lo práctico, la interfaz web reúne catálogo, '
+    'asignación, seguimiento, pagos y reportes en un flujo accesible según el rol, sin depender de comandos de correo '
+    'para cada operación (Grupo 05 SA, «P2_WEB», 2026).',
+]
+PROBLEMA = [
+    'El escenario comercial descrito en el Proyecto 1 requería registrar cada contacto y conocer la etapa de cada '
+    'interesado. Cuando esa información permanece repartida entre planillas, mensajes y la memoria de cada vendedor, '
+    'resulta difícil identificar prospectos sin atención, reconstruir una conversación o conocer por qué se perdió '
+    'una oportunidad. El canal de correo del P1 resolvió el registro transaccional, pero el Proyecto 2 necesita '
+    'presentar el mismo proceso mediante vistas web para visitantes, vendedores, coordinación y administración '
+    '(Grupo 05 SA, 2026).',
+    'La causa funcional es la falta de una vista compartida del prospecto que reúna interés, asignación, etapa del '
+    'embudo, interacciones, recordatorios y pagos con permisos diferenciados. Si el canal web no integra estos datos, '
+    'el seguimiento puede quedar fragmentado, la distribución del trabajo no resulta visible y coordinación carece '
+    'de información consistente para revisar conversiones y motivos de pérdida.',
+    'El problema se formula así: ¿cómo ofrecer, sobre la base de datos compartida, un sistema web de tres capas que '
+    'permita captar, asignar y acompañar prospectos hasta su matrícula, con control de acceso por rol y trazabilidad '
+    'de las operaciones? La solución desarrollada usa React para la interfaz, Laravel para la API y las reglas de '
+    'negocio, y PostgreSQL para conservar el estado y el historial del proceso.',
+]
 OBJETIVO_GENERAL = ('Desarrollar un sistema web de control de prospectos para UNEXO, con arquitectura de 3 capas '
                     '(React, Laravel API RESTful y PostgreSQL), que gestione la captación, asignación, seguimiento y '
                     'conversión a matrícula de los prospectos de sus programas de formación.')
@@ -67,16 +98,150 @@ FASES = {
 METODOLOGIA_CIERRE = None
 
 # ---------------------------------------------------------------- Capítulo II: Fundamentación Teórica
-PROGRAMACION_SERVIDOR = None
-TEORIA = {   # solo lo que usa crm-web (verificado en composer.json, package.json, routes/, app/Http) y lo que exige el
-             # enunciado: arquitectura de 3 capas, API RESTful, RBAC. G07 era MVC con Inertia y Vue: no se copia su lista.
-    'Fundamentos de la programación del lado del servidor': None, 'Servicios Web': None, 'Protocolo HTTP': None,
-    'Lenguaje HTML': None, 'Lenguaje PHP': None, 'Framework Laravel': None,
-    'Arquitectura de 3 capas (Presentación, Lógica de Negocio y Datos)': None, 'API RESTful': None,
-    'Hojas de estilo CSS': None, 'Framework Tailwind CSS': None, 'JavaScript': None, 'Biblioteca React': None, 'Enrutamiento en el cliente (React Router)': None,
-    'Cliente HTTP Axios': None, 'Base de datos relacional': None, 'PostgreSQL': None,
-    'Autenticación con token de acceso (Bearer)': None, 'Control de acceso basado en roles (RBAC)': None,
+# Teoria investigada con fuentes primarias; referencias y fecha de consulta en BIBLIOGRAFIA.
+PROGRAMACION_SERVIDOR = (
+    'La programación del lado del servidor procesa solicitudes recibidas por HTTP, aplica reglas de negocio, '
+    'consulta datos y devuelve una respuesta al cliente. En una aplicación con interfaz separada, esa respuesta '
+    'puede ser JSON en lugar de una página HTML. En este proyecto, React presenta la información y Laravel '
+    'atiende las solicitudes de la API, valida las entradas y coordina el acceso a PostgreSQL '
+    '(MDN Web Docs, «Introduction to the server side», s. f.; Laravel, «Routing», s. f.).'
+)
+
+TEORIA = {
+    'Fundamentos de la programación del lado del servidor': (
+        'El navegador envía una petición a una ruta del servidor; este identifica la operación, comprueba los datos y '
+        'permisos, ejecuta la lógica correspondiente y devuelve un estado HTTP y una representación del resultado. '
+        'La validación y la autorización deben repetirse en el servidor aunque la interfaz también limite las acciones. '
+        'En el CRM, las clases de negocio N* atienden las rutas y delegan la persistencia a las clases D* '
+        '(MDN Web Docs, «Introduction to the server side», s. f.; Laravel, «Validation», s. f.).'),
+    'Servicios Web': (
+        'Un servicio web expone operaciones para que otro programa intercambie información con él mediante una red. '
+        'En este sistema, la interfaz React consume un servicio HTTP que recibe parámetros y devuelve respuestas JSON: '
+        'por ejemplo, consulta el catálogo o registra un interés. El contrato de rutas y respuestas permite separar '
+        'la interfaz de la lógica que procesa la solicitud '
+        '(MDN Web Docs, «Overview of HTTP», s. f.; Laravel, «Routing», s. f.).'),
+    'Protocolo HTTP': (
+        'HTTP organiza la comunicación en solicitudes y respuestas. Sus métodos expresan la intención de la operación: '
+        'GET consulta, POST envía datos para crear o procesar, y PUT, PATCH y DELETE se usan para modificar o eliminar '
+        'recursos según el contrato de la API. Las respuestas incluyen un código de estado y pueden transportar JSON. '
+        'La interfaz del CRM utiliza estos métodos al llamar a las rutas de Laravel '
+        '(MDN Web Docs, «Overview of HTTP», s. f.).'),
+    'Lenguaje HTML': (
+        'HTML es el lenguaje de marcado que estructura el contenido de una página mediante elementos como títulos, '
+        'enlaces y formularios. Proporciona significado y organización al documento, mientras CSS define su aspecto '
+        'y JavaScript aporta comportamiento. El proyecto entrega un documento HTML inicial y React compone la '
+        'interfaz que ve el usuario (MDN Web Docs, «HTML», s. f.).'),
+    'Lenguaje PHP': (
+        'PHP es un lenguaje de programación que puede ejecutarse en el servidor para recibir datos de formularios, '
+        'consultar servicios y producir respuestas dinámicas. En este proyecto se usa PHP 8.3 o superior para las '
+        'clases de negocio, las reglas de validación y el acceso a datos que utiliza Laravel; el navegador no ejecuta '
+        'ese código PHP (PHP Documentation Group, «Introduction», s. f.).'),
+    'Framework Laravel': (
+        'Laravel organiza en PHP el ciclo de una solicitud HTTP y ofrece rutas, middleware, validación y herramientas '
+        'de acceso a datos. El proyecto utiliza Laravel 13 como base de la API: las rutas públicas y privadas están en '
+        'routes/api.php; middleware propio autentica el token y exige el permiso del recurso antes de ejecutar la '
+        'operación. Las clases de negocio se mantienen separadas de las clases de datos '
+        '(Laravel, «Routing», s. f.; Laravel, «Middleware», s. f.).'),
+    'Arquitectura de 3 capas (Presentación, Lógica de Negocio y Datos)': (
+        'Una arquitectura de tres capas distribuye las responsabilidades entre presentación, reglas de negocio y '
+        'persistencia. La primera recoge y muestra información; la segunda decide qué operaciones son válidas; '
+        'la tercera consulta y modifica los datos. En el proyecto, presentacion/ contiene React y Axios, negocio/ '
+        'contiene la API Laravel y sus reglas, y datos/ contiene los accesos a PostgreSQL. La interfaz no consulta '
+        'la base directamente (Microsoft, «Using a Three-Tier Architecture Model», s. f.).'),
+    'API RESTful': (
+        'REST es un estilo arquitectónico para sistemas distribuidos que separa cliente y servidor y define una '
+        'interfaz uniforme sobre recursos. Una API HTTP inspirada en REST identifica recursos mediante rutas, emplea '
+        'métodos HTTP y devuelve representaciones y estados de respuesta. Las rutas del CRM exponen usuarios, '
+        'prospectos, intereses y pagos mediante ese esquema; llamar a la API «RESTful» describe su diseño de '
+        'recursos y operaciones, sin afirmar que implemente todas las restricciones formales de REST '
+        '(Fielding, 2000; Laravel, «Routing», s. f.).'),
+    'Hojas de estilo CSS': (
+        'CSS define la presentación de los elementos HTML: colores, tipografía, espacios, disposición y adaptación '
+        'a distintos tamaños de pantalla. Su uso permite mantener reglas visuales comunes a las páginas. El CRM '
+        'combina una hoja de estilos propia con utilidades de Tailwind para la identidad visual y la disposición '
+        'responsiva (MDN Web Docs, «CSS», s. f.).'),
+    'Framework Tailwind CSS': (
+        'Tailwind CSS proporciona clases de utilidad para expresar estilos directamente en los componentes, como '
+        'espaciado, color, tamaño y estados. También admite variantes para puntos de quiebre y modo oscuro. '
+        'En este proyecto, Tailwind 4 complementa las reglas CSS propias de la interfaz React; las clases de utilidad '
+        'se usan para construir vistas adaptables sin que Tailwind determine la lógica de negocio '
+        '(Tailwind Labs, «Styling with utility classes», s. f.).'),
+    'JavaScript': (
+        'JavaScript es el lenguaje de programación de la interfaz web: responde a eventos, modifica el estado visible '
+        'y solicita datos al servidor. En el CRM se emplea en componentes JSX, funciones de acceso a la API y '
+        'controles de navegación. La ejecución en el navegador mejora la interacción, pero las decisiones de '
+        'autorización siguen verificándose en Laravel (MDN Web Docs, «JavaScript», s. f.).'),
+    'Biblioteca React': (
+        'React construye interfaces mediante componentes que combinan estructura, lógica de presentación y estado. '
+        'Un cambio de estado vuelve a representar la parte pertinente de la pantalla. El CRM usa React 18 para '
+        'el catálogo público y los paneles de administrador, coordinador y vendedor, mientras el servidor entrega '
+        'datos mediante la API (React, «Quick Start», s. f.).'),
+    'Enrutamiento en el cliente (React Router)': (
+        'El enrutamiento del cliente relaciona la dirección del navegador con la vista que debe mostrarse sin '
+        'solicitar un documento HTML completo en cada navegación. React Router permite configurar el árbol de rutas '
+        'con createBrowserRouter. En el proyecto, rutas.jsx declara las páginas; AppShell comprueba el menú recibido '
+        'desde la API para redirigir cuando el usuario no tiene acceso '
+        '(React Router, «createBrowserRouter», s. f.).'),
+    'Cliente HTTP Axios': (
+        'Axios es un cliente HTTP para JavaScript que permite enviar solicitudes y manejar respuestas de forma '
+        'asíncrona. El proyecto centraliza su configuración en presentacion/src/api/cliente.js: define la URL base, '
+        'solicita JSON, agrega el token Bearer cuando existe y procesa respuestas de sesión vencida o acceso '
+        'denegado. Las páginas llaman a funciones de api/ y no a la base de datos '
+        '(Axios, «First steps», s. f.).'),
+    'Base de datos relacional': (
+        'Una base de datos relacional organiza la información en tablas con filas y columnas; las claves primarias '
+        'identifican registros y las claves foráneas mantienen relaciones válidas. SQL permite consultar y modificar '
+        'estos datos. En el CRM se relacionan prospectos, intereses, órdenes, cuotas e inscripciones, y las '
+        'restricciones de la base complementan las validaciones de negocio '
+        '(PostgreSQL Global Development Group, «Foreign Keys», s. f.).'),
+    'PostgreSQL': (
+        'PostgreSQL es el gestor de base de datos utilizado para la persistencia del sistema. Admite consultas SQL, '
+        'relaciones entre tablas, claves foráneas y transacciones. En este proyecto conserva los usuarios, la '
+        'matriz de acceso, la actividad comercial y los pagos; las migraciones de datos/ definen las tablas y '
+        'restricciones que utiliza la API Laravel '
+        '(PostgreSQL Global Development Group, «Tutorial», s. f.).'),
+    'Autenticación con token de acceso (Bearer)': (
+        'Un token Bearer acredita una solicitud cuando se envía en el encabezado Authorization con el esquema '
+        'Bearer; quien posea el token puede presentarlo, por lo que debe protegerse durante su transporte y '
+        'almacenamiento. En el CRM, Laravel emite un token opaco al iniciar sesión, conserva su hash en la base y '
+        'el middleware lo verifica en las rutas privadas '
+        '(Jones y Hardt, 2012).'),
+    'Control de acceso basado en roles (RBAC)': (
+        'RBAC vincula permisos con roles y asigna esos roles a usuarios, de modo que el acceso a un recurso depende '
+        'del rol activo. El CRM utiliza Administrador, Coordinador y Vendedor; las tablas recursos y permisos '
+        'definen lectura, modificación o eliminación. La API consulta esa matriz antes de ejecutar cada acción '
+        'protegida, y el menú se construye con los recursos permitidos '
+        '(Ferraiolo, Cugini y Kuhn, 1995).'),
 }
+
+BIBLIOGRAFIA = [
+    'Axios. (s. f.). First steps. https://axios.rest/pages/getting-started/first-steps (consulta: 25 de noviembre de 2026).',
+    'Ferraiolo, D. F., Cugini, J. A. y Kuhn, D. R. (1995). Role-Based Access Control (RBAC): Features and Motivations. NIST. https://www.nist.gov/publications/role-based-access-control-rbac-features-and-motivations (consulta: 25 de noviembre de 2026).',
+    'Fielding, R. T. (2000). Architectural Styles and the Design of Network-based Software Architectures, cap. 5: Representational State Transfer. University of California, Irvine. https://ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm (consulta: 25 de noviembre de 2026).',
+    'Jones, M. y Hardt, D. (2012). RFC 6750: The OAuth 2.0 Authorization Framework: Bearer Token Usage. IETF. https://www.rfc-editor.org/rfc/rfc6750 (consulta: 25 de noviembre de 2026).',
+    'Laravel. (s. f.). Middleware. Documentación de Laravel 13.x. https://laravel.com/framework/docs/13.x/middleware (consulta: 25 de noviembre de 2026).',
+    'Laravel. (s. f.). Routing. Documentación de Laravel 13.x. https://laravel.com/framework/docs/13.x/routing (consulta: 25 de noviembre de 2026).',
+    'Laravel. (s. f.). Validation. Documentación de Laravel 13.x. https://laravel.com/framework/docs/13.x/validation (consulta: 25 de noviembre de 2026).',
+    'MDN Web Docs. (s. f.). CSS: Cascading Style Sheets. https://developer.mozilla.org/en-US/docs/Web/CSS (consulta: 25 de noviembre de 2026).',
+    'MDN Web Docs. (s. f.). HTML: HyperText Markup Language. https://developer.mozilla.org/en-US/docs/Web/HTML (consulta: 25 de noviembre de 2026).',
+    'MDN Web Docs. (s. f.). Introduction to the server side. https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Server-side/First_steps/Introduction (consulta: 25 de noviembre de 2026).',
+    'MDN Web Docs. (s. f.). JavaScript. https://developer.mozilla.org/en-US/docs/Web/JavaScript (consulta: 25 de noviembre de 2026).',
+    'MDN Web Docs. (s. f.). Overview of HTTP. https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview (consulta: 25 de noviembre de 2026).',
+    'Microsoft. (s. f.). Using a Three-Tier Architecture Model. Microsoft Learn. https://learn.microsoft.com/en-us/windows/win32/cossdk/using-a-three-tier-architecture-model (consulta: 25 de noviembre de 2026).',
+    'PHP Documentation Group. (s. f.). Introduction. PHP Manual. https://www.php.net/intro (consulta: 25 de noviembre de 2026).',
+    'PostgreSQL Global Development Group. (s. f.). Foreign Keys. Documentación de PostgreSQL 17. https://www.postgresql.org/docs/17/tutorial-fk.html (consulta: 25 de noviembre de 2026).',
+    'PostgreSQL Global Development Group. (s. f.). Tutorial. Documentación de PostgreSQL 17. https://www.postgresql.org/docs/17/tutorial.html (consulta: 25 de noviembre de 2026).',
+    'React. (s. f.). Quick Start. https://react.dev/learn (consulta: 25 de noviembre de 2026).',
+    'React Router. (s. f.). createBrowserRouter. https://reactrouter.com/api/data-routers/createBrowserRouter (consulta: 25 de noviembre de 2026).',
+    'Tailwind Labs. (s. f.). Styling with utility classes. https://tailwindcss.com/docs/styling-with-utility-classes (consulta: 25 de noviembre de 2026).',
+    'Grupo 05 SA. (2026). Sistema CRM de captación de prospectos vía e-mail: Proyecto 1 de INF513. Documento interno del proyecto.',
+    'Grupo 05 SA. (2026). Product: alcance y contexto operativo del CRM web. Documento del repositorio, PRODUCT.md.',
+    'Grupo 05 SA. (2026). P2_WEB: requisitos y decisiones de implementación del Proyecto 2. Documento del repositorio, P2_WEB.md.',
+    'OpenStreetMap. (2026, 13 de octubre). Mapa de Santa Cruz de la Sierra y Ciudad Universitaria de la UAGRM [Mapa]. https://www.openstreetmap.org/ (© colaboradores de OpenStreetMap, licencia ODbL).',
+    'UAGRM. (s. f.). Facultad de Ingeniería en Ciencias de la Computación y Telecomunicaciones: contacto y ubicación. https://www.uagrm.edu.bo/facultades/ficct (consulta: 25 de noviembre de 2026).',
+    'UNEXO. (s. f.). Campus virtual. FICCT-UAGRM. https://unexo.ficct.uagrm.edu.bo/academia/ (consulta: 25 de noviembre de 2026).',
+]
+
 # Dónde está cada tema / herramienta en crm-web. documento_p2.py no genera el documento si un tema o herramienta no
 # tiene evidencia o la evidencia ya no está. 'composer:x' / 'npm:x' = dependencia directa en composer.json / package.json;
 # 'ruta[:texto]' = el archivo existe (y contiene el texto). Rutas relativas a crm-web.
@@ -99,20 +264,37 @@ EVIDENCIA = {
 STACK_AJENO = ('inertia', 'vue', 'jwt', 'livewire', 'blade')   # nada de esto puede estar en composer.json / package.json
 
 # ---------------------------------------------------------------- Capítulo III: Organización (UNEXO)
-# Los textos del P1 eran de la Unidad de Capacitación de la FICCT: no se reutilizan. Misión, visión, objetivo y organigrama
-# son PROPUESTA DEL GRUPO a partir de ../PRODUCT.md (propósito, usuarios y criterio de éxito); confirmarlos con la clienta
-# y vaciar POR_CONFIRMAR. Ubicación: dato de UNEXO que no está en ninguna fuente.
-MISION = ('Formar profesionales mediante programas de formación y módulos independientes, acompañando a cada interesado '
-          'desde su primer contacto hasta su matrícula.')
-VISION = ('Ser una institución de formación reconocida por convertir el interés de cada persona en una matrícula, con un '
-          'proceso comercial ordenado, medible y sin interesados olvidados.')
-OBJETIVO_EMPRESA = ('Captar, dar seguimiento y matricular a los interesados en sus programas de formación, con la '
-                    'coordinación al tanto de cada prospecto y de los motivos por los que se pierde.')
-UBICACION = None
-ORGANIGRAMA = 'Organigrama del área comercial de UNEXO'
+# El P1 aporta literalmente la ubicación y la infraestructura; su mapa queda incluido como recurso local del generador.
+# Las declaraciones Misión, Visión, Objetivo y el organigrama de este P2 describen el proceso comercial del CRM.
+ORGANIZACION_CONTEXTO = ('UNEXO ofrece un campus virtual de cursos y módulos en el entorno académico de la FICCT-UAGRM '
+                        '(UNEXO, «Campus virtual», s. f.). Este capítulo describe el servicio comercial que modela el CRM: '
+                        'sus funciones y roles de sistema. La misión, visión, objetivo y estructura siguientes corresponden '
+                        'a ese alcance funcional; no se presentan como declaraciones institucionales ni como organigrama '
+                        'oficial de la facultad.')
+MISION = ('Acompañar a las personas interesadas en programas y módulos desde la consulta inicial hasta la matrícula, '
+          'registrando cada contacto, ofreciendo información clara sobre la oferta y conservando la trazabilidad de '
+          'la atención comercial.')
+VISION = ('Mantener un proceso comercial en el que cada interesado tenga seguimiento oportuno y en el que coordinación '
+          'pueda conocer el avance, las conversiones y los motivos de pérdida a partir de información compartida y verificable.')
+OBJETIVO_EMPRESA = ('Organizar la captación, asignación, seguimiento y conversión a matrícula de los interesados en la '
+                    'oferta de formación, con responsabilidades diferenciadas para administración, coordinación y vendedores.')
+UBICACION = ('La unidad funciona en el edificio de la FICCT, módulo 236 de la Ciudad Universitaria de la UAGRM, sobre la avenida '
+             'Dr. Enrique Aponte Canseco, entre la avenida Busch y la avenida 26 de Febrero (segundo anillo), en la ciudad de Santa Cruz de '
+             'la Sierra, Bolivia (17°46\'34" S, 63°11\'42" O).')
+UBICACION_FIGURA = 'Ubicación de la FICCT en Santa Cruz de la Sierra y en la Ciudad Universitaria'
+UBICACION_FUENTE = ('Elaboración propia sobre mapas de OpenStreetMap (© colaboradores de OpenStreetMap, licencia ODbL). Coordenadas del '
+                    'edificio según OpenStreetMap, consultado el 13 de octubre de 2026.')
+INFRAESTRUCTURA = ('Por ser una unidad pequeña, ocupa una oficina con tres áreas de trabajo y comparte el resto de la infraestructura de la facultad:')
+INFRAESTRUCTURA_AREAS = [
+    'Oficina de la jefatura y de la coordinación, donde también se atiende a los interesados que llegan en persona.',
+    'Área del equipo comercial; los asesores trabajan casi siempre fuera de ella, desde el celular.',
+    'Laboratorios de computación de la FICCT, donde se dictan los módulos en horarios que no chocan con las materias de la carrera.',
+    'Servicios de red y correo de la facultad (tecnoweb.org.bo), sobre los que funciona el sistema de este proyecto.',
+]
+ORGANIGRAMA = 'Organigrama funcional del proceso comercial modelado para UNEXO'
 # área comercial según los usuarios del sistema (../PRODUCT.md): (cargo, depende de)
 ORGANIGRAMA_CARGOS = [('Administración', None), ('Coordinación', 'Administración'), ('Vendedores', 'Coordinación')]
-POR_CONFIRMAR = ['Misión', 'Visión', 'Objetivo de la organización', 'Organigrama']   # propuesta del grupo, no dato de UNEXO
+POR_CONFIRMAR = []  # los textos anteriores describen el alcance del CRM, sin atribución institucional
 
 # ---------------------------------------------------------------- Capítulo IV: Requerimientos (P2_WEB.md §2)
 REQUERIMIENTOS = [   # (título, párrafo "El sistema permitirá…"); fuente: ../P2_WEB.md §2 (RF1.1 … RF4.3, ajustes del 20/11)
@@ -154,22 +336,30 @@ CU = {   # nombres aprobados por el docente (foro, 5/10/2026)
     'CU5': 'Gestión de Pérdida de Prospectos y Clasificación de Motivos',
     'CU6': 'Gestión de Validar Datos y Procesar Conversión a Matrícula',
     'CU7': 'Gestión de Bitácora, Interacciones y Recordatorios', 'CU8': 'Reportes y Estadísticas'}
-PRIORIDAD = {}   # {'CU1': 'Alta', …}: decisión del grupo, no está en ninguna fuente
+PRIORIDAD = {
+    'CU1': 'Alta', 'CU2': 'Alta', 'CU3': 'Alta', 'CU4': 'Alta',
+    'CU5': 'Media', 'CU6': 'Alta', 'CU7': 'Media', 'CU8': 'Media',
+}
+PRIORIDAD_CRITERIO = ('La prioridad Alta corresponde a las funciones necesarias para acceder, captar y asignar '
+                      'prospectos, seguir su avance y convertirlos en matrícula. La prioridad Media corresponde a '
+                      'la clasificación de pérdidas, el seguimiento complementario y la consulta de indicadores. '
+                      'La prioridad expresa el orden de implementación del grupo; no elimina ningún caso de uso.')
 ALCANCE = {      # ../P2_WEB.md §1, columna "Cómo se cumple en la web"
     'CU1': 'Registro, modificación y cambio de estado de usuarios con rol, vigencia (fecha de inicio y de fin) y foto con '
            'nombre legible; inicio y cierre de sesión con token; perfil y cambio de contraseña; matriz de acceso editable '
            '(lectura, modificación y eliminación por rol y recurso) y bitácora de accesos.',
     'CU2': 'Catálogo público por programas y módulos, con búsqueda y registro de interés del visitante; sincronización de '
            'la oferta académica desde el cliente API del catálogo, simulado hasta que el Grupo 06 publique su servicio.',
-    'CU3': 'Alta manual y carga masiva por CSV de prospectos con su origen; asignación manual y reparto Round-Robin por el '
-           'Coordinador o el Administrador.',
+    'CU3': 'Alta manual y carga masiva por CSV de prospectos con su origen; incorporación de nuevos intereses a un '
+            'prospecto existente; asignación manual y reparto Round-Robin por el Coordinador o el Administrador.',
     'CU4': 'Tablero Kanban con seis columnas (Nuevo, En Contacto, Seguimiento, Promesa de Pago, Convertido y Perdido), '
            'tarjetas que se arrastran y la opción "Mover a…" en el celular.',
     'CU5': 'Pasar una tarjeta a Perdido exige un motivo de la lista de motivos de pérdida, clasificados por categoría; el '
            'Administrador y el Coordinador gestionan esa lista.',
-    'CU6': 'Métodos de pago del prospecto (tarjeta simulada, QR y transferencia), orden de pago al contado o en cuotas, '
-           'comprobantes y su validación; la conversión exige datos completos y la primera cuota aprobada, y genera la '
-           'inscripción, la comisión del vendedor y la exportación al SIS.',
+    'CU6': 'Métodos de pago manuales (QR y transferencia) o tarjeta mediante Stripe Sandbox; orden de pago al contado '
+            'o en cuotas, anulación controlada, comprobantes con validación manual y conciliación de Stripe por sesión '
+            'o webhook firmado. La conversión exige datos completos y la primera cuota aprobada, y genera la inscripción, '
+            'la comisión del vendedor y la exportación al SIS.',
     'CU7': 'Historial cronológico por tarjeta, registro de interacciones y notas, recordatorios de contacto con la agenda '
            'del día y notificaciones internas.',
     'CU8': 'Dashboard con indicadores, reportes como listados, estadísticas porcentuales del embudo y de los accesos, y '
@@ -272,23 +462,35 @@ DETALLE = {
     'CU6': dict(
         gestionar='Gestionar Conversión a Matrícula', iniciador='Vendedor',
         proposito='Cobrar al prospecto y convertirlo en alumno matriculado con sus datos validados.',
-        descripcion='Desde la ficha del prospecto, el Vendedor registra métodos de pago, genera la orden de pago al '
-                    'contado o en cuotas y sube el comprobante o cobra con la tarjeta simulada; el Coordinador o el '
-                    'Administrador aprueban o rechazan la cuota. Con los datos completos y la primera cuota aprobada, la '
-                    'tarjeta pasa a Convertido, se registran la inscripción y la comisión, y la matrícula se exporta al SIS.',
+        descripcion='Desde la ficha del prospecto, el Vendedor crea una orden de pago único o en cuotas. Para una cuota '
+                    'pendiente puede iniciar Stripe Checkout Sandbox o registrar un comprobante de pago manual. Stripe '
+                    'confirma el pago mediante consulta de la sesión o webhook firmado; los comprobantes manuales son '
+                    'revisados por el Coordinador o Administrador. La primera cuota aprobada y los datos completos '
+                    'permiten convertir el interés, registrar inscripción y comisión y exportar la matrícula al SIS.',
         precondicion='El prospecto está en la cartera del vendedor y tiene un interés abierto.',
-        proceso=['El Vendedor abre la ficha del prospecto y registra un método de pago.',
-                 'El Vendedor genera la orden de pago con módulos, descuentos y número de cuotas.',
-                 'El Vendedor sube el comprobante de la cuota o la cobra con la tarjeta registrada, y la cuota queda en revisión.',
-                 'El Coordinador revisa el comprobante en Validación de Pagos y aprueba o rechaza la cuota.',
-                 'Con la primera cuota aprobada y los datos completos, el sistema pasa la tarjeta a Convertido y registra '
-                 'la inscripción y la comisión.',
-                 'El Coordinador exporta las matrículas pendientes al SIS en Matrículas y SIS y registra el resultado.'],
+        proceso=['El Vendedor abre la ficha del prospecto y genera una orden con módulos, descuentos y cuotas.',
+                 'El Vendedor selecciona una cuota pendiente e inicia Stripe Checkout Sandbox.',
+                 'El sistema valida la orden y el importe en BOB, registra la sesión y redirige a Stripe.',
+                 'Tras el pago, el sistema consulta la sesión de retorno o procesa el webhook firmado y verifica su importe.',
+                 'El sistema registra la transacción y marca la cuota como Pago aprobado de forma idempotente.',
+                 'Si es la primera cuota y los datos están completos, el sistema convierte el interés y registra la '
+                 'inscripción y la comisión.',
+                 'El Coordinador exporta las matrículas pendientes al SIS y registra el resultado.'],
+        alternativos=['A1. Pago manual: el Vendedor registra un método QR o transferencia y sube el comprobante; '
+                     'la cuota queda En revisión hasta que el Coordinador o Administrador la apruebe o rechace.',
+                     'A2. Registro previo de tarjeta: el Vendedor inicia Stripe Setup; el sistema consulta la sesión '
+                     'de retorno y, si Stripe la confirma, asocia el método al prospecto.',
+                     'A3. Checkout cancelado: el sistema consulta la sesión, conserva la cuota pendiente si no hubo '
+                     'confirmación y permite volver a intentar el pago.',
+                     'A4. Anulación de orden: el Vendedor indica el motivo; el sistema solo anula una orden sin cuotas '
+                     'pagadas o en revisión ni pagos Stripe confirmados.'],
         postcondicion='El prospecto queda convertido en alumno, con su inscripción, comisión y exportación registradas.',
         excepciones=['- Orden de otro vendedor: "Solo el vendedor asignado genera la orden de pago."',
                      '- Total inválido: "El total de la orden debe ser mayor a cero."',
-                     '- Tarjeta inválida: "El número de tarjeta no es válido."',
-                     '- Tarjeta vencida: "La tarjeta está vencida."',
+                     '- Orden anulada: "La orden de pago fue anulada y no admite cobros."',
+                     '- Cuota ya pagada: "Esta cuota ya fue pagada."',
+                     '- Cuota en revisión manual: "Esta cuota tiene un comprobante manual en revisión."',
+                     '- Confirmación manual indebida: "Las cuotas procesadas por Stripe solo se confirman mediante la pasarela oficial."',
                      '- Comprobante repetido: "Ya hay un comprobante en revisión para esta cuota."',
                      '- Aprobación fuera de revisión: "Solo se aprueba una cuota en revisión."',
                      '- Conversión sin pago: "La primera cuota de una orden de pago todavía no está aprobada."',
@@ -362,9 +564,11 @@ PAQUETES = {
                                               'movimientos y los motivos de pérdida.'),
     'Pagos y Matrícula': dict(cu=['CU6'], tablas=['metodos_pago', 'descuentos', 'ordenes_pago', 'orden_pago_descuentos',
                                                    'cuotas', 'pagos', 'comprobantes_pago', 'solicitudes_compra',
+                                                   'transacciones_stripe', 'webhook_eventos_stripe',
                                                    'inscripciones_comerciales', 'exportaciones'],
-                              descripcion='Gestiona los métodos de pago, las órdenes de pago y sus cuotas, los '
-                                          'comprobantes, la inscripción y la exportación de la matrícula al SIS.'),
+                               descripcion='Gestiona los métodos de pago, las órdenes y sus cuotas, los comprobantes '
+                                           'manuales y las transacciones y webhooks de Stripe Sandbox; también la '
+                                           'inscripción y la exportación de la matrícula al SIS.'),
     'Seguimiento Comercial': dict(cu=['CU7'], tablas=['interacciones', 'recordatorios', 'notificaciones'],
                                   descripcion='Gestiona las interacciones, los recordatorios de contacto y las notificaciones.'),
     'Ventas y Reportes': dict(cu=['CU8'], tablas=['comisiones', 'configuraciones'],
@@ -463,7 +667,21 @@ PRUEBAS_NEGRA = [
     ('Cierre de sesión', 'Comprobar que cerrar sesión elimina el token.',
      'Vuelve al login y no queda token guardado en el navegador.', ' cierre de sesion'),
 ]
-CONCLUSIONES = []           # una por objetivo específico, mismo orden
-BIBLIOGRAFIA = []
+CONCLUSIONES = [
+    'Se identificaron los actores del proceso comercial, sus permisos y los ocho casos de uso que abarcan desde la '
+    'consulta pública de la oferta hasta los reportes de gestión. Esta definición permite relacionar cada función '
+    'con una necesidad y un responsable.',
+    'El análisis distribuyó las responsabilidades en paquetes y documentó las colaboraciones y clases de los casos '
+    'de uso. Los diagramas permiten comprobar cómo se conectan las acciones de los usuarios con la lógica del sistema.',
+    'El diseño dejó definidos el modelo conceptual, el mapeo y el esquema físico de la base de datos, además del '
+    'despliegue, las secuencias y la navegación por actor. Los modelos se contrastaron con las tablas, rutas y '
+    'pantallas de la implementación.',
+    'La implementación separa la presentación React, la API RESTful y las reglas de negocio Laravel, y la '
+    'persistencia PostgreSQL. La autorización por rol y la bitácora se resuelven en el servidor y se reflejan '
+    'en el menú y las operaciones disponibles para cada usuario.',
+    'Se prepararon verificaciones de caja blanca y caja negra para los flujos principales y las restricciones de '
+    'acceso. La publicación en el servidor de la facultad sigue siendo una actividad de transición; este documento '
+    'no la presenta como realizada sin evidencia de despliegue.',
+]
 ANEXOS = []                 # (título, ruta de imagen); solo documentos que existan
 URL_GITHUB = None   # se lee de .git/config de crm-web al generar (documento_p2.py)

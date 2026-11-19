@@ -154,14 +154,21 @@ class DPago
     }
     public function metodoConProspecto(MetodoPago $metodo): MetodoPago { return $metodo->loadMissing('prospecto'); }
     public function interesDeOrden(OrdenPago $orden): Interes { return $orden->loadMissing('interes.prospecto')->interes; }
-    public function cambiarEstadoCuota(int $orden, int $numero, string $estado, array $extra = []): void
+    public function actualizarCuota(int $orden, int $numero, array $datos): void
     {
-        $extra = array_filter($extra, fn ($valor) => $valor !== null);
-        if ($numero === 1) Pago::query()->whereKey($orden)->update(['estado' => $estado, 'updated_at' => now()]
-            + (in_array($estado, ['Pago aprobado', 'Pago rechazado'], true)
-                ? ['fecha_validacion' => now(), 'observacion_validacion' => $extra['observacion'] ?? null] : []));
-        Cuota::query()->where('nro_orden', $orden)->where('nro_cuota', $numero)->update(['estado' => $estado, 'updated_at' => now()]
-            + ($estado === 'Pago aprobado' ? ['fecha_pago' => now()] : []) + $extra);
+        Cuota::query()->where('nro_orden', $orden)->where('nro_cuota', $numero)->update($datos + ['updated_at' => now()]);
+    }
+    public function actualizarPago(int $orden, array $datos): void
+    {
+        Pago::query()->whereKey($orden)->update($datos + ['updated_at' => now()]);
+    }
+    public function montoCuotasEnEstado(int $orden, string $estado): float
+    {
+        return (float) Cuota::query()->where('nro_orden', $orden)->where('estado', $estado)->sum('monto');
+    }
+    public function hayCuotasEnEstados(int $orden, array $estados): bool
+    {
+        return Cuota::query()->where('nro_orden', $orden)->whereIn('estado', $estados)->exists();
     }
     public function actualizarComprobantes(int $orden, int $cuota, string $estado, ?string $observacion = null): void
     {
@@ -176,4 +183,6 @@ class DPago
     {
         return DAlcance::prospectos(Prospecto::query()->whereKey($prospecto->documento), $usuario)->exists();
     }
+
+    public function esDescuentoActivo(string $codigo): bool { return Descuento::query()->whereKey($codigo)->where('estado', 'activo')->exists(); }
 }
