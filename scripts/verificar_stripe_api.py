@@ -14,9 +14,14 @@ BASE = (sys.argv[1] if len(sys.argv) > 1 else 'http://127.0.0.1:8001').rstrip('/
 API = f'{BASE}/api'
 # PHP para la prueba de centavos: el del sistema o el del contenedor, p. ej. QA_PHP="docker exec -w /repo crm-web-app-1 php"
 PHP = os.environ.get('QA_PHP', 'php').split()
+PSQL = os.environ.get('QA_PSQL', r'C:\Program Files\PostgreSQL\17\bin\psql.exe')
+DB = os.environ.get('DB_DATABASE', 'crm_educativo')
+DB_USER = os.environ.get('DB_USERNAME', 'postgres')
 
 
 def leer_env(clave):
+    if clave in os.environ:
+        return os.environ[clave]
     with open('negocio/.env', encoding='utf-8') as f:
         for line in f:
             if line.startswith(f'{clave}='):
@@ -194,32 +199,25 @@ st_d_ok, ord_d = req(f'/intereses/{tar_d}/ordenes-pago', 'POST', {
     'descuentos': dctos_all,
     'cuotas': 2,
     'primer_vencimiento': '2030-07-15',
-    'envio_automatico': True,
 }, vnd)
 assert st_d_ok == 201, f'D08/D10 orden valida completa fallo: {st_d_ok} {ord_d}'
 sub_esp = round(sum(float(m['precio']) for m in prog_multi['modulos']), 2)
 pcts = {'CLIENTE_RECURRENTE': 10, 'PROGRAMA_COMPLETO': 15, '3_MAS_MODULOS': 10}
 dcto_esp = round(sum(round(sub_esp * pcts[c] / 100, 2) for c in dctos_all), 2)
 assert abs(float(ord_d['orden']['descuento_total']) - dcto_esp) < 0.01, f'Descuento esperado {dcto_esp}, recibido {ord_d["orden"]}'
-assert ord_d['orden']['envio_automatico'] is True
 
 st_cmp_bad, _ = req(f'/ordenes-pago/{ord_d["orden"]["nro_orden"]}/cuotas/1/comprobante', 'POST', {
     'archivo': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 }, vnd)
 assert st_cmp_bad == 422, f'P32 comprobante manual nuevo debio retornar 422: {st_cmp_bad}'
 
-st_auto_off, d_off = req(f'/ordenes-pago/{ord_d["orden"]["nro_orden"]}/envio-automatico', 'PATCH', {'envio_automatico': False}, vnd)
-assert st_auto_off == 200 and d_off['orden']['envio_automatico'] is False
-st_auto_on, d_on = req(f'/ordenes-pago/{ord_d["orden"]["nro_orden"]}/envio-automatico', 'PATCH', {'envio_automatico': True}, vnd)
-assert st_auto_on == 200 and d_on['orden']['envio_automatico'] is True
-
 # Verificar token publico de cuota (/pagos/publico/cuotas/{token}) y regeneracion de sesion expirada (A10)
 ord_dsc_nro = ord_d['orden']['nro_orden']
 tok_cuota = subprocess.check_output([
-    PSQL, '-U', 'postgres', '-d', 'crm_educativo', '-tAc',
+    PSQL, '-U', DB_USER, '-d', DB, '-tAc',
     f"SELECT token_pago FROM cuotas WHERE nro_orden = {ord_dsc_nro} AND nro_cuota = 1;"
 ]).decode().strip()
-assert tok_cuota, 'No se genero token_pago automatico al activar envio_automatico'
+assert tok_cuota, 'La cuota debe conservar su token publico'
 st_pub_bad, _ = req('/pagos/publico/cuotas/token-inexistente-xyz')
 assert st_pub_bad == 404, f'Token inexistente debio ser 404, recibido {st_pub_bad}'
 st_pub_c1, d_pub_c1 = req(f'/pagos/publico/cuotas/{tok_cuota}')
@@ -227,7 +225,7 @@ assert st_pub_c1 == 200 and d_pub_c1['estado_link'] == 'pendiente' and d_pub_c1[
 for campo_priv in ('documento', 'correo', 'vendedor', 'nro_tarjeta', 'session_id'):
     assert campo_priv not in d_pub_c1, f'Campo privado o interno filtrado al endpoint publico de cuota: {campo_priv}'
 ses_c1 = subprocess.check_output([
-    PSQL, '-U', 'postgres', '-d', 'crm_educativo', '-tAc',
+    PSQL, '-U', DB_USER, '-d', DB, '-tAc',
     f"SELECT stripe_sesion FROM transacciones_stripe WHERE nro_orden = {ord_dsc_nro} AND nro_cuota = 1 ORDER BY nro_transaccion DESC LIMIT 1;"
 ]).decode().strip()
 assert ses_c1.startswith('cs_test_'), f'Sesion Stripe no persistida: {ses_c1}'
@@ -239,58 +237,12 @@ subprocess.check_call(['php', '-r', (
 st_pub_c2, d_pub_c2 = req(f'/pagos/publico/cuotas/{tok_cuota}')
 assert st_pub_c2 == 200 and d_pub_c2['url_checkout'] != d_pub_c1['url_checkout'] and d_pub_c2['url_checkout'].startswith('https://checkout.stripe.com/')
 ses_c2 = subprocess.check_output([
-    PSQL, '-U', 'postgres', '-d', 'crm_educativo', '-tAc',
+    PSQL, '-U', DB_USER, '-d', DB, '-tAc',
     f"SELECT stripe_sesion FROM transacciones_stripe WHERE nro_orden = {ord_dsc_nro} AND nro_cuota = 1 ORDER BY nro_transaccion DESC LIMIT 1;"
 ]).decode().strip()
 assert ses_c2 != ses_c1, 'Debio regenerarse una sesion nueva tras expirar'
 
-# Limpiar ordenes previas solo de prospectos DSC* interrumpidos para no sesgar conteo del scheduler
-subprocess.check_call([
-    PSQL, '-U', 'postgres', '-d', 'crm_educativo', '-c',
-    f"UPDATE ordenes_pago SET estado = 'Anulada', motivo_anulacion = 'Limpieza previa prueba API' WHERE nro_orden < {ord_dsc_nro} AND estado = 'Activa' AND nro_tarjeta IN (SELECT nro_tarjeta FROM intereses WHERE documento LIKE 'DSC%');"
-], stdout=subprocess.DEVNULL)
-
-# Scheduler A01-A09: correr recordatorios para cuota 2 (vence 2030-08-15) en -3d, 0d, +3d, duplicado e SMTP fallido
-vence_c2 = ord_d['orden']['cuotas'][1]['fecha_vencimiento'][:10]
-import datetime as _dt
-dt_v = _dt.date.fromisoformat(vence_c2)
-for etiqueta, delta, col in [('A01 previo -3d', -3, 'recordatorio_previo_en'), ('A02 vencimiento 0d', 0, 'recordatorio_vencimiento_en'), ('A03 mora +3d', 3, 'recordatorio_mora_en')]:
-    fecha_cmd = (dt_v + _dt.timedelta(days=delta)).isoformat()
-    out_sch = subprocess.check_output(['php', 'negocio/artisan', 'unexo:recordatorios-pago', f'--fecha={fecha_cmd}']).decode()
-    assert 'evaluadas=' in out_sch, out_sch
-    val_col = subprocess.check_output([
-        PSQL, '-U', 'postgres', '-d', 'crm_educativo', '-tAc',
-        f"SELECT {col} IS NOT NULL FROM cuotas WHERE nro_orden = {ord_dsc_nro} AND nro_cuota = 2;"
-    ]).decode().strip()
-    assert val_col == 't', f'{etiqueta} no marco {col} (output: {out_sch})'
-out_dup = subprocess.check_output(['php', 'negocio/artisan', 'unexo:recordatorios-pago', f'--fecha={(dt_v + _dt.timedelta(days=3)).isoformat()}']).decode()
-assert 'enviados=0' in out_dup, f'A08 duplicado envio de mas: {out_dup}'
-
-# A09: Resetear recordatorio_mora_en en cuota 2 y ejecutar scheduler con puerto SMTP inexistente -> no marca enviado, registra fallida
-subprocess.check_call([
-    PSQL, '-U', 'postgres', '-d', 'crm_educativo', '-c',
-    f"UPDATE cuotas SET recordatorio_mora_en = NULL WHERE nro_orden = {ord_dsc_nro} AND nro_cuota = 2;"
-], stdout=subprocess.DEVNULL)
-out_a09 = subprocess.check_output([
-    'php', '-r',
-    "require 'negocio/vendor/autoload.php'; $app=require 'negocio/bootstrap/app.php'; "
-    "$kernel=$app->make(Illuminate\\Contracts\\Console\\Kernel::class); $kernel->bootstrap(); "
-    "config(['mail.mailers.smtp.host'=>'127.0.0.1','mail.mailers.smtp.port'=>19999]); "
-    f"Illuminate\\Support\\Facades\\Artisan::call('unexo:recordatorios-pago',['--fecha'=>'{(dt_v + _dt.timedelta(days=3)).isoformat()}']); "
-    "echo Illuminate\\Support\\Facades\\Artisan::output();"
-]).decode()
-assert 'fallidos=1' in out_a09 and 'enviados=0' in out_a09, out_a09
-val_mora_despues = subprocess.check_output([
-    PSQL, '-U', 'postgres', '-d', 'crm_educativo', '-tAc',
-    f"SELECT recordatorio_mora_en IS NULL FROM cuotas WHERE nro_orden = {ord_dsc_nro} AND nro_cuota = 2;"
-]).decode().strip()
-assert val_mora_despues == 't', 'A09 no debio marcar recordatorio_mora_en cuando fallo SMTP'
-
-# A05 anular orden -> no vuelve a enviar
-req(f'/ordenes-pago/{ord_dsc_nro}/anular', 'PATCH', {'motivo': 'Limpieza de orden de prueba automatizada'}, vnd)
-out_anu = subprocess.check_output(['php', 'negocio/artisan', 'unexo:recordatorios-pago', f'--fecha={(dt_v + _dt.timedelta(days=3)).isoformat()}']).decode()
-assert 'enviados=0' in out_anu, f'A05 orden anulada no debe reenviar recordatorios: {out_anu}'
-ok('D10, P32, A01-A10 reglas de descuentos, bloqueo QR/manual, token publico regenerable y scheduler verificados')
+ok('D10, P32 descuentos, bloqueo QR/manual y token publico regenerable verificados')
 
 # Verificar conversión BOB 499.99 -> 49999 centavos vía PHP unit test sobre NStripe::aCentavos
 out_php = subprocess.check_output(PHP + [
@@ -330,7 +282,7 @@ assert st_no_tok == 400, f'Retorno publico sin token debio ser 400, recibido {st
 st_bad_tok, _ = req(f'/pagos/publico/sesiones/{chk2["session_id"]}?token=falso123456')
 assert st_bad_tok == 403, f'Retorno publico con token falso debio ser 403, recibido {st_bad_tok}'
 tok_real = subprocess.check_output([
-    PSQL, '-U', 'postgres', '-d', 'crm_educativo', '-tAc',
+    PSQL, '-U', DB_USER, '-d', DB, '-tAc',
     f"SELECT token_publico FROM transacciones_stripe WHERE stripe_sesion = '{chk2['session_id']}';"
 ]).decode().strip()
 assert tok_real, 'Falta token_publico guardado en transacciones_stripe'
@@ -354,24 +306,19 @@ st_reg, chk_reg = req(f'/ordenes-pago/{nro_orden2}/cuotas/1/checkout', 'POST', {
 assert st_reg == 201 and chk_reg['session_id'] != chk2['session_id'] and chk_reg['reutilizada'] is False, f'Regeneracion tras expirar fallo: {st_reg} {chk_reg}'
 ok('PRUEBA 20 sesion expirada permite regenerar enlace nuevo manteniendo cuota pendiente')
 
-# PRUEBA 18 Fallo controlado de SMTP no deshace pago ni marca enviado
+# Fallo SMTP durante una solicitud manual: registrar el error sin alterar pagos.
 php_smtp_fail = (
     "require 'negocio/vendor/autoload.php'; $app=require 'negocio/bootstrap/app.php'; "
     "$app->make(Illuminate\\Contracts\\Console\\Kernel::class)->bootstrap(); "
-    "config(['mail.mailers.smtp.host' => '127.0.0.1', 'mail.mailers.smtp.port' => 19999]); "
-    "$n = $app->make(App\\Negocio\\NNotificacion::class); "
-    "$n->notificarPagoConfirmado(['cliente_correo'=>'unexouagrm+fail@gmail.com','cliente_nombre'=>'Fail Test',"
-    "'vendedor_correo'=>'vendedor.demo@crm-educativo.local','programa'=>'IA','modulo'=>'M1','nro_orden'=>999999,"
-    "'nro_cuota'=>1,'total_cuotas'=>1,'monto'=>100,'referencia'=>'pi_test_smtp_fail']); "
-    "echo 'SMTP_FAIL_SAFE_OK';"
+    "config(['mail.mailers.smtp.host'=>'127.0.0.1','mail.mailers.smtp.port'=>19999]); "
+    "$r=App\\Http\\Requests\\Notificacion\\EnviarNotificacionRequest::create('/api/notificaciones','POST',"
+    "['destinatario'=>'manual-test@example.test','tipo'=>'Solicitud manual de prueba','mensaje'=>'Mensaje controlado']); "
+    "$r->setContainer($app); $r->attributes->set('auth_usuario',Datos\\Modelos\\Usuario::where('rol','administrador')->first()); "
+    "$r->validateResolved(); $res=$app->make(App\\Negocio\\NNotificacion::class)->enviar($r); "
+    "echo json_encode(['status'=>$res->getStatusCode(),'estado'=>$res->getData()->notificacion->estado,'error'=>$res->getData()->detalle_smtp]);"
 )
-out_smtp = subprocess.check_output(['php', '-r', php_smtp_fail]).decode().strip()
-assert 'SMTP_FAIL_SAFE_OK' in out_smtp
-fallida_cnt = int(subprocess.check_output([
-    PSQL, '-U', 'postgres', '-d', 'crm_educativo', '-tAc',
-    "SELECT count(*) FROM notificaciones WHERE destinatario='unexouagrm+fail@gmail.com' AND estado='fallida';"
-]).decode().strip())
-assert fallida_cnt >= 1, 'Fallo SMTP controlado no registro estado fallida'
-ok('PRUEBA 18 fallo SMTP controlado registrado como fallida sin lanzar excepcion fatal')
+out_smtp = json.loads(subprocess.check_output(PHP + ['-r', php_smtp_fail]).decode())
+assert out_smtp['status'] == 502 and out_smtp['estado'] == 'fallida' and '19999' in out_smtp['error'], out_smtp
+ok('Fallo SMTP manual devuelve 502 y conserva historial fallido')
 
 print('\nSTRIPE API & SEGURIDAD: TODO OK')

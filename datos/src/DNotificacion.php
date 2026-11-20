@@ -5,7 +5,6 @@ namespace Datos;
 use Datos\Modelos\Notificacion;
 use Datos\Modelos\Prospecto;
 use Datos\Modelos\Usuario;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 
 /** Persistencia de notificaciones y comprobaciones de cartera relacionadas. */
@@ -22,16 +21,6 @@ class DNotificacion
     public function crear(array $datos): Notificacion
     {
         return Notificacion::query()->create($datos);
-    }
-
-    public function existeNotificacionEnviada(string $destinatario, string $tipo, string $referencia): bool
-    {
-        return Notificacion::query()
-            ->whereRaw('lower(destinatario) = ?', [mb_strtolower($destinatario)])
-            ->where('tipo', $tipo)
-            ->where('estado', 'enviada')
-            ->where('mensaje', 'ilike', DAlcance::escaparLike($referencia))
-            ->exists();
     }
 
     public function listar(Usuario $usuario): Collection

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Aviso } from '../ui'
 import FormularioOrdenPago from './FormularioOrdenPago'
 import HistorialPagos from './HistorialPagos'
 import MetodosPago from './MetodosPago'
@@ -15,7 +14,6 @@ export default function PagosProspecto({ t, esSuVendedor, editable, aviso, onCam
   const [modalOrden, setModalOrden] = useState(false)
   const [modalCompartir, setModalCompartir] = useState(null)
   const [actualizando, setActualizando] = useState(false)
-  const [avisoCorreo, setAvisoCorreo] = useState(null)
   const timerRef = useRef(null)
 
   useEffect(() => () => {
@@ -61,12 +59,6 @@ export default function PagosProspecto({ t, esSuVendedor, editable, aviso, onCam
 
   return (
     <div className="grid gap-5">
-      {avisoCorreo && (
-        <Aviso tipo="error">
-          {avisoCorreo}
-        </Aviso>
-      )}
-
       <ResumenPagos
         totalContratado={resumen.totalContratado}
         totalPagado={resumen.totalPagado}
@@ -105,9 +97,8 @@ export default function PagosProspecto({ t, esSuVendedor, editable, aviso, onCam
         <FormularioOrdenPago
           t={t}
           onCerrar={() => setModalOrden(false)}
-          onListo={(mensaje, correoWarn) => {
+          onListo={(mensaje) => {
             setModalOrden(false)
-            setAvisoCorreo(correoWarn || null)
             aviso.ok(mensaje)
             onCambio()
           }}

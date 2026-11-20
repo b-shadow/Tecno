@@ -1,31 +1,9 @@
 import { useState } from 'react'
 import { Ban, CheckCircle2, ExternalLink, Info, Plus, Send } from 'lucide-react'
-import { Aviso, Boton, Campo, Etiqueta, Modal, fecha, hoyLocal } from '../ui'
+import { Aviso, Boton, Campo, Etiqueta, Modal, fecha } from '../ui'
 import { apiErrorMessage } from '../../servicios/errors'
 import { bsPago } from './ResumenPagos'
 import * as pagosApi from '../../api/pagos'
-
-const DIAS_PREVIO = 3
-const DIAS_DESPUES = 3
-
-function sumarDias(fechaIso, dias) {
-  const [a, m, d] = String(fechaIso).slice(0, 10).split('-').map(Number)
-  const dt = new Date(a, m - 1, d + dias, 12, 0, 0)
-  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
-}
-
-function proximoRecordatorio(c, envioAutomatico) {
-  if (!envioAutomatico || c.estado !== 'Pendiente de pago') return null
-  const hoy = hoyLocal()
-  const previo = sumarDias(c.fecha_vencimiento, -DIAS_PREVIO)
-  const dia = String(c.fecha_vencimiento).slice(0, 10)
-  const mora = sumarDias(c.fecha_vencimiento, DIAS_DESPUES)
-
-  if (!c.recordatorio_previo_en && previo > hoy) return previo
-  if (!c.recordatorio_vencimiento_en && dia >= hoy) return dia
-  if (!c.recordatorio_mora_en && mora >= hoy) return mora
-  return null
-}
 
 /** Sección 2: Órdenes activas como elemento principal, cuotas limpias y órdenes liquidadas/anuladas contraídas. */
 export default function PlanPagos({ t, ordenes, editable, puedeGenerar, onGenerar, onEnviarCuota, aviso, onCambio }) {
@@ -111,8 +89,6 @@ export default function PlanPagos({ t, ordenes, editable, puedeGenerar, onGenera
           editable={editable}
           onCerrar={() => setDetalleOrden(null)}
           onAnular={(o) => { setDetalleOrden(null); setAnularOrdenModal(o) }}
-          onCambio={onCambio}
-          aviso={aviso}
         />
       )}
 
@@ -150,7 +126,6 @@ function TarjetaOrden({ o, t, editable, onVerDetalles, onEnviarCuota, onVerCuota
           <p className="text-sm text-tinta-suave">
             {o.items.length} {o.items.length === 1 ? 'módulo contratado' : 'módulos contratados'}
             {' · '}Total: <b className="text-tinta tabular-nums">{bsPago(o.total)}</b>
-            {!anulada && !liquidada && <> · Envíos automáticos: <b>{o.envio_automatico ? 'Activados' : 'Desactivados'}</b></>}
           </p>
         </div>
         <div className="acciones flex-wrap">
@@ -171,14 +146,12 @@ function TarjetaOrden({ o, t, editable, onVerDetalles, onEnviarCuota, onVerCuota
         {o.cuotas.map((c) => {
           const pagada = c.estado === 'Pago aprobado'
           const puedeEnviar = editable && !anulada && ['Pendiente de pago', 'Pago rechazado'].includes(c.estado)
-          const proxRecordatorio = proximoRecordatorio(c, Boolean(o.envio_automatico && !anulada))
           return (
             <div key={c.nro_cuota} className="flex flex-wrap items-center justify-between gap-3 rounded-ui border border-filete px-4 py-3">
               <div className="grid gap-0.5">
                 <strong className="text-sm">Cuota {c.nro_cuota} de {totalCuotas}</strong>
                 <div className="text-xs text-tinta-suave">
                   Vencimiento: <span className="tabular-nums">{fecha(c.fecha_vencimiento)}</span>
-                  {proxRecordatorio && <> · Próximo recordatorio: <span className="tabular-nums">{fecha(proxRecordatorio)}</span></>}
                 </div>
                 <div className="mt-0.5 flex flex-wrap items-center gap-2.5">
                   <strong className="text-base tabular-nums">{bsPago(c.monto)}</strong>
@@ -206,23 +179,9 @@ function TarjetaOrden({ o, t, editable, onVerDetalles, onEnviarCuota, onVerCuota
   )
 }
 
-function ModalDetallesOrden({ orden, editable, onCerrar, onAnular, onCambio, aviso }) {
-  const [cambiandoAuto, setCambiandoAuto] = useState(false)
+function ModalDetallesOrden({ orden, editable, onCerrar, onAnular }) {
   const anulada = orden.estado === 'Anulada'
   const anulable = editable && !anulada && !orden.cuotas.some((c) => ['Pago aprobado', 'En revision'].includes(c.estado))
-
-  async function alternarAuto(activar) {
-    setCambiandoAuto(true)
-    try {
-      const { data } = await pagosApi.configurarEnvioAutomatico(orden.nro_orden, activar)
-      aviso.ok(data.mensaje)
-      onCambio()
-      onCerrar()
-    } catch (err) {
-      aviso.error(err)
-      setCambiandoAuto(false)
-    }
-  }
 
   return (
     <Modal ancho titulo={`Detalles de orden #${orden.nro_orden}`} descripcion={`Generada el ${fecha(orden.fecha_generacion, true)}`} onCerrar={onCerrar}>
@@ -249,18 +208,6 @@ function ModalDetallesOrden({ orden, editable, onCerrar, onAnular, onCambio, avi
             <span>Total</span><span className="tabular-nums">{bsPago(orden.total)}</span>
           </div>
         </section>
-
-        {!anulada && editable && (
-          <section className="flex flex-wrap items-center justify-between gap-3 rounded-ui border border-filete bg-niebla-2 p-3 text-sm">
-            <div>
-              <strong>Envíos automáticos por correo</strong>
-              <p className="text-xs text-tinta-suave">Estado actual: {orden.envio_automatico ? 'Activados' : 'Desactivados'}</p>
-            </div>
-            <Boton className="btn-secundario" cargando={cambiandoAuto} onClick={() => alternarAuto(!orden.envio_automatico)}>
-              {orden.envio_automatico ? 'Desactivar envíos' : 'Activar envíos'}
-            </Boton>
-          </section>
-        )}
 
         <div className="acciones justify-between flex-wrap">
           {anulable ? (

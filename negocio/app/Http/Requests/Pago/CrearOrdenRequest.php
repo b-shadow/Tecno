@@ -18,7 +18,6 @@ class CrearOrdenRequest extends ApiRequest
             'descuentos.*' => ['string', $this->segun(fn ($v) => app(DPago::class)->esDescuentoActivo($v))],
             'cuotas' => ['required', 'integer', 'between:1,12'],
             'primer_vencimiento' => ['required', 'date', 'after_or_equal:today'],
-            'envio_automatico' => ['nullable', 'boolean'],
         ];
     }
 

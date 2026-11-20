@@ -1,10 +1,10 @@
 /**
  * Pruebas E2E integrales sobre navegador Playwright Chromium (Refactorización Módulo de Pagos):
  * - D01–D12: reglas dinámicas de descuentos en UI y backend + vista previa de cuotas + monto exacto Stripe
- * - P01–P32: creación de orden, envío manual sin redirección, modal único compartir, WhatsApp, SMTP real,
+ * - P01–P32: creación de orden, envío manual sin redirección, modal único compartir, WhatsApp, SMTP controlado,
  *   pago Stripe (4242, 3DS, Mastercard, rechazo 0002), retorno público confirmación/cancelación,
  *   webhook sin retorno UI, registro tarjeta Setup (activar/desactivar/inactivos), historial, bloqueo QR/manual
- * - A01–A12: envío automático activado/desactivado + enlace público por cuota /pagos/cuota?token=... con regeneración tras expiración
+ * - Enlace público por cuota /pagos/cuota?token=... con regeneración tras expiración
  * - Visual 1–17: colapsado inicial de Métodos e Historial, 320/390/768/1280px sin desbordamiento, 6 temas + alto contraste + tamaño fuente
  */
 import { createRequire } from 'node:module'
@@ -22,7 +22,7 @@ const OUT = 'qa-artifacts/refactor-pagos'
 await fs.mkdir(OUT, { recursive: true })
 
 function psqlScalar(sql) {
-  return execFileSync(PSQL, ['-U', 'postgres', '-d', 'crm_educativo', '-tAc', sql], { encoding: 'utf8' }).trim()
+  return execFileSync(PSQL, ['-U', process.env.DB_USERNAME || 'postgres', '-d', process.env.DB_DATABASE || 'crm_educativo', '-tAc', sql], { encoding: 'utf8' }).trim()
 }
 
 function expireStripeSession(sessionId) {
@@ -57,7 +57,7 @@ const progMulti = cat.programas.find((p) => p.modulos.length >= 4) || cat.progra
 const mod = progMulti.modulos[0]
 
 let uidCounter = 1
-async function crearProspectoYOrden({ cuotas, primerVencimiento = '2030-07-01', telefono = '71234567', sufijoCorreo = 'e2e', moduloCodigo = mod.codigo, envioAutomatico = true }) {
+async function crearProspectoYOrden({ cuotas, primerVencimiento = '2030-07-01', telefono = '71234567', sufijoCorreo = 'e2e', moduloCodigo = mod.codigo }) {
   const uid = `${String(Date.now()).slice(-6)}${uidCounter++}`
   const doc = `RP${uid}`
   const correoCliente = `unexouagrm+${sufijoCorreo}${uid}@gmail.com`
@@ -74,7 +74,7 @@ async function crearProspectoYOrden({ cuotas, primerVencimiento = '2030-07-01', 
   let orden = null
   if (cuotas > 0) {
     const { status: stO, data: dO } = await api(`/intereses/${nroTarjeta}/ordenes-pago`, 'POST', {
-      modulos: [moduloCodigo], cuotas, primer_vencimiento: primerVencimiento, envio_automatico: envioAutomatico,
+      modulos: [moduloCodigo], cuotas, primer_vencimiento: primerVencimiento,
     }, vnd)
     assert.equal(stO, 201, JSON.stringify(dO))
     orden = dO.orden
@@ -180,7 +180,7 @@ try {
   await vPage.waitForURL(/inicio-vendedor/)
 
   // =========================================================================
-  // FLUJO 1: D01–D12 (Reglas estrictas de descuentos), P01–P14, P31–P32, A01, A10, Visual 1–13
+  // FLUJO 1: D01–D12 (Reglas estrictas de descuentos), P01–P14, P31–P32, A10, Visual 1–13
   // =========================================================================
   const caso1 = await crearProspectoYOrden({ cuotas: 0, telefono: '+59171234567', sufijoCorreo: 'c1' })
   await vPage.goto(`${BASE}/agenda?interes=${caso1.nroTarjeta}`)
@@ -197,7 +197,7 @@ try {
   assert.equal(await metodosDetails.evaluate((el) => el.open), false, 'Métodos de pago debe iniciar contraído')
   assert.equal(await historialDetails.evaluate((el) => el.open), false, 'Historial de pagos debe iniciar contraído')
 
-  // Abrir FormularioOrdenPago y verificar D01-D09 + D11 + A01
+  // Abrir FormularioOrdenPago y verificar D01-D09 + D11
   await vPage.getByRole('region', { name: 'Gestión de pagos' }).getByRole('button', { name: 'Generar orden de pago' }).click()
   const modalOrden = vPage.getByRole('dialog', { name: 'Generar orden de pago' })
   await modalOrden.waitFor()
@@ -250,10 +250,6 @@ try {
   await modalOrden.getByLabel(/Cantidad de cuotas/).selectOption('3')
   assert.equal(await modalOrden.locator('table.tabla tbody tr').count(), 4, 'D11: Vista previa de 3 cuotas + fila Total')
 
-  // A01: Envío automático pre-activado para correo válido
-  const chkAuto = modalOrden.getByLabel(/Enviar solicitudes y recordatorios autom/i)
-  assert.equal(await chkAuto.isChecked(), true, 'A01: Envío automático debe iniciar activado con correo válido')
-
   // Cambiar a Pago único para Caso 1 y generar
   await modalOrden.getByLabel(/Forma de pago/).selectOption('unico')
   await vPage.screenshot({ path: `${OUT}/01-modal-nueva-orden.png`, fullPage: true })
@@ -263,14 +259,14 @@ try {
   const orden1Txt = await vPage.locator('h4', { hasText: /Orden de pago #\d+/ }).first().innerText()
   const nroOrden1 = Number(orden1Txt.match(/Orden de pago #(\d+)/)[1])
 
-  // P31 / A12 / Visual: Envío automático activo NO oculta botón Enviar solicitud de pago, progreso visible, sin URL permanente
-  await vPage.getByText(/Envíos automáticos:.*Activados/i).waitFor()
+  assert.equal(Number(psqlScalar(`SELECT count(*) FROM notificaciones WHERE destinatario = '${caso1.correoCliente}';`)), 0)
+
   await vPage.getByText('0 de 1 cuota pagada', { exact: true }).waitFor()
   assert.equal(await vPage.locator('progress.pagos-progreso').getAttribute('max'), '1')
   assert.equal(await vPage.getByRole('button', { name: 'Enviar solicitud de pago', exact: true }).count(), 1)
   assert.equal(await vPage.locator('input[readonly][value*="checkout.stripe.com"]').count(), 0, 'No debe haber URL larga permanente en la tarjeta')
   await vPage.screenshot({ path: `${OUT}/02-resumen-y-orden-activa.png`, fullPage: true })
-  console.log(`OK   D01-D11 + A01/A12 + Visual orden #${nroOrden1} limpia y validada`)
+  console.log(`OK   D01-D11 + Visual orden #${nroOrden1} limpia y validada`)
 
   // Compartir vía ModalCompartirPago (Copiar + WhatsApp + Correo SMTP)
   await vPage.getByRole('button', { name: 'Enviar solicitud de pago', exact: true }).click()
@@ -293,6 +289,8 @@ try {
   await modalComp.getByRole('button', { name: 'Enviar por correo electrónico', exact: true }).click()
   assert.equal(await modalComp.locator('input[type="email"]').inputValue(), caso1.correoCliente)
   await vPage.screenshot({ path: `${OUT}/03-modal-compartir-pago.png` })
+  await modalComp.getByLabel('Asunto').fill('Enlace de pago de tu programa — prueba manual')
+  await modalComp.getByLabel('Mensaje').fill('Mensaje editado de prueba controlada. Revisa el enlace para completar tu pago.')
   await modalComp.getByRole('button', { name: 'Confirmar y enviar', exact: true }).click()
   await vPage.getByText(/aceptado por el servidor SMTP/i).waitFor({ timeout: 25000 })
   assert.equal(Number(psqlScalar(`SELECT count(*) FROM transacciones_stripe WHERE nro_orden = ${nroOrden1} AND nro_cuota = 1;`)), 1)
@@ -302,8 +300,6 @@ try {
   const tokenPago1 = psqlScalar(`SELECT token_pago FROM cuotas WHERE nro_orden = ${nroOrden1} AND nro_cuota = 1;`)
   const sesion1 = psqlScalar(`SELECT stripe_sesion FROM transacciones_stripe WHERE nro_orden = ${nroOrden1} AND nro_cuota = 1 LIMIT 1;`)
   assert(tokenPago1, 'Debe existir token_pago en cuotas')
-  const notifAuto = Number(psqlScalar(`SELECT count(*) FROM notificaciones WHERE destinatario = '${caso1.correoCliente}' AND estado = 'enviada' AND tipo LIKE '%Orden #${nroOrden1}%';`))
-  assert(notifAuto >= 1, 'La orden con envío automático debe enviar y registrar el correo inicial por SMTP')
   const notifManual = Number(psqlScalar(`SELECT count(*) FROM notificaciones WHERE destinatario = '${caso1.correoCliente}' AND estado = 'enviada' AND tipo LIKE '%Enlace de pago de tu programa%';`))
   assert(notifManual >= 1, 'El envío manual desde ModalCompartirPago debe registrarse como enviado por SMTP')
   expireStripeSession(sesion1)
@@ -328,7 +324,7 @@ try {
   await cPage.screenshot({ path: `${OUT}/05-cliente-cuota-ya-pagada.png`, fullPage: true })
   console.log('OK   A10 enlace público de cuota regenera sesión expirada, cobra y bloquea doble pago tras liquidar')
 
-  // Vendedor actualiza y ve liquidada + historial + correos sin duplicados
+  // Vendedor actualiza y ve liquidada + historial + ausencia de correo al confirmar
   await vPage.getByRole('button', { name: 'Actualizar estado', exact: true }).click()
   await vPage.getByText('1 de 1 cuota pagada', { exact: true }).waitFor({ timeout: 10000 })
   const cerradasDetails = vPage.locator('details', { hasText: /Órdenes liquidadas y anuladas/ })
@@ -341,13 +337,13 @@ try {
   const pi1 = psqlScalar(`SELECT stripe_pago_intent FROM cuotas WHERE nro_orden = ${nroOrden1} AND nro_cuota = 1;`)
   const notifCli = Number(psqlScalar(`SELECT count(*) FROM notificaciones WHERE destinatario = '${caso1.correoCliente}' AND estado = 'enviada' AND mensaje LIKE '%${pi1}%';`))
   const notifVnd = Number(psqlScalar(`SELECT count(*) FROM notificaciones WHERE destinatario = 'vendedor.demo@crm-educativo.local' AND estado = 'enviada' AND mensaje LIKE '%${pi1}%';`))
-  assert.equal(notifCli, 1)
-  assert.equal(notifVnd, 1)
+  assert.equal(notifCli, 0)
+  assert.equal(notifVnd, 0)
   evidencias.push({ flujo: 'Flujo 1 (D01-D11, A10, Pago único)', orden: nroOrden1, pi: pi1, notifCli, notifVnd })
   await clientCtx.close()
 
   // =========================================================================
-  // FLUJO 2: D12 Descuento completo real en UI + Plan de 3 cuotas (3DS, MC, Visa, Rechazo, Cancelación, Setup Tarjeta, Toggle Envío Automático)
+  // FLUJO 2: D12 Descuento completo real en UI + Plan de 3 cuotas (3DS, MC, Visa, Rechazo, Cancelación, Setup Tarjeta)
   // =========================================================================
   const casoDsc = await crearProspectoYOrden({ cuotas: 0, sufijoCorreo: 'd12' })
   await vPage.goto(`${BASE}/agenda?interes=${casoDsc.nroTarjeta}`)
@@ -376,15 +372,6 @@ try {
   const caso3 = await crearProspectoYOrden({ cuotas: 3, sufijoCorreo: 'c3' })
   await vPage.goto(`${BASE}/agenda?interes=${caso3.nroTarjeta}`)
   await vPage.getByRole('tab', { name: 'Pagos', exact: true }).click()
-
-  // Toggle envíos automáticos en Detalles y opciones
-  await vPage.getByRole('button', { name: 'Detalles y opciones', exact: true }).first().click()
-  const modalDet = vPage.getByRole('dialog', { name: /Detalles de orden/ })
-  await modalDet.getByRole('button', { name: 'Desactivar envíos', exact: true }).click()
-  await vPage.getByText(/Envíos automáticos:.*Desactivados/i).waitFor({ timeout: 10000 })
-  await vPage.getByRole('button', { name: 'Detalles y opciones', exact: true }).first().click()
-  await modalDet.getByRole('button', { name: 'Activar envíos', exact: true }).click()
-  await vPage.getByText(/Envíos automáticos:.*Activados/i).waitFor({ timeout: 10000 })
 
   // Audit visual en 6 temas + alto contraste + tamaños y 4 viewports (320, 390, 768, 1280) sobre UI refactorizada (incluyendo modal abierto en 320px)
   await vPage.setViewportSize({ width: 320, height: 720 })
@@ -503,11 +490,11 @@ try {
   await llenarTarjetaStripe(c3Page, { numero: '4242 4242 4242 4242' })
   await enviarFormularioStripe(c3Page)
   await c3Page.waitForURL(/\/pagos\/confirmacion\?session_id=cs_test_/, { timeout: 45000 })
-  await c3Page.getByText('¡Tarjeta registrada en Stripe Sandbox!', { exact: true }).waitFor({ timeout: 25000 })
+  await c3Page.getByText('¡Tarjeta registrada correctamente!', { exact: true }).waitFor({ timeout: 25000 })
 
   await vPage.getByRole('button', { name: 'Actualizar estado', exact: true }).click()
   if (!(await metodos3.evaluate((el) => el.open))) await metodos3.locator('summary').click()
-  await vPage.getByText(/terminada en 4242/i).waitFor({ timeout: 10000 })
+  await metodos3.getByText(/terminada en 4242/i).first().waitFor({ timeout: 10000 })
   await vPage.screenshot({ path: `${OUT}/07-metodos-pago-tarjetas.png`, fullPage: true })
   const btnsDesactivar = vPage.getByRole('button', { name: 'Desactivar', exact: true })
   assert((await btnsDesactivar.count()) >= 1, 'Debe haber al menos una tarjeta activa para desactivar')
@@ -553,7 +540,7 @@ try {
   await vendorCtx.close()
   assert.deepEqual(erroresJs, [], 'Errores JS detectados: ' + erroresJs.join('; '))
   await fs.writeFile(`${OUT}/evidencias-refactor.json`, JSON.stringify(evidencias, null, 2))
-  console.log('\nSTRIPE REFACTOR E2E UI + VISUAL + AUTOMATIZACION: TODO OK')
+  console.log('\nSTRIPE REFACTOR E2E UI + VISUAL + CORREO MANUAL: TODO OK')
 } finally {
   await browser.close()
 }

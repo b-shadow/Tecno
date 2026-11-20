@@ -15,17 +15,6 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         health: '/up',
     )
-    ->withCommands([
-        __DIR__.'/../app/Console/Commands',
-    ])
-    ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule): void {
-        $hora = (string) config('pagos_recordatorios.hora_envio', '09:00');
-        $tz = (string) config('pagos_recordatorios.zona_horaria', 'America/La_Paz');
-        $schedule->command('unexo:recordatorios-pago')
-            ->dailyAt($hora)
-            ->timezone($tz)
-            ->withoutOverlapping();
-    })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->api(append: [
             \App\Http\Middleware\NoCacheApi::class,
