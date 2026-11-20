@@ -2,7 +2,7 @@
  * UNEXO — Variables compartidas del sistema de diseño.
  * Los estilos visuales específicos de cada público están separados en estilos/temas/{adultos,niños,jovenes}.css.
  * Atributos activos en <html>:
- *   data-theme="light|dark"                día o noche (horario de Bolivia UTC-4 o manual)
+ *   data-theme="light|dark"                día o noche (hora local del dispositivo o manual)
  *   data-audiencia="adultos|jovenes|niños" tema según público objetivo
  *   data-letra="-1..3"                     tamaño de fuente accesible
  *   data-contraste="alto"                  alto contraste prioritario (WCAG AAA en texto)
