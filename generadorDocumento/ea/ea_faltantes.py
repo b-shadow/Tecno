@@ -179,8 +179,9 @@ def interacciones(cu):
                 raise ValueError(f'{cu}: {n}::{r["metodo"]} ya no delega en NStripe')
             pasos.append((n, 'NStripe', f'{llamada_stripe[1]}()'))
             origen_datos = 'NStripe'
-        disponibles = [(dato, metodo) for dato, metodo in codigo._llamadas(origen_datos,
-                                                                            llamada_stripe[1] if origen_datos == 'NStripe' else r['metodo'], php)
+        # llamadas en orden real, entrando a los auxiliares (NStripe crea la transacción dentro de uno de ellos)
+        disponibles = [(dato, metodo) for _, dato, metodo in codigo.llamadas_en_orden(
+                           origen_datos, llamada_stripe[1] if origen_datos == 'NStripe' else r['metodo'])
                        if dato in clases and clases[dato]['estereotipo'] == 'datos']
         for nombre_metodo in PREFERIDAS_D[cu][indice]:
             real = next(((dato, metodo) for dato, metodo in disponibles if metodo == nombre_metodo), None)
@@ -194,6 +195,222 @@ def interacciones(cu):
                 pasos.append(('NStripe', 'StripeClient', 'checkout.sessions.retrieve()'))
     if not pasos: raise ValueError(f'{cu} no tiene rutas de secuencia verificadas')
     return clases, pasos
+
+
+# ------------------------------------------------------------------------------------------------ 7.4 Secuencia
+# Recorridos principales de cada CU: ruta de la API y, en orden, los mensajes que salen de su método N ('N' = la clase
+# N de la ruta). Cada mensaje se comprueba contra codigo.llamadas_en_orden: si el código deja de hacerlo, o lo hace en
+# otro orden, la generación falla. Se dibuja el camino feliz; las validaciones y ramas de error quedan fuera.
+RECORRIDOS = {
+    'CU1': [('POST /login', [('N', 'DAuth', 'usuarioPorCorreo'), ('N', 'DAuth', 'crearToken'),
+                             ('N', 'DBitacora', 'registrar'), ('N', 'NAcceso', 'menu'), ('NAcceso', 'DAcceso', 'menuPorRol')]),
+            ('POST /usuarios', [('N', 'DUsuario', 'crear'), ('N', 'DUsuario', 'fresco')]),
+            ('PUT /matriz', [('N', 'DSeguridad', 'guardarPermiso')])],
+    'CU2': [('GET /catalogo', [('N', 'DCatalogo', 'programasAbiertos')]),
+            ('POST /registro-interes', [('N', 'DProspecto', 'encontrarPorDocumentoOCorreoBloqueado'),
+                                        ('N', 'DProspecto', 'crear'), ('N', 'DProspecto', 'crearInteres')])],
+    'CU3': [('POST /prospectos', [('N', 'DProspecto', 'crear'), ('N', 'DProspecto', 'crearInteres'),
+                                  ('N', 'DProspecto', 'conIntereses')]),
+            ('PATCH /intereses/{interes}/asignar', [('N', 'DInteres', 'obtener'), ('N', 'DInteres', 'vendedor'),
+                                                    ('N', 'DInteres', 'guardar'), ('N', 'DInteres', 'registrarInteraccion'),
+                                                    ('N', 'DInteres', 'refrescarDetalle')])],
+    'CU4': [('PATCH /intereses/{interes}/estado', [('N', 'DInteres', 'obtener'), ('N', 'DInteres', 'bloquear'),
+                                                   ('N', 'DInteres', 'guardar'), ('N', 'DInteres', 'actualizarEstadoProspecto'),
+                                                   ('N', 'DInteres', 'registrarInteraccion'), ('N', 'DInteres', 'refrescarDetalle')])],
+    'CU5': [('PATCH /intereses/{interes}/estado', [('N', 'DInteres', 'obtener'), ('N', 'DInteres', 'guardar'),
+                                                   ('N', 'DInteres', 'actualizarEstadoProspecto'),
+                                                   ('N', 'DInteres', 'registrarInteraccion')]),
+            ('POST /motivos', [('N', 'DMotivo', 'existeNombre'), ('N', 'DMotivo', 'crear')])],
+    'CU6': [('POST /intereses/{interes}/ordenes-pago', [('N', 'DPago', 'interesBloqueado'), ('N', 'DPago', 'crearOrden'),
+                                                        ('N', 'DPago', 'insertarItems'), ('N', 'DPago', 'insertarCuotas'),
+                                                        ('N', 'DPago', 'crearPago')]),
+            ('POST /ordenes-pago/{orden}/cuotas/{cuota}/checkout', [
+                ('N', 'NStripe', 'iniciarCheckoutCuota'), ('NStripe', 'DStripe', 'ordenConDetalle'),
+                ('NStripe', 'DPago', 'asegurarTokenCuota'), ('NStripe', 'StripeClient', 'checkout.sessions.create'),
+                ('NStripe', 'DStripe', 'crearTransaccion')]),
+            ('GET /pagos/stripe/sesiones/{sessionId}', [
+                ('N', 'NStripe', 'verificarSesion'), ('NStripe', 'DStripe', 'transaccionPorSesion'),
+                ('NStripe', 'StripeClient', 'checkout.sessions.retrieve'), ('NStripe', 'NPago', 'estadoCuota'),
+                ('NStripe', 'DStripe', 'actualizarTransaccion'), ('NStripe', 'DPago', 'actualizarInteres')]),
+            ('POST /exportaciones', [('N', 'DExportacion', 'exportarPendientes')])],
+    'CU7': [('POST /intereses/{interes}/interacciones', [('N', 'DSeguimiento', 'registrarInteraccion'),
+                                                         ('N', 'DSeguimiento', 'actualizarInteres')]),
+            ('POST /intereses/{interes}/recordatorios', [('N', 'DSeguimiento', 'crearRecordatorio'),
+                                                         ('N', 'DSeguimiento', 'actualizarInteres')]),
+            ('GET /notificaciones', [('N', 'DNotificacion', 'listar')])],
+    'CU8': [('GET /reportes/estadisticas', [('N', 'DReporte', 'estadisticas')]),
+            ('GET /comisiones/resumen', [('N', 'DSeguimiento', 'resumenComisiones')])],
+}
+# Quién inicia cada recorrido cuando no es el iniciador del CU (contenido.DETALLE).
+ACTOR_RUTA = {('CU5', 'POST /motivos'): 'Administrador', ('CU6', 'POST /exportaciones'): 'Coordinador'}
+PAGINA_PREFERIDA = {'CU2': 'PCatalogo.jsx', 'CU4': 'PEmbudo.jsx', 'CU5': 'PEmbudo.jsx'}
+PASO_SEQ = 35           # separación vertical fija de los mensajes en EA 15
+PRIMERO_SEQ = 133       # altura del primer mensaje con las líneas de vida arriba en 35
+IZQUIERDA_SEQ = 120     # centro del primer actor (a 12 pt): a su izquierda va la pestaña opt
+
+
+def mensajes_secuencia(cu):
+    """[(guarda, [(origen, destino, rótulo, 'call'|'return'|'self')])] por recorrido; la guarda del marco opt es la
+    función de api/*.js que lo dispara. Los extremos son
+    nombres de línea de vida: '@Actor', 'Pantalla', 'HTTP', 'Negocio', 'Datos', 'Stripe'."""
+    php, rutas, funciones, usos = codigo.clases_php(), codigo.rutas_api(), codigo.funciones_api(), codigo.usos_api()
+    clases, _, errores = codigo.cadena(cu)
+    if errores: raise ValueError('; '.join(errores))
+    if cu == 'CU5': clases.update(codigo.cadena('CU4')[0])   # «Perdido + motivo» se marca en PEmbudo.jsx (pantalla de CU4)
+    capa = lambda c: 'Stripe' if c == 'StripeClient' else 'Negocio' if php[c]['estereotipo'] == 'negocio' else 'Datos'
+
+    def retorno(c, m):
+        firma = php[c]['metodos'][m]['firma']
+        t = re.search(r'\):\s*([?\w\\|]+)$', firma)
+        return t.group(1).rsplit('\\', 1)[-1] if t else 'resultado'
+
+    escenas = []
+    for ruta, pasos in RECORRIDOS[cu]:
+        r = next((r for r in rutas if f'{r["verbo"]} {r["ruta"]}' == ruta), None)
+        if not r: raise ValueError(f'{cu}: la ruta {ruta} ya no existe en api.php')
+        n, met = r['controlador'], r['metodo']
+        reales = codigo.llamadas_en_orden(n, met)
+        i = 0
+        for o, d, m in pasos:   # subsecuencia: cada mensaje existe y después del anterior
+            o = n if o == 'N' else o
+            while i < len(reales) and reales[i] != (o, d, m): i += 1
+            if i == len(reales): raise ValueError(f'{cu} {ruta}: {o} ya no llama a {d}::{m}() en ese orden')
+            i += 1
+        fn = next((k for k, f in funciones.items() if f['verbo'] == r['verbo'] and f['ruta'] == codigo.norm(r['ruta'])), None)
+        if not fn: raise ValueError(f'{cu}: ninguna función de api/*.js llama a {ruta}')
+        api = f'{fn.split(".")[0]}.js'
+        paginas = [a.rsplit('/', 1)[-1] for a, fns in usos.items() if fn in fns and a.rsplit('/', 1)[-1] in clases]
+        if r['ruta'] == '/login': paginas = ['PLogin.jsx']
+        if not paginas: raise ValueError(f'{cu}: ninguna página del CU llama a {fn}')
+        pagina = PAGINA_PREFERIDA.get(cu) if PAGINA_PREFERIDA.get(cu) in paginas else paginas[0]
+        actor = '@' + ACTOR_RUTA.get((cu, ruta), C.DETALLE[cu]['iniciador'])
+        msj = [(actor, 'Pantalla', f'usar {pagina}', 'call'),
+               ('Pantalla', 'HTTP', f'{api}::{funciones[fn]["nombre"]}()', 'call'),
+               ('HTTP', 'Negocio', f'{n}::{met}()', 'call')]
+        for o, d, m in pasos:
+            if capa(d) == 'Negocio': msj.append(('Negocio', 'Negocio', f'{d}::{m}()', 'self'))
+            elif capa(d) == 'Stripe': msj += [('Negocio', 'Stripe', f'{m}()', 'call'), ('Stripe', 'Negocio', 'Session', 'return')]
+            else: msj += [('Negocio', 'Datos', f'{d}::{m}()', 'call'), ('Datos', 'Negocio', retorno(d, m), 'return')]
+        msj += [('Negocio', 'HTTP', retorno(n, met), 'return'), ('HTTP', 'Pantalla', 'respuesta JSON', 'return'),
+                ('Pantalla', actor, 'resultado mostrado', 'return')]
+        escenas.append((funciones[fn]['nombre'], msj))   # guarda del opt: la acción que dispara el recorrido
+    return escenas
+
+
+def geometria_secuencia(cu, pt):
+    """Acomodo del sd de un CU con letra de pt puntos, sin abrir EA: líneas de vida con su x, marcos opt y medidas.
+    La separación entre líneas de vida se ajusta al nombre y al rótulo más largo que pasa entre ellas."""
+    escenas = mensajes_secuencia(cu)
+    actores = list(dict.fromkeys(a for _, msj in escenas for x in msj for a in x[:2] if a.startswith('@')))
+    capas = [('Pantalla', 'Pantalla React'), ('HTTP', 'Cliente HTTP (Axios)'), ('Negocio', 'Negocio Laravel'),
+             ('Datos', 'Datos PostgreSQL')]
+    if any(x[1] == 'Stripe' for _, msj in escenas for x in msj): capas.append(('Stripe', 'Pasarela Stripe'))
+    vidas = [(a, a[1:]) for a in actores] + capas
+    idx = {k: i for i, (k, _) in enumerate(vidas)}
+    letra = lambda texto, f=0.58: len(texto) * f * pt   # ancho en unidades de EA con Calibri a pt puntos
+    cabecera = lambda k: max(70 if k.startswith('@') else 110, letra(dict(vidas)[k], 0.62) + 30)
+    hueco = [(cabecera(vidas[i][0]) + cabecera(vidas[i + 1][0])) / 2 + 20 for i in range(len(vidas) - 1)]
+    for a, b, texto, tipo in sorted((x for _, msj in escenas for x in msj), key=lambda x: abs(idx[x[0]] - idx[x[1]])):
+        i, j = sorted((idx[a], idx[b]))
+        if tipo == 'self': j = min(i + 1, len(hueco))   # el rótulo del automensaje va a la derecha
+        falta = letra(texto) + 40 - sum(hueco[i:j])
+        if falta > 0: hueco[j - 1] += falta
+    # el primer actor, a la derecha de la guarda más larga: ninguna guarda cruza una línea de vida
+    xs = [max(IZQUIERDA_SEQ * pt / 12, 32 + max(letra(f'[{g}]') for g, _ in escenas))]
+    for h in hueco: xs.append(xs[-1] + h)
+    # EA 15 acomoda solo los mensajes (no respeta PtStartY): el primero a 98 de la cabecera y luego cada 35, también
+    # los automensajes. Los marcos opt se calculan con esa misma regla y quedan contiguos, como en G07.
+    marcos, y = [], PRIMERO_SEQ
+    for ruta, msj in escenas:
+        arriba = y - 28                                   # el rótulo del primer mensaje queda bajo el borde
+        for _ in msj: ultimo = y; y += PASO_SEQ
+        marcos.append((ruta, arriba, ultimo + 7))
+    der = xs[-1] + max(70, cabecera(vidas[-1][0]) / 2 + 15)
+    return dict(escenas=escenas, vidas=[(k, t, x, cabecera(k)) for (k, t), x in zip(vidas, xs)], marcos=marcos,
+                alto=ultimo + 10, ancho=der + 15, der=der)
+
+
+def letra_secuencia(cu, alto_cm):
+    """Letra de EA (11-16 pt) que deja más grande el texto impreso del sd en la hoja (19,5 × alto_cm): EA no agranda la
+    separación entre mensajes, así que un sd alto gana con letra grande y uno ancho no."""
+    def impreso(pt):
+        g = geometria_secuencia(cu, pt)
+        return pt * min(19.5 / (g['ancho'] + 20), alto_cm / (g['alto'] + 60))
+    return max(range(11, 17), key=impreso)
+
+
+def secuencia(ea, raiz, cu, archivo, pt):
+    """sd del CU en una sola hoja: una línea de vida por capa (actor, pantalla React, cliente HTTP, negocio Laravel,
+    datos PostgreSQL y, en CU6, la pasarela Stripe), cada mensaje con la clase y el método reales y un marco opt por
+    recorrido con la acción de api/*.js como guarda. pt: letra de nombres y rótulos (la de los rótulos la fija EA al abrir)."""
+    g = geometria_secuencia(cu, pt)
+    nombre = f'{cu}. {C.CU[cu]}: Secuencia (recorridos principales)'
+    anterior = next((x for x in raiz.Diagrams if x.Name == nombre), None)
+    if anterior:   # sus marcos opt quedarían sueltos en el paquete al rehacer el diagrama
+        viejos = {o.ElementID for o in anterior.DiagramObjects if ea.r.GetElementByID(o.ElementID).Type == 'InteractionFragment'}
+        for i in reversed(range(raiz.Elements.Count)):
+            if raiz.Elements.GetAt(i).ElementID in viejos: raiz.Elements.DeleteAt(i, False)
+        raiz.Elements.Refresh()
+    d = diagrama(ea, raiz, nombre, 'Sequence', archivo, refrescar=True)
+    d.StyleEx = 'SuppressBrackets=1;'; d.Update()
+    estilo = f"ObjectStyle='font=Calibri;fontsz={pt * 10};'"
+    elementos = {}
+    for k, texto, x, w in g['vidas']:
+        tipo = 'Actor' if k.startswith('@') else 'Sequence'   # línea de vida UML: cabecera rectangular de una línea
+        e = elementos[k] = elemento(ea, raiz, texto, tipo)   # la misma línea de vida en los ocho diagramas
+        if e.Stereotype: e.Stereotype = ''; e.Update()      # sin ícono de robustez (tapaba el primer mensaje), como G07
+        ea.poner(d, e, round(x - w / 2), 35, round(w), g['alto'])
+        ea.r.Execute(f'UPDATE t_diagramobjects SET {estilo} WHERE Diagram_ID={d.DiagramID} AND Object_ID={e.ElementID}')
+    n = 0
+    for _, msj in g['escenas']:
+        for a, b, texto, tipo in msj:
+            n += 1
+            ea.mensaje_seq(d, elementos[a], elementos[b], texto.replace("'", '´'), n, 'return' if tipo == 'return' else 'call')
+    for ruta, arriba, abajo in g['marcos']:
+        fr = ea.elemento(raiz, '', 'InteractionFragment')
+        fr.Subtype = 1   # opt
+        fr.Update()
+        parte = fr.Partitions.AddNew('x', ''); parte.Size = 100; fr.Update()
+        guid = '{' + str(uuid.uuid4()).upper() + '}'
+        ea.r.Execute(f"UPDATE t_xref SET Description='@PAR;Name={ruta};Size={abajo - arriba};GUID={guid};@ENDPAR;' "
+                     f"WHERE Client='{fr.ElementGUID}' AND Name='Partitions'")
+        ea.poner(d, fr, 15, arriba, round(g['der'] - 15), abajo - arriba, seq=60)
+        ea.r.Execute(f'UPDATE t_diagramobjects SET {estilo} WHERE Diagram_ID={d.DiagramID} AND Object_ID={fr.ElementID}')
+    d.Update(); ea.r.ReloadDiagram(d.DiagramID)
+    ea.exportar(d, archivo)
+
+
+def con_letra_rotulos(pt, tarea):
+    """EA toma la letra de los rótulos de las líneas (opción FONTSIZE13 del registro, 8 pt por defecto) al abrir: se
+    sube a pt mientras corre tarea() y se restaura al terminar."""
+    import winreg
+    clave = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Sparx Systems\EA400\EA\OPTIONS', 0,
+                           winreg.KEY_READ | winreg.KEY_SET_VALUE)
+    antes = winreg.QueryValueEx(clave, 'FONTSIZE13')
+    winreg.SetValueEx(clave, 'FONTSIZE13', 0, antes[1], pt if antes[1] == winreg.REG_DWORD else str(pt))
+    try: return tarea()
+    finally: winreg.SetValueEx(clave, 'FONTSIZE13', 0, antes[1], antes[0]); winreg.CloseKey(clave)
+
+
+# Alto útil de la hoja para cada sd (cm), el mismo que usan documento_p2.py y actualizar_secuencias.py.
+from formato_g07 import ALTO_SD  # noqa: E402
+ALTO_SEQ = {cu: ALTO_SD[0] if i == 0 else ALTO_SD[1] for i, cu in enumerate(C.CU)}
+
+
+def solo_secuencias(cus=None):
+    """Rehace los sd de 7.4 (todos o los de cus), agrupados por letra: una sesión de EA por cada letra de rótulos."""
+    grupos = {}
+    for cu in cus or C.CU:
+        grupos.setdefault(letra_secuencia(cu, ALTO_SEQ[cu]), []).append(cu)
+    for pt, lista in sorted(grupos.items()):
+        def tarea(lista=lista, pt=pt):
+            ea = ea_base.EA.abrir_existente()
+            try:
+                seq = paquete(ea, ea.modelo, 'Diseño de Secuencia')
+                for cu in lista: secuencia(ea, seq, cu, f'sd-{cu.lower()}.png', pt)
+            finally: ea.cerrar()
+        print(f'  letra {pt} pt: {", ".join(lista)}')
+        con_letra_rotulos(pt, tarea)
 
 
 def diagrama_interaccion(ea, raiz, cu, tipo, archivo):
@@ -436,6 +653,8 @@ def main():
     ea_base.SALIDA.mkdir(exist_ok=True)
     if sys.argv[1:] == ['--despliegue']:   # solo 6.1
         return solo_despliegue()
+    if sys.argv[1:2] == ['--secuencias']:  # solo 7.4 (opcional: CU1 CU6 ...)
+        return solo_secuencias(sys.argv[2:])
     ea = ea_base.EA.abrir_existente()
     try:
         _, actores, casos = requisitos(ea, ea.modelo)
@@ -444,10 +663,10 @@ def main():
         seq = paquete(ea, ea.modelo, 'Diseño de Secuencia')
         for cu in C.CU:
             diagrama_interaccion(ea, col, cu, 'Comunicación', f'com-{cu.lower()}.png')
-            diagrama_interaccion(ea, seq, cu, 'Secuencia', f'sd-{cu.lower()}.png')
     finally:
         ea.cerrar()
     print(f'Exportados {len(ea.exportados)} diagramas PNG y EMF en {ea_base.SALIDA}')
+    solo_secuencias()   # aparte: cada letra de rótulos necesita su propia sesión de EA
     solo_despliegue()   # aparte: necesita abrir EA con la letra de rótulos a 11 pt
 
 

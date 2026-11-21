@@ -11,7 +11,7 @@ import contenido as C  # noqa: E402
 import codigo  # noqa: E402
 import esquema  # noqa: E402
 import navegacion  # noqa: E402
-from formato_g07 import G07, PENDIENTES, MARGEN_NAV  # noqa: E402
+from formato_g07 import G07, PENDIENTES, MARGEN_NAV, ALTO_SD  # noqa: E402
 from docx.enum.text import WD_ALIGN_PARAGRAPH  # noqa: E402
 from docx.shared import Cm  # noqa: E402
 IZQ = WD_ALIGN_PARAGRAPH.LEFT   # 11.–13. sin línea de capítulo: B16 a la izquierda
@@ -142,11 +142,12 @@ d.seccion(False)
 d.h('7.3. Diseño Físico', 3)
 for t in sorted(T):
     d.fisico(t, T[t])
+d.seccion(False, MARGEN_NAV)   # 7.4 con 1 cm de margen lateral: cada sd entero, a 19,5 cm, en su hoja carta
 d.h('7.4. Diseño de casos de uso (Diagrama de secuencia)', 3)
 for i, (cu, nombre) in enumerate(C.CU.items()):
-    if i: d.salto()
-    d.h(f'{cu}. {nombre}', 4)
-    d.imagen(DIAG / f'sd-{cu.lower()}.png', alto_max=19)
+    # salto antes del título y no un párrafo de salto: ese renglón vacío le quitaba 1,2 cm de alto al diagrama
+    d.h(f'{cu}. {nombre}', 4).paragraph_format.page_break_before = i > 0
+    d.imagen(DIAG / f'sd-{cu.lower()}.png', ancho=19.5, alto_max=ALTO_SD[0] if i == 0 else ALTO_SD[1])
 for i, actor in enumerate(navegacion.ACTORES, 1):   # 7.5 va en la primera página apaisada, como G07
     titulos = [('7.5. Diseño de Navegación', 3)] if i == 1 else []
     d.franjas(DIAG / f'nav-{actor.lower()}.png', titulos + [(f'7.5.{i}. Diagrama de Navegación del {actor}', 4)], FRANJAS,

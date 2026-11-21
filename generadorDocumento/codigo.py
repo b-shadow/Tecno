@@ -190,6 +190,34 @@ def _llamadas(clase, metodo, C):
     return list(dict.fromkeys(res))
 
 
+_LLAMADA = re.compile(r'\$this->(\w+)->(\w+)\(|\$stripe->((?:\w+->)*)(\w+)\(|\$this->(\w+)\(|\b([A-Z]\w+)::(\w+)\(')
+
+
+def llamadas_en_orden(clase, metodo, pila=()):
+    """[(origen, destino, método)] que ejecuta clase::metodo, en el orden en que aparecen en el código. Entra a los
+    auxiliares propios ($this->m()) y a otras clases de negocio; las llamadas al SDK de Stripe ($stripe->a->b->m())
+    salen como ('StripeClient', 'a.b.m'). Recorre todas las ramas: sirve para comprobar que lo que dibuja un
+    diagrama existe y en ese orden, no para saber qué rama se ejecuta."""
+    C = clases_php()
+    if (clase, metodo) in pila or metodo not in C[clase]['metodos']: return []
+    pila, res = pila + ((clase, metodo),), []
+    for m in _LLAMADA.finditer(C[clase]['metodos'][metodo]['cuerpo']):
+        prop, met, ruta_sdk, met_sdk, propio, estatica, met_est = m.groups()
+        if prop and prop in C[clase]['props']:
+            destino = C[clase]['props'][prop].rsplit('\\', 1)[-1]
+            if destino in C:
+                res.append((clase, destino, met))
+                if C[destino]['estereotipo'] == 'negocio': res += llamadas_en_orden(destino, met, pila)
+        elif met_sdk:
+            res.append((clase, 'StripeClient', ruta_sdk.replace('->', '.') + met_sdk))
+        elif propio:
+            res += llamadas_en_orden(clase, propio, pila)
+        elif estatica and estatica in C and C[estatica]['estereotipo'] in ('negocio', 'datos'):
+            res.append((clase, estatica, met_est))
+            if C[estatica]['estereotipo'] == 'negocio': res += llamadas_en_orden(estatica, met_est, pila)
+    return res
+
+
 # ------------------------------------------------------------------ cadena por CU (5.3.2)
 def cadena(cu):
     """Clases y dependencias del CU leídas del código. Devuelve (clases, dependencias, errores):

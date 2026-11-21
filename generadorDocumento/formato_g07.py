@@ -15,6 +15,10 @@ from doc_ficct import Informe, _campo, _fuente, _sin_sangria, LOGO, INTEGRANTES 
 
 CARTA = (Cm(21.59), Cm(27.94))
 MARGEN = dict(left_margin=Cm(3), right_margin=Cm(3), top_margin=Cm(2.5), bottom_margin=Cm(2.5))
+# 7.4: alto (cm) que deja la hoja carta vertical con MARGEN_NAV bajo los títulos de cada sd (medido en el PDF: la figura
+# empieza a 4,9 cm con el título 7.4 y a 3,6 cm con solo «CUn. …», que abre página con salto antes; el texto acaba en
+# 25,9 cm). Con ancho de 19,5 cm, cada diagrama de secuencia entra entero en su hoja.
+ALTO_SD = (20.6, 21.5)   # con holgura por el espacio después del párrafo de la imagen (medido: la figura empieza a 3,8 cm)
 MARGEN_NAV = dict(left_margin=Cm(1), right_margin=Cm(1), top_margin=Cm(2), bottom_margin=Cm(2))   # franjas casi a todo el ancho
 GRIS, AZUL, AZUL_CLARO, AZUL_MAPEO, AZUL_MAPEO_CLARO = 'C9C9C9', '4F94D9', 'D6E8F5', '5C9CD4', 'DEEBF5'
 PENDIENTES = []
@@ -174,13 +178,30 @@ class G07(Informe):
     def tabla_mapeo(self, nombre, columnas, ancho=15.6):
         """columnas: [(columna, 'pk' | 'fk' | 'pk fk' | '')]. Una tabla por tabla de la BD, como G07: fila de nombre, fila
         de marcas y fila de atributos (sin las dos filas vacías de G07, a pedido del usuario). Los nombres se parten en
-        renglones después de cada "_"; la letra baja de 11 a 8 pt solo en las tablas que no entran a 11."""
+        renglones después de cada "_"; la letra baja de 11 a 8 pt solo en las tablas que no entran a 11. Si ni a 8 pt
+        caben en una fila (cuotas, transacciones_stripe…), las columnas siguen en franjas de marcas + atributos bajo el
+        mismo nombre, pegadas a él: la tabla queda entera y ningún nombre se corta a media palabra."""
         largo = lambda c: max(len(x) for x in [y + '_' for y in c.split('_')[:-1]] + [c.split('_')[-1], 'pk fk'])   # renglón más largo, con su _
         mide = lambda c, m, tam: largo(c) * 0.02 * tam * (1.1 if 'pk' in m else 1) + 0.25   # la PK va en negrita
         cm = lambda cols, tam: sum(mide(c, m, tam) for c, m in cols)
-        tam = next((t for t in (11, 10.5, 10, 9.5, 9, 8.5, 8) if cm(columnas, t) <= ancho), 8)
-        n = len(columnas)
-        t = self.doc.add_table(rows=3, cols=n); t.alignment = WD_TABLE_ALIGNMENT.CENTER; _bordes(t, '9CC2E5')
+        for k in range(1, len(columnas) + 1):   # la menor cantidad de franjas en que todo entra al menos a 8 pt
+            total, franjas, acum = cm(columnas, 8), [[]], 0
+            for c, m in columnas:   # cortes contiguos, de ancho parejo
+                if franjas[-1] and acum + mide(c, m, 8) / 2 > total * len(franjas) / k: franjas.append([])
+                franjas[-1].append((c, m)); acum += mide(c, m, 8)
+            tam = next((t for t in (11, 10.5, 10, 9.5, 9, 8.5, 8) if all(cm(f, t) <= ancho for f in franjas)), None)
+            if tam: break
+        for j, cols in enumerate(franjas):
+            if j:   # separador mínimo, unido a lo que sigue
+                par = _sin_sangria(self.doc.add_paragraph(), False); pf = par.paragraph_format
+                pf.space_before = pf.space_after = Pt(0); pf.line_spacing = Pt(3); pf.keep_with_next = True
+            self._franja_mapeo(nombre if j == 0 else None, cols, ancho, tam, mide)
+        self.doc.add_paragraph()
+
+    def _franja_mapeo(self, nombre, columnas, ancho, tam, mide):
+        """Fila de nombre (solo en la primera franja), fila de marcas y fila de atributos."""
+        n, filas = len(columnas), 3 if nombre else 2
+        t = self.doc.add_table(rows=filas, cols=n); t.alignment = WD_TABLE_ALIGNMENT.CENTER; _bordes(t, '9CC2E5')
         t.autofit = False
         mar = OxmlElement('w:tblCellMar')   # márgenes de celda de 0,1 cm: más espacio para los nombres
         for lado in ('left', 'right'):
@@ -189,20 +210,20 @@ class G07(Informe):
         lay = OxmlElement('w:tblLayout'); lay.set(qn('w:type'), 'fixed'); t._tbl.tblPr.append(lay)
         anchos = [mide(c, m, tam) for c, m in columnas]
         anchos = [a * ancho / sum(anchos) for a in anchos]   # repartir el sobrante: la tabla ocupa todo el ancho
-        cab = t.cell(0, 0).merge(t.cell(0, n - 1))
-        _texto_celda(cab, nombre, bold=True, tam=16, fuente='Calibri', centro=True); _sombra(cab, AZUL_MAPEO)
+        if nombre:
+            cab = t.cell(0, 0).merge(t.cell(0, n - 1))
+            _texto_celda(cab, nombre, bold=True, tam=16, fuente='Calibri', centro=True); _sombra(cab, AZUL_MAPEO)
         for i, (col, marca) in enumerate(columnas):
-            _texto_celda(t.cell(1, i), marca, bold=bool(marca), italic='fk' in marca and 'pk' not in marca, tam=tam, fuente='Calibri')
-            _texto_celda(t.cell(2, i), renglones(col, anchos[i], tam * (1.1 if 'pk' in marca else 1)), bold='pk' in marca,
+            _texto_celda(t.cell(filas - 2, i), marca, bold=bool(marca), italic='fk' in marca and 'pk' not in marca, tam=tam, fuente='Calibri')
+            _texto_celda(t.cell(filas - 1, i), renglones(col, anchos[i], tam * (1.1 if 'pk' in marca else 1)), bold='pk' in marca,
                          tam=tam, fuente='Calibri')
-            _sombra(t.cell(1, i), AZUL_MAPEO_CLARO)
+            _sombra(t.cell(filas - 2, i), AZUL_MAPEO_CLARO)
         for col, a in zip(t.columns, anchos): col.width = Cm(a)
         for f in t.rows:
             f._tr.get_or_add_trPr().append(OxmlElement('w:cantSplit'))
             for c, a in zip(f.cells, anchos if len(f.cells) == n else [ancho]):
                 c.width = Cm(a)
                 for par in c.paragraphs: par.paragraph_format.keep_with_next = True
-        self.doc.add_paragraph()
 
     def fisico(self, nombre, columnas):
         """CREATE TABLE en TNR Bold 12 con columnas alineadas por tabulaciones (G07 7.3)."""

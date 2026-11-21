@@ -23,16 +23,24 @@ def columnas_mapeo(t):
 
 
 def generar(t):
-    """Bloques nuevos de la tabla t en un documento G07 vacío: (tabla de mapeo, párrafos del CREATE TABLE)."""
+    """Bloques nuevos de la tabla t en un documento G07 vacío: (elementos del mapeo, párrafos del CREATE TABLE)."""
     g = G07(); body = g.doc.element.body
     # lo nuevo entra antes del sectPr final: empieza en len(body) - 1
-    n = len(body) - 1; g.tabla_mapeo(t, columnas_mapeo(t), ancho=19.5); mapeo = body[n]   # sin el párrafo vacío de después
+    n = len(body) - 1; g.tabla_mapeo(t, columnas_mapeo(t), ancho=19.5); mapeo = list(body)[n:-2]   # franjas, sin el párrafo vacío
     n = len(body) - 1; g.fisico(t, T[t]); fisico = list(body)[n:-2]                       # sin el párrafo vacío ni sectPr
     return mapeo, fisico
 
 
 def texto(el):
     return ''.join(x.text or '' for x in el.iter() if x.tag.endswith('}t'))
+
+
+def bloque_mapeo(hijos, i):
+    """La tabla de mapeo que empieza en hijos[i] y sus franjas siguientes (párrafo vacío con keepNext + tabla)."""
+    fin = i
+    while fin + 2 < len(hijos) and hijos[fin + 1].tag.endswith('}p') and not texto(hijos[fin + 1]).strip()             and hijos[fin + 1].find('.//' + hijos[fin + 1].tag.rsplit('}', 1)[0] + '}keepNext') is not None             and hijos[fin + 2].tag.endswith('}tbl'):
+        fin += 2
+    return hijos[i:fin + 1]
 
 
 def main():
@@ -45,11 +53,15 @@ def main():
     cambios = []
     for t in T:
         nuevo_mapeo, nuevo_fisico = generar(t)
-        viejo = [e for e in hijos[i72:i73] if e.tag.endswith('}tbl') and plano(texto(e)).startswith(t)
-                 and plano(texto(e))[len(t):len(t) + 2] in ('pk', 'fk')]
-        if len(viejo) != 1: raise RuntimeError(f'Mapeo: encontré {len(viejo)} tablas «{t}» en 7.2.1')
-        if plano(texto(viejo[0])) != plano(texto(nuevo_mapeo)):
-            viejo[0].addprevious(copy.deepcopy(nuevo_mapeo)); viejo[0].getparent().remove(viejo[0]); cambios.append(f'mapeo {t}')
+        ini = [i for i in range(i72, i73) if hijos[i].tag.endswith('}tbl') and plano(texto(hijos[i])).startswith(t)
+               and plano(texto(hijos[i]))[len(t):len(t) + 2] in ('pk', 'fk')]
+        if len(ini) != 1: raise RuntimeError(f'Mapeo: encontré {len(ini)} tablas «{t}» en 7.2.1')
+        viejos = bloque_mapeo(hijos, ini[0])
+        firma = lambda els: [(e.tag.rsplit('}', 1)[1], plano(texto(e))) for e in els]
+        if firma(viejos) != firma(nuevo_mapeo):
+            for e in nuevo_mapeo: viejos[0].addprevious(copy.deepcopy(e))
+            for e in viejos: e.getparent().remove(e)
+            cambios.append(f'mapeo {t}')
         ini = [i for i in range(i73, i74) if texto(hijos[i]).strip() == f'CREATE TABLE {t} (']
         if len(ini) != 1: raise RuntimeError(f'Físico: encontré {len(ini)} «CREATE TABLE {t} (» en 7.3')
         fin = next(i for i in range(ini[0], i74) if texto(hijos[i]).strip() == ');')
