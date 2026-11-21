@@ -10,10 +10,10 @@ const out = 'qa-artifacts'
 await fs.mkdir(out, { recursive: true })
 const results = []
 const sizes = [[320,740],[390,844],[768,1024],[1280,900]]
-const common = ['/prospectos','/agenda','/seguimiento','/reportes','/notificaciones']
+const common = ['/embudo','/prospectos','/agenda','/seguimiento','/reportes','/notificaciones']
 const roles = [
-  { id:'admin', correo:'admin@crm-educativo.local', password:'Admin12345', home:'/dashboard', pages:['/dashboard','/usuarios','/gestion-anuncios','/interesados','/validacion-pagos','/alumnos','/reportes-comerciales',...common] },
-  { id:'coordinador', correo:'coord@test.local', password:'Clave12345', home:'/dashboard', pages:['/dashboard','/gestion-anuncios','/interesados','/validacion-pagos','/alumnos','/reportes-comerciales',...common] },
+  { id:'admin', correo:'admin@crm-educativo.local', password:'Admin12345', home:'/dashboard', pages:['/dashboard','/usuarios','/matriz-acceso','/bitacora','/motivos-perdida','/gestion-anuncios','/interesados','/validacion-pagos','/alumnos',...common] },
+  { id:'coordinador', correo:'coord@test.local', password:'Clave12345', home:'/dashboard', pages:['/dashboard','/motivos-perdida','/gestion-anuncios','/interesados','/validacion-pagos','/alumnos',...common] },
   { id:'vendedor', correo:'vendedor.demo@crm-educativo.local', password:'Vendedor12345', home:'/inicio-vendedor', pages:['/inicio-vendedor',...common] },
 ]
 
@@ -65,29 +65,30 @@ async function audit(engine) {
     await test('catalogo y registro publico movil',async()=>{
       await page.goto(base+'/anuncios'); await settle(page)
       await layout(page)
-      await page.getByRole('button',{name:'Ver programa',exact:true}).first().click()
-      await page.getByRole('button',{name:'Me interesa el programa completo',exact:true}).click()
+      await page.locator('.programa-celda').first().click()
+      await page.getByRole('button',{name:'Me interesa el programa',exact:true}).click()
       const unique=engine+'-'+Date.now()
+      const ci=String(Date.now()).slice(-9)
       await page.getByLabel('Nombre *',{exact:true}).fill('Visual')
-      await page.getByLabel('Apellido *',{exact:true}).fill(unique)
-      await page.getByPlaceholder('Nro. de documento').fill('UI-'+unique)
+      await page.getByLabel('Apellido *',{exact:true}).fill('Prueba Visual')
+      await page.getByPlaceholder('Nro. de documento').fill('QA'+ci)
       await page.getByPlaceholder('Ej. 71234567').fill('00007777')
       await page.getByPlaceholder('Ej. Ingeniero de sistemas').fill('QA')
       await page.getByPlaceholder('Ej. Santa Cruz').fill('Entorno aislado')
-      await page.getByPlaceholder('tu@email.com').fill(unique+'@example.invalid')
-      const button=page.getByRole('button',{name:'Enviar interes',exact:true})
+      await page.getByPlaceholder('usted@correo.com').fill(unique+'@example.invalid')
+      const button=page.getByRole('button',{name:'Enviar interés',exact:true})
       const rect=await button.boundingBox()
       assert(rect.x+rect.width<390,'Boton de registro recortado')
       await button.click()
-      await page.getByText('Interes registrado correctamente.',{exact:false}).waitFor()
+      await page.getByText('Interés registrado correctamente.',{exact:false}).waitFor()
       await shot(page,engine+'-publico-registro')
       await page.locator('main').evaluate(e=>e.scrollTop=e.scrollHeight)
-      await page.getByRole('link',{name:'Iniciar sesion',exact:true}).click()
+      await page.getByRole('link',{name:'Iniciar sesión',exact:true}).click()
       await page.waitForURL(base+'/login')
       await settle(page)
-      assert.equal(await page.locator('main').evaluate(e=>e.scrollTop),0,'Navegacion conserva desplazamiento anterior')
-      await page.getByRole('button',{name:'Olvidaste tu contrasena?',exact:true}).click()
-      await page.getByText('Solicita al administrador que restablezca tu contrasena desde Usuarios.',{exact:true}).waitFor()
+      assert(await page.evaluate(()=>scrollY)<2,'Navegacion conserva desplazamiento anterior')
+      await page.getByRole('button',{name:'¿Olvidó su contraseña?',exact:true}).click()
+      await page.getByText('Solicite al administrador que restablezca su contraseña desde Usuarios.',{exact:true}).waitFor()
     })
 
     for(const role of roles) {
@@ -145,9 +146,8 @@ async function audit(engine) {
           await page.locator('.chat-list-item').first().click()
           await page.locator('.agenda-detail-window').waitFor()
           await page.waitForFunction(()=> {
-            const panel=document.querySelector('.agenda-detail-window').getBoundingClientRect()
-            const main=document.querySelector('main').getBoundingClientRect()
-            return panel.top>=main.top-2 && panel.top<main.top+60
+            const top=document.querySelector('.agenda-detail-window').getBoundingClientRect().top
+            return top>=-2 && top<140
           })
           await layout(page)
           await shot(page,`${engine}-${role.id}-agenda-detalle-movil`)
@@ -178,9 +178,9 @@ async function audit(engine) {
       }
       await test(role.id+' cierre de sesion',async()=>{
         await page.locator('.profile-chip').click()
-        await page.getByRole('button',{name:'Cerrar sesion',exact:true}).click()
-        await page.locator('.logout-card').getByRole('button',{name:'Cerrar sesion',exact:true}).click()
-        await page.waitForURL(base+'/anuncios'); await settle(page)
+        await page.getByRole('button',{name:'Cerrar sesión',exact:true}).click()
+        await page.locator('.logout-card').getByRole('button',{name:'Cerrar sesión',exact:true}).click()
+        await page.waitForURL(base+'/login'); await settle(page)
         assert.equal(await page.evaluate(()=>!!(localStorage.getItem('crm_token')||sessionStorage.getItem('crm_token'))),false)
       })
       console.log('OK matriz',engine,role.id,role.pages.length+' paginas, cuatro anchos y dos temas')
