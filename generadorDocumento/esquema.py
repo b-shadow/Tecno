@@ -84,6 +84,8 @@ def tablas_migraciones():
             for met, col in re.findall(r"\$%s->(\w+)\('(\w+)'" % v, cuerpo):
                 if met == 'dropColumn': cols.discard(col)
                 elif met not in no_columna: cols.add(col)
+            for lista in re.findall(r"\$%s->dropColumn\(\[(.*?)\]" % v, cuerpo, re.S):   # dropColumn(['a', 'b'])
+                cols -= set(re.findall(r"'(\w+)'", lista))
             if re.search(r"\$%s->timestamps\(" % v, cuerpo): cols |= {'created_at', 'updated_at'}
         for tabla, col in re.findall(r'ALTER TABLE (\w+) ADD COLUMN (\w+)', up): res.setdefault(tabla, set()).add(col)
         for tabla in re.findall(r"Schema::dropIfExists\('(\w+)'\)", up): res.pop(tabla, None)

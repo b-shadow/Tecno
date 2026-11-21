@@ -37,7 +37,7 @@ texto o el diagrama (o el código, si el error está ahí) y se vuelve a correr.
 
 ```
 python ea/ea_faltantes.py                          # abre el EAPX existente; conserva posiciones manuales
-python ea/ea_p2.py --actualizar-conceptual          # cambia solo los atributos y conserva las posiciones del conceptual
+python ea/ea_p2.py --actualizar-conceptual          # sincroniza atributos con el esquema y aplica el acomodo de posiciones.json
 python ea/ea_faltantes.py --despliegue             # rehace solo 6.1 (calco G07, letra 11 pt; la corrida completa también lo hace así)
 python actualizar_figura_docx.py conceptual|despliegue   # sustituye solo esa figura en el documento manual actual
 python insertar_diagramas.py                       # sustituye solo diagramas pendientes del DOCX actual
@@ -89,6 +89,6 @@ También avisa (sin fallar) de las rutas de `api.php` que ninguna pantalla llama
   **PostgreSQL** (datos). Nunca MVC, Vue, Inertia ni JWT (eso era G07).
 - Nada inventado: cada dato sale de crm-web, de la BD o de `../P2_WEB.md` / `../PRODUCT.md`; lo que falta queda `[PENDIENTE]`.
 - Diagramas solo en EA 15 Trial real por COM; nunca una copia crackeada. UML exacto: cada elemento existe de verdad.
-- Conceptual con los atributos en orden de la BD y la PK marcada en la misma línea (`+ codigo PK`); las FK se representan mediante asociaciones. Para actualizar solo el diagrama EA existente y conservar su distribución manual: `python ea/ea_p2.py --actualizar-conceptual`. Navegación en franjas apaisadas (como G07); 5.3.2 en 3 capas, no MVC.
+- Conceptual con los atributos en orden de la BD y la **PK subrayada** (atributo static en EA), sin escribir «PK» ni «FK» (pedido del docente en la revisión; escribir PK/FK en un conceptual es causal de rechazo); las FK se representan mediante asociaciones. Entra entero en **una** página vertical (19,5 × 21 cm bajo los títulos, letra impresa ≈4,7 pt, EMF vectorial): el acomodo está en `ea/posiciones.json` (0 líneas sobre cajas, N-N junto a su asociación) y las cajas miden lo justo para su texto (`medida_conceptual`). Si se agrega una tabla, hay que reacomodar a mano en EA y `--guardar-posiciones`. Para actualizar solo el diagrama EA existente: `python ea/ea_p2.py --actualizar-conceptual` y luego `python actualizar_figura_docx.py conceptual`. Navegación en franjas apaisadas (como G07); 5.3.2 en 3 capas, no MVC.
 - Organización: UNEXO. No reutilizar textos del P1 (Unidad de Capacitación de la FICCT).
 - Nombre del entregable: `P2-INF513-GRUPO05SA` (.doc). Credenciales jamás en el documento ni en esta carpeta.

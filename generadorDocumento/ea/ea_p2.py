@@ -7,7 +7,7 @@
         posiciones.json; las próximas regeneraciones las respetan. Para volver al acomodo automático de un diagrama,
         borrar su entrada de posiciones.json.
   python ea/ea_p2.py --actualizar-conceptual
-        cambia solo los atributos del conceptual existente y exporta la figura, conservando las cajas acomodadas.
+        sincroniza los atributos del conceptual existente con el esquema (PK subrayada), aplica posiciones.json y exporta.
 
 Notación y reglas: REGLAS_DOCUMENTO_P2.md §4–§6. Datos: ../esquema.py (BD real) y ../navegacion.py.
 La clase EA y el acomodo de cajas están en ea_base.py (extraídos del P1; este generador no depende de otra carpeta)."""
@@ -57,19 +57,54 @@ def colocar(ea, d, elementos, medidas, guardadas):
 
 
 # ------------------------------------------------------------------------------------------------ 7.1 Conceptual
+def atributos_conceptual():
+    """{tabla: columnas} del conceptual: todas menos las FK (que son las asociaciones), en el orden del esquema."""
+    T, pk, fkcols = esquema.tablas(), esquema.pks(), esquema.columnas_fk()
+    return {t: [c for c, *_ in cols if c in pk[t] or (t, c) not in fkcols] for t, cols in T.items()}
+
+
+def medida_conceptual(t, attrs):
+    """Caja ajustada al texto de EA (~4,6 unidades por carácter, filas de 12): sin relleno sobrante, para que el
+    diagrama entero quepa en una página con la letra más grande posible."""
+    return int(34 + 4.9 * max(len(t), *(len(a) for a in attrs))), 52 + 12 * len(attrs)
+
+
+def marcar_atributo(a, campo, es_pk, pos):
+    """PK subrayada, sin escribir «PK» (pedido del docente en la revisión del P1): en EA un atributo static se dibuja
+    subrayado. No se usa IsID porque pinta «{id}»."""
+    a.Name = campo; a.Visibility = 'Public'; a.Stereotype = ''; a.StereotypeEx = ''
+    a.IsStatic = es_pk; a.Pos = pos; a.Update()
+
+
+def separar_paralelas(ea, d):
+    """Dos relaciones entre las mismas tablas (ordenes_pago → usuarios: vendedor_correo y anulada_por) se dibujarían
+    una encima de la otra: se corren 9 unidades a cada lado de la recta que une los centros."""
+    d.DiagramObjects.Refresh(); d.DiagramLinks.Refresh()
+    cen = {o.ElementID: ((o.left + o.right) / 2, (o.top + o.bottom) / 2) for o in d.DiagramObjects}
+    grupos = {}
+    for l in d.DiagramLinks:
+        c = ea.r.GetConnectorByID(l.ConnectorID)
+        grupos.setdefault(frozenset((c.ClientID, c.SupplierID)), []).append((l, c))
+    for par in (g for g in grupos.values() if len(g) > 1):
+        for k, (l, c) in enumerate(par):
+            (ax, ay), (bx, by) = cen[c.ClientID], cen[c.SupplierID]
+            n = ((bx - ax) ** 2 + (by - ay) ** 2) ** .5
+            desp = 9 * (2 * k - len(par) + 1)
+            px, py = round(-(by - ay) / n * desp), round((bx - ax) / n * desp)
+            l.Geometry = f'SX={px};SY={py};EX={px};EY={py};'; l.Update()
+    d.Update()
+
+
 def conceptual(ea, pkg):
-    """Una clase por tabla, atributos en orden del esquema y PK indicada inline como «columna PK».
+    """Una clase por tabla, atributos en orden del esquema y PK subrayada (static).
     Las FK no se listan: son asociaciones con multiplicidad. Las N-N son clase de asociación con línea punteada."""
     T, F, NN, pk, uq = esquema.tablas(), esquema.fks(), esquema.intermedias(), esquema.pks(), esquema.unicas()
-    fkcols = esquema.columnas_fk()
-    attrs = {t: [c for c, *_ in cols if c in pk[t] or (t, c) not in fkcols] for t, cols in T.items()}
+    attrs = atributos_conceptual()
     ent = {}
     for t in T:
         e = ea.elemento(pkg, t, 'Class')
         for i, c in enumerate(attrs[t]):
-            nombre = f'{c} PK' if c in pk[t] else c
-            a = e.Attributes.AddNew(nombre, ''); a.Visibility = 'Public'; a.Pos = i
-            a.Update()
+            marcar_atributo(e.Attributes.AddNew(c, ''), c, c in pk[t], i)
         e.Update(); ent[t] = e
     relaciones = []
     for inter, (a, b) in NN.items():
@@ -87,13 +122,11 @@ def conceptual(ea, pkg):
         ea.conector(ent[h], ent[p], 'Association', rol, card=(hija, '0..1' if nulo else '1'))
         relaciones.append((h, p))
     d = ea.diagrama(pkg, 'Diseño Conceptual de Base de Datos', 'Logical')
-    medidas = {t: (int(44 + 5.0 * max(len(t), *(len(x) + (7 if x in pk[t] else 4) for x in attrs[t]))),
-                   40 + 12 * len(attrs[t])) for t in T}
+    medidas = {t: medida_conceptual(t, attrs[t]) for t in T}
     guardadas = cargar_posiciones().get(d.Name, {})
-    if all(t in guardadas for t in T):
+    if all(t in guardadas for t in T):   # posiciones.json: acomodo hecho para una página vertical (ver README)
         for t, (l, tp, r, b) in guardadas.items():
-            if t in ent:
-                o = d.DiagramObjects.AddNew(f'l={l};r={r};t={tp};b={b};', ''); o.ElementID = ent[t].ElementID; o.Update()
+            if t in ent: ea.poner(d, ent[t], l, -tp, r - l, tp - b)
     else:
         # que el acomodo busque la letra más grande en UNA página vertical con márgenes de 1 cm (19,5 × 21,4 cm bajo los
         # títulos): EA exporta el PNG al doble y su texto mide ~20 px
@@ -107,13 +140,15 @@ def conceptual(ea, pkg):
     # sin ea_base.colocar_asociaciones: el acomodo ya deja cada N-N junto a sus dos tablas (aristas inter-a, inter-b) y
     # reubicarla la ponía sobre otras relaciones
     # sin ea_base.rutar_enlaces: su ruta puede pasar por dentro de la caja de origen (pasó con roles → usuarios)
+    separar_paralelas(ea, d)
     auditar_conceptual(ea, d)
     ea.exportar(d, 'conceptual.png')
 
 
 def actualizar_conceptual_existente(ea):
-    """Actualiza solo los atributos del conceptual existente, sin reemplazar clases ni posiciones manuales."""
-    T, pk = esquema.tablas(), esquema.pks()
+    """Sincroniza los atributos del conceptual existente con el esquema (agrega y quita columnas, PK subrayada) sin
+    reemplazar clases ni relaciones. Si posiciones.json tiene el conceptual, aplica ese acomodo y esas medidas."""
+    T, pk, attrs = esquema.tablas(), esquema.pks(), atributos_conceptual()
 
     def buscar_paquete(paquete, nombre):
         for p in paquete.Packages:
@@ -130,26 +165,27 @@ def actualizar_conceptual_existente(ea):
     faltan = set(T) - set(clases)
     if faltan: raise RuntimeError(f'Faltan clases del esquema en el conceptual: {sorted(faltan)}')
 
-    for tabla, columnas in T.items():
-        clase = clases[tabla]
+    for tabla in T:
+        clase, campos = clases[tabla], attrs[tabla]
+        for i in reversed(range(clase.Attributes.Count)):   # columnas que ya no están en la BD
+            if clase.Attributes.GetAt(i).Name.removesuffix(' PK') not in campos:
+                print(f'   {tabla}: se quita {clase.Attributes.GetAt(i).Name}'); clase.Attributes.DeleteAt(i, False)
+        clase.Attributes.Refresh()
         existentes = {a.Name.removesuffix(' PK'): a for a in clase.Attributes}
-        campos = [c for c, *_ in columnas if c in pk[tabla] or (tabla, c) not in esquema.columnas_fk()]
-        if set(existentes) != set(campos):
-            raise RuntimeError(f'Los atributos actuales de {tabla} no coinciden con el esquema: '
-                               f'{sorted(existentes)} vs {sorted(campos)}')
         for i, campo in enumerate(campos):
-            atributo = existentes[campo]
-            atributo.Name = f'{campo} PK' if campo in pk[tabla] else campo
-            atributo.Stereotype = ''
-            atributo.StereotypeEx = ''
-            atributo.IsStatic = False
-            atributo.Pos = i
-            atributo.Update()
-        clase.Update()
+            if campo not in existentes: print(f'   {tabla}: se agrega {campo}')
+            marcar_atributo(existentes.get(campo) or clase.Attributes.AddNew(campo, ''), campo, campo in pk[tabla], i)
+        clase.Attributes.Refresh(); clase.Update()
 
     d = next((d for d in pkg.Diagrams if d.Name == 'Diseño Conceptual de Base de Datos'), None)
     if not d: raise RuntimeError('No se encontró el diagrama conceptual en Diseño de Datos.')
+    guardadas = cargar_posiciones().get(d.Name, {})
+    if guardadas:
+        for o in d.DiagramObjects:
+            p = guardadas.get(ea.r.GetElementByID(o.ElementID).Name)
+            if p: o.left, o.top, o.right, o.bottom = p; o.Update()
     d.Update(); ea.r.ReloadDiagram(d.DiagramID)
+    separar_paralelas(ea, d)
     auditar_conceptual(ea, d)
     ea.exportar(d, 'conceptual.png')
 
@@ -444,7 +480,7 @@ def main():
         ea = ea_base.EA.abrir_existente()
         try: actualizar_conceptual_existente(ea)
         finally: ea.cerrar()
-        print('Actualizado el diagrama conceptual existente; se conservaron las posiciones manuales.')
+        print('Actualizado el diagrama conceptual existente (atributos del esquema y acomodo de posiciones.json).')
         return
     if EAPX.exists() and '--recrear' not in sys.argv:
         raise SystemExit('El EAPX existente contiene diagramas y cambios manuales. '

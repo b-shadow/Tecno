@@ -127,7 +127,7 @@ d.imagen(DIAG / 'despliegue.png', ancho=25.9, alto_max=13.2)   # 13,2 cm: lo que
 d.seccion(False, MARGEN_NAV)   # el conceptual en una sola página, casi a todo el ancho (como G07 pág. 63)
 d.h('7. Diseño de Datos', 2)
 d.h('7.1. Diseño Conceptual de Base de Datos', 3)
-d.imagen(DIAG / 'conceptual.png', ancho=19.5, alto_max=19.5)
+d.imagen(DIAG / 'conceptual.png', ancho=19.5, alto_max=21.0)   # 21 cm: lo que dejan los dos títulos (de 4,4 a 25,9 cm)
 d.seccion(False, MARGEN_NAV)   # Mapeo con 1 cm de margen lateral: cada tabla entera y horizontal (decisión del usuario)
 d.h('7.2. Diseño Lógico', 3)   # el lógico es el mapeo (pedido del usuario: título 7.2 Diseño Lógico, luego Mapeo)
 d.h('7.2.1. Mapeo', 4)

@@ -22,7 +22,7 @@ V = '{urn:schemas-microsoft-com:vml}'
 # Encabezados sin tildes y en minúsculas. Con caja, la figura ocupa lo más que entra en ella (6.1: página apaisada
 # bajo los tres títulos, como documento_p2.py); sin caja, conserva su ancho.
 FIGURAS = {
-    'conceptual': ('conceptual', '7.1. diseno conceptual de base de datos', '7.2. diseno logico', None),
+    'conceptual': ('conceptual', '7.1. diseno conceptual de base de datos', '7.2. diseno logico', (19.5, 21.0)),
     'despliegue': ('despliegue', '6.1. diseno fisico de la arquitectura', '7. diseno de datos', (25.9, 13.2)),
 }
 
