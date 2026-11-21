@@ -2,15 +2,20 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
-#[Fillable(['nombre', 'apellido', 'documento', 'correo', 'telefono', 'profesion', 'ubicacion', 'estado', 'fecha_registro'])]
 class Prospecto extends Model
 {
-    public const ESTADOS = ['Nuevo', 'Contactado', 'Interesado', 'En proceso', 'Convertido', 'Perdido'];
+    protected $table = 'prospectos';
+
+    protected $primaryKey = 'documento';
+
+    protected $keyType = 'string';
+
+    public $incrementing = false;
+
+    protected $guarded = [];
 
     protected function casts(): array
     {
@@ -19,22 +24,11 @@ class Prospecto extends Model
 
     public function intereses(): HasMany
     {
-        return $this->hasMany(Interes::class);
+        return $this->hasMany(Interes::class, 'documento', 'documento');
     }
 
-    public function ordenesPago(): HasManyThrough
+    public function metodosPago(): HasMany
     {
-        return $this->hasManyThrough(OrdenPago::class, Interes::class);
+        return $this->hasMany(MetodoPago::class, 'documento', 'documento');
     }
-
-    public function interacciones(): HasManyThrough
-    {
-        return $this->hasManyThrough(Interaccion::class, Interes::class);
-    }
-
-    public function recordatorios(): HasManyThrough
-    {
-        return $this->hasManyThrough(Recordatorio::class, Interes::class);
-    }
-
 }
