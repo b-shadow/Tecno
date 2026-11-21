@@ -1,0 +1,222 @@
+/* Catálogo público y login: la malla de la oferta. Cada programa es una fila; sus módulos, casillas en orden de cursado. */
+
+.publico { min-height: 100dvh; display: flex; flex-direction: column; background: var(--niebla-2); }
+.publico main { flex: 1; display: flex; flex-direction: column; }
+.publico main > * { flex-shrink: 0; }
+
+/* Público adulto: títulos en grotesca pesada (jóvenes y niños conservan su propia letra de títulos). */
+:root:not([data-audiencia='jovenes']):not([data-audiencia='ninos']) :is(.publico, .oferta) { --fuente-titulo: var(--fuente-ui); --titulo-peso: 800; }
+
+/* Color de cada área (también usado en el panel, en /gestion-anuncios). */
+.area-1 { --c: var(--programa-1); }
+.area-2 { --c: var(--programa-2); }
+.area-3 { --c: var(--programa-3); }
+.area-4 { --c: var(--programa-4); }
+.area-5 { --c: var(--programa-5); }
+
+/* ---------- Cabecera de la oferta ---------- */
+.oferta { flex: 1; display: flex; flex-direction: column; padding: clamp(20px, 3vw, 40px) clamp(16px, 3vw, 40px) 0; }
+.oferta-interna { padding: 0; }
+.oferta-cabecera { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--e-4) var(--e-6); margin-bottom: var(--e-5); }
+.oferta-cabecera h1 { font-size: clamp(2.25rem, 1.5rem + 2.4vw, 3.5rem); line-height: 1; letter-spacing: -0.03em; color: var(--navy); }
+:root[data-theme='dark'] .oferta-cabecera h1 { color: var(--tinta); }
+.oferta-cabecera p { margin-top: var(--e-2); color: var(--tinta-suave); max-width: 44ch; text-wrap: pretty; }
+.oferta-cabecera .cifra { color: var(--tinta); font-weight: 700; }
+
+.areas { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--e-2); max-width: 64%; }
+.area-filtro {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 16px;
+  border: 1px solid var(--filete-fuerte); border-radius: 999px; background: var(--papel); color: var(--tinta);
+  font-weight: 700; font-size: var(--t-s); cursor: pointer; white-space: nowrap;
+  transition: background-color 160ms var(--curva), border-color 160ms var(--curva), color 160ms var(--curva);
+}
+.area-filtro[class*=' area-']::before { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+.area-filtro:hover { border-color: var(--tinta-suave); }
+.area-filtro[aria-pressed='true'] { background: var(--navy); border-color: var(--navy); color: #fff; }
+.area-filtro[aria-pressed='true']::before { box-shadow: 0 0 0 2px #fff; }
+:root[data-theme='dark'] .area-filtro[aria-pressed='true'] { background: var(--acento); border-color: var(--acento); color: var(--sobre-acento); }
+
+/* ---------- La malla ---------- */
+.malla-marco { margin-bottom: var(--e-5); overflow-x: auto; background: var(--papel); border: 1px solid var(--filete); border-radius: var(--radio-grande); }
+.malla { border-collapse: separate; border-spacing: 16px 10px; width: 100%; table-layout: fixed; padding: 0 8px 10px; }
+/* Columnas iguales: programa a 280 px y los módulos se reparten el resto; con muchos módulos la malla se desplaza hacia los lados. */
+.malla-col-programa { width: 280px; }
+@media (min-width: 721px) {
+  .malla[data-columnas='6'] { min-width: 1340px; }
+  .malla[data-columnas='7'] { min-width: 1520px; }
+  .malla[data-columnas='8'] { min-width: 1700px; }
+  .malla[data-columnas='9'] { min-width: 1880px; }
+  .malla[data-columnas='10'] { min-width: 2060px; }
+}
+@media (min-width: 721px) and (max-width: 1240px) { .malla:is([data-columnas='3'], [data-columnas='4'], [data-columnas='5']) { min-width: 1160px; } }
+.malla thead th { text-align: left; font-size: var(--t-xs); font-weight: 700; color: var(--tinta-suave); padding: 14px 14px 0; white-space: nowrap; }
+.malla td, .malla th { vertical-align: top; padding: 0; }
+
+/* Columna del programa: fija al desplazar la malla hacia los lados. */
+.malla thead th:first-child, .malla-fila > th { position: sticky; left: 0; z-index: 2; background: var(--papel); box-shadow: -16px 0 0 var(--papel); }
+
+.malla-area th {
+  text-align: left; padding: var(--e-3) 4px 2px; font-size: var(--t-m); font-weight: 800; color: var(--tinta);
+  border-bottom: 2px solid var(--c);
+}
+.malla-area th small { margin-left: 8px; font-size: var(--t-xs); font-weight: 600; color: var(--tinta-suave); }
+
+.programa-celda, .materia {
+  display: grid; align-content: start; gap: 4px; width: 100%; height: 100%; text-align: left; cursor: pointer;
+  color: var(--tinta); background: var(--papel); font: inherit;
+  transition: background-color 180ms var(--curva), border-color 180ms var(--curva), color 180ms var(--curva);
+}
+.programa-celda { min-width: 0; min-height: 92px; padding: 10px 12px; border: 2px solid var(--c); border-radius: var(--radio); background: color-mix(in srgb, var(--c) 9%, var(--papel)); }
+.programa-celda strong { font-size: var(--t-m); font-weight: 800; line-height: 1.25; color: var(--navy); }
+:root[data-theme='dark'] .programa-celda strong { color: var(--tinta); }
+.programa-celda small, .materia small { font-size: var(--t-xs); color: var(--tinta-suave); }
+.programa-celda:hover { background: color-mix(in srgb, var(--c) 16%, var(--papel)); }
+.programa-celda[aria-pressed='true'] { background: var(--c); color: #fff; }
+.programa-celda[aria-pressed='true'] :is(strong, small, .programa-desc) { color: #fff; }
+:root[data-theme='dark'] .programa-celda[aria-pressed='true'] :is(strong, small, .programa-desc) { color: var(--sobre-acento); }
+
+.materia { min-width: 0; min-height: 92px; padding: 10px 12px; border: 2px solid var(--c); border-radius: var(--radio); }
+.materia b { font-size: var(--t-xs); font-weight: 800; letter-spacing: 0.06em; color: var(--c); font-variant-numeric: tabular-nums; }
+.materia > span:not(.materia-desc) { font-size: var(--t-s); font-weight: 700; line-height: 1.25; }
+.materia:hover { background: color-mix(in srgb, var(--c) 8%, var(--papel)); }
+.materia[aria-pressed='true'] { background: var(--c); }
+.materia[aria-pressed='true'] :is(b, span, small) { color: #fff; }
+:root[data-theme='dark'] .materia[aria-pressed='true'] :is(b, span, small) { color: var(--sobre-acento); }
+
+/* Correlatividad: una línea une el programa con su Módulo 1 y cada casilla con la siguiente. */
+.malla-fila td { position: relative; }
+.programa-siglas { display: none; }
+/* Imágenes de la API del catálogo: aparecen al abrir el programa (y en celular, como miniatura). */
+.programa-img, .materia-img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: calc(var(--radio) - 1px); background: var(--niebla); margin-bottom: 6px; animation: abrir 260ms var(--curva); }
+.malla-fila:not(.abierta) .programa-img { display: none; }
+.malla-fila > th::after { content: ''; position: absolute; top: 46px; right: -16px; width: 16px; height: 2px; background: var(--c); }
+/* Celdas de una fila con la misma altura (el botón llena su celda). */
+.malla-fila > :is(td, th) { height: 1px; }
+.malla-fila td:not(.ultima):not(.malla-vacia)::after {
+  content: ''; position: absolute; top: 46px; right: -16px; width: 16px; height: 2px; background: var(--c);
+}
+
+/* Fila abierta: el programa elegido muestra su descripción y la de cada módulo. */
+.malla-fila.abierta .materia { border-style: solid; }
+.malla-fila.abierta .materia:not([aria-pressed='true']) { background: color-mix(in srgb, var(--c) 6%, var(--papel)); }
+.programa-desc, .materia-desc { display: block; margin-top: 6px; font-size: var(--t-xs); line-height: 1.45; color: var(--tinta-suave); animation: abrir 260ms var(--curva); }
+.materia-desc { max-width: 24ch; }
+.materia[aria-pressed='true'] .materia-desc { color: #fff; }
+:root[data-theme='dark'] .materia[aria-pressed='true'] .materia-desc { color: var(--sobre-acento); }
+@keyframes abrir { from { opacity: 0; transform: translateY(-4px); } }
+
+:root[data-contraste='alto'] :is(.materia, .programa-celda)[aria-pressed='true'] { outline: 3px solid var(--tinta); outline-offset: 2px; }
+
+/* ---------- Barra de elección (acción principal) ---------- */
+.eleccion {
+  position: sticky; bottom: 0; z-index: 25; margin: auto calc(-1 * clamp(16px, 3vw, 40px)) 0;
+  /* margin-top: auto la empuja al fondo cuando la malla es corta; el espacio mínimo lo da .malla-marco. */
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-2) var(--e-5);
+  padding: var(--e-3) clamp(16px, 3vw, 40px); background: var(--navy); color: #fff;
+}
+:root[data-contraste='alto'] .eleccion { background: var(--portada); border-top: 3px solid var(--tinta); }
+.eleccion p { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.eleccion p small { font-size: var(--t-xs); color: var(--portada-suave); }
+.eleccion p strong { font-size: var(--t-l); font-weight: 800; line-height: 1.2; }
+.eleccion.vacia p { color: var(--portada-suave); font-size: var(--t-s); }
+.eleccion-precio { font-size: var(--t-2xl); font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* ---------- Registro de interés ---------- */
+.registro { width: 100%; display: grid; align-items: start; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: var(--e-6); padding: clamp(24px, 4vw, 56px) clamp(16px, 3vw, 40px); max-width: 1200px; margin: 0 auto; }
+.registro-resumen { display: grid; gap: var(--e-3); align-content: start; }
+.btn-volver { justify-self: start; margin-left: -8px; }
+.registro-img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--radio-grande); background: var(--niebla); }
+.registro-resumen h1 { font-size: clamp(1.9rem, 1.4rem + 1.6vw, 2.6rem); line-height: 1.05; letter-spacing: -0.025em; color: var(--navy); }
+:root[data-theme='dark'] .registro-resumen h1 { color: var(--tinta); }
+.registro-resumen > p { color: var(--tinta-suave); }
+.registro .hoja h2 { font-size: var(--t-xl); }
+.cadena { list-style: none; margin: var(--e-2) 0 0; padding: 0; display: grid; gap: 8px; }
+.cadena li {
+  position: relative; display: grid; grid-template-columns: 4.2rem 1fr auto; align-items: center; gap: 10px;
+  padding: 8px 12px; border: 2px dashed var(--filete-fuerte); border-radius: var(--radio); color: var(--tinta-suave); font-size: var(--t-s);
+}
+.cadena li + li::before { content: ''; position: absolute; left: 2.2rem; top: -10px; width: 2px; height: 8px; background: var(--filete-fuerte); }
+.cadena li b { font-size: var(--t-xs); letter-spacing: 0.06em; font-variant-numeric: tabular-nums; }
+.cadena li.incluido { border: 2px solid var(--acento-texto); color: var(--tinta); font-weight: 650; }
+.cadena li.incluido b, .cadena li.incluido svg { color: var(--acento-texto); }
+.registro-resumen .total { display: grid; gap: 2px; margin-top: var(--e-3); padding-top: var(--e-3); border-top: 2px solid var(--navy); }
+.registro-resumen .total .cifra { font-size: var(--t-3xl); font-weight: 800; color: var(--navy); line-height: 1.05; }
+:root[data-theme='dark'] .registro-resumen .total { border-color: var(--acento); }
+:root[data-theme='dark'] .registro-resumen .total .cifra { color: var(--tinta); }
+.registro-resumen .total small { color: var(--tinta-suave); font-size: var(--t-s); }
+
+/* ---------- Login: el logo de UNEXO sobre el formulario ---------- */
+/* El login entra entero en la pantalla: el logo y los espacios se achican con el alto disponible. */
+.acceso { flex: 1; display: grid; place-items: center; padding: clamp(12px, 3.5vh, 48px) 16px; }
+.acceso-form { width: min(420px, 100%); display: grid; justify-items: center; gap: clamp(12px, 2.5vh, 24px); }
+.acceso-logo { width: auto; height: clamp(56px, 13vh, 150px); }
+.logo-noche { display: none; }
+:root[data-theme='dark'] .logo-dia { display: none; }
+:root[data-theme='dark'] .logo-noche { display: block; }
+.acceso-form form { width: 100%; display: grid; gap: clamp(10px, 2vh, 16px); padding: clamp(16px, 3vh, 24px) var(--e-5); }
+.acceso-titulo { display: grid; gap: 4px; }
+.acceso-titulo h1 { font-size: var(--t-2xl); line-height: 1.15; }
+.acceso-titulo p { color: var(--tinta-suave); font-size: var(--t-s); }
+/* Pantallas bajas (laptop de 600 px útiles, celulares chicos): logo y espacios más chicos, sin la bajada. */
+@media (max-height: 700px) {
+  .acceso { padding-block: 8px; }
+  .acceso-logo { height: clamp(44px, 9vh, 72px); }
+  .acceso-titulo p { display: none; }
+  .acceso-form form { gap: 10px; padding-block: 14px; }
+  .acceso-form .campo { gap: 4px; }
+  .acceso-form .btn-grande { min-height: 46px; }
+}
+.acceso-opciones { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.campo-clave { position: relative; }
+.campo-clave input { padding-right: 48px; }
+.campo-clave button { position: absolute; right: 4px; bottom: 1px; }
+.acciones-inicio { justify-content: flex-start; margin-top: 12px; }
+
+@media (max-width: 960px) {
+  .registro { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---------- Celular: la malla se pliega a bloques por programa con sus módulos en cadena vertical ---------- */
+@media (max-width: 720px) {
+  .malla-marco { overflow: visible; background: transparent; border: 0; }
+  .malla, .malla tbody, .malla tr, .malla th, .malla td { display: block; width: 100%; min-width: 0; }
+  .malla { padding: 0; }
+  .malla thead { display: none; }
+  .malla thead th:first-child, .malla-fila > th { position: static; box-shadow: none; }
+  .malla tbody + tbody { margin-top: var(--e-5); }
+  .malla-area th { padding: 0 0 6px; margin-bottom: var(--e-3); }
+  /* Un solo contenedor por programa: la propia celda del programa (sin caja alrededor). */
+  .malla-fila { margin-bottom: var(--e-3); }
+  .malla-vacia { display: none !important; }
+  .programa-celda { max-width: none; min-width: 0; }
+  .malla-fila td { padding: 10px 0 0 22px; }
+  /* Plegado: cada programa muestra nombre, precio y la tira de códigos; al tocarlo se despliega su cadena. */
+  .malla-fila:not(.abierta) td { display: none; }
+  .programa-siglas { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .programa-siglas i { font-style: normal; font-size: var(--t-xs); font-weight: 800; letter-spacing: 0.04em; color: var(--c); border: 1px solid var(--c); border-radius: 3px; padding: 1px 5px; font-variant-numeric: tabular-nums; }
+  .malla-fila > th::after { display: none; }
+  .eleccion.vacia { position: static; }
+  .malla-fila > :is(td, th) { height: auto; }
+  .malla-fila td::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 2px; background: var(--c); }
+  .malla-fila td.ultima::before { bottom: auto; height: 34px; }
+  .malla-fila td:not(.ultima):not(.malla-vacia)::after { display: none; }
+  .materia { min-height: 0; grid-template-columns: auto 1fr; column-gap: 10px; }
+  .materia b { grid-row: span 2; align-self: center; }
+  .materia { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .materia-desc { grid-column: 1 / -1; max-width: none; }
+  .materia-img { grid-column: 3; grid-row: 1 / span 2; width: 72px; margin: 0; }
+  .programa-celda { grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; }
+  .programa-celda > :not(.programa-img) { grid-column: 1; }
+  .malla-fila:not(.abierta) .programa-img, .programa-img { display: block; grid-column: 2; grid-row: 1 / span 3; width: 84px; margin: 0; }
+  .materia small { grid-column: 2; }
+  .areas { justify-content: flex-start; max-width: none; flex-wrap: nowrap; overflow-x: auto; margin-inline: calc(-1 * clamp(16px, 3vw, 40px)); padding: 2px clamp(16px, 3vw, 40px) 6px; scrollbar-width: none; }
+  .eleccion { gap: var(--e-2) var(--e-3); }
+  .eleccion p small { display: none; }
+  .eleccion p strong { font-size: var(--t-m); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .eleccion.vacia p { font-size: var(--t-xs); }
+  .eleccion-precio { font-size: var(--t-xl); }
+  .eleccion .btn { flex: 1 1 100%; }
+}
+
+/* A 320 px el encabezado público cabe en dos filas: solo el ícono de la marca. */
+@media (max-width: 380px) { .publico .marca-texto { display: none; } }

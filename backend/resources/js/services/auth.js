@@ -1,73 +1,66 @@
-import { reactive } from 'vue'
-import { getMe, login as loginRequest, logout as logoutRequest, updatePerfil, updatePerfilPassword } from './api'
+import { useSyncExternalStore } from 'react'
+import { api } from './api'
 import { clearStoredSession, persistSession, readSession } from './session'
 
-export const authState = reactive(readSession())
+// Estado de sesión compartido (usuario, menú dinámico y permisos de su rol). Cada cambio reemplaza el objeto.
+let estado = readSession()
+const oyentes = new Set()
 
-window.addEventListener('crm:session-expired', () => {
-  authState.token = null
-  authState.usuario = null
-})
-
-export function isAuthenticated() {
-  return Boolean(authState.token && authState.usuario)
+function fijar(nuevo) {
+  estado = { ...estado, ...nuevo }
+  oyentes.forEach((oyente) => oyente())
 }
 
-export function canManageUsers() {
-  return authState.usuario?.rol === 'administrador'
+window.addEventListener('crm:session-expired', () => fijar({ token: null, usuario: null, menu: [], permisos: {} }))
+
+export function useAuth() {
+  return useSyncExternalStore((oyente) => {
+    oyentes.add(oyente)
+    return () => oyentes.delete(oyente)
+  }, () => estado)
 }
 
-export function canManageCatalog() {
-  return ['administrador', 'coordinador'].includes(authState.usuario?.rol)
+export const authState = () => estado
+export const isAuthenticated = () => Boolean(estado.token && estado.usuario)
+
+/** Nivel de acceso del rol sobre un recurso: 0 nada, 1 lectura, 2 modificación, 3 eliminación. */
+export function nivel(recurso, s = estado) {
+  return { lectura: 1, modificacion: 2, eliminacion: 3 }[s.permisos?.[recurso]] || 0
 }
+export const puede = (recurso, minimo = 'lectura', s = estado) => nivel(recurso, s) >= { lectura: 1, modificacion: 2, eliminacion: 3 }[minimo]
 
-export async function login(credentials, remember = true) {
-  const data = await loginRequest(credentials)
-
-  setSession(data, remember)
-
-  return data.usuario
-}
-
-export function setSession(data, remember = true) {
-  authState.token = data.token
-  authState.usuario = data.usuario
-  authState.remember = remember
+export async function login(credenciales, remember = true) {
+  const { data } = await api.post('/login', credenciales)
   persistSession(data, remember)
+  fijar({ token: data.token, usuario: data.usuario, menu: data.menu, permisos: data.permisos, remember })
+  return data
 }
 
 export async function refreshSession() {
-  if (!authState.token) {
-    return null
-  }
-
-  authState.usuario = await getMe()
-  persistSession(authState, authState.remember)
-
-  return authState.usuario
+  if (!estado.token) return null
+  const { data } = await api.get('/me')
+  const nuevo = { ...estado, ...data }
+  persistSession(nuevo, estado.remember)
+  fijar(data)
+  return data.usuario
 }
 
 export async function updateProfile(payload) {
-  authState.usuario = await updatePerfil(payload)
-  persistSession(authState, authState.remember)
-
-  return authState.usuario
-}
-
-export async function changePassword(payload) {
-  return updatePerfilPassword(payload)
+  const { data } = await api.put('/perfil', payload)
+  const nuevo = { ...estado, usuario: data.usuario }
+  persistSession(nuevo, estado.remember)
+  fijar({ usuario: data.usuario })
+  return data
 }
 
 export async function logout() {
-  if (authState.token) {
+  if (estado.token) {
     try {
-      await logoutRequest()
+      await api.post('/logout')
     } catch {
-      // Local cleanup is still required when the server session is already gone.
+      // Si la sesión ya no existe en el servidor igual hay que limpiar la local.
     }
   }
-
-  authState.token = null
-  authState.usuario = null
   clearStoredSession()
+  fijar({ token: null, usuario: null, menu: [], permisos: {} })
 }

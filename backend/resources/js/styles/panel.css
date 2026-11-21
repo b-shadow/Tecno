@@ -1,0 +1,142 @@
+/* Panel interno: Kanban (CU4), ficha de la tarjeta con su historial (CU7), agenda, gráficos y matriz de acceso. */
+
+/* ---------- Kanban ---------- */
+.etapas { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--e-3); }
+.etapas button { --c: var(--etapa-nuevo); display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid var(--filete); border-radius: 999px; background: var(--papel); cursor: pointer; font-size: var(--t-s); font-weight: 650; }
+.etapas button::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+.etapas button b { font-variant-numeric: tabular-nums; color: var(--tinta-suave); }
+.kanban {
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 20px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 20px), transparent);
+  padding-right: 28px;
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(272px, 1fr); gap: var(--e-3);
+  overflow-x: auto; padding-bottom: var(--e-3); align-items: start; scroll-snap-type: x proximity;
+}
+.columna {
+  --c: var(--etapa-nuevo);
+  display: flex; flex-direction: column; min-height: 240px; max-height: calc(100dvh - 310px);
+  background: var(--niebla); border-radius: var(--radio-grande); scroll-snap-align: start;
+  box-shadow: inset 0 4px 0 var(--c);
+  transition: background-color 160ms var(--curva), outline-color 160ms var(--curva);
+  outline: 2px dashed transparent; outline-offset: -2px;
+}
+.columna.encima { background: var(--acento-suave); outline-color: var(--c); }
+.columna-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 14px 10px; }
+.columna-cabecera h3 { font-family: var(--fuente-ui); font-size: var(--t-s); font-weight: 750; color: var(--c); }
+:root[data-theme='light']:not([data-contraste='alto']) .columna-cabecera h3 { color: color-mix(in srgb, var(--c) 85%, #000); }
+.columna-cabecera span { font-size: var(--t-xs); font-weight: 700; color: var(--tinta-suave); font-variant-numeric: tabular-nums; background: var(--papel); border-radius: 999px; padding: 1px 8px; }
+.columna-lista { display: grid; gap: 8px; padding: 0 10px 12px; overflow-y: auto; }
+.columna-vacia { padding: 18px 12px; text-align: center; font-size: var(--t-xs); color: var(--tinta-suave); border: 1px dashed var(--filete-fuerte); border-radius: var(--radio); }
+
+.tarjeta {
+  display: grid; gap: 6px; padding: 12px; cursor: grab;
+  background: var(--papel); border: 1px solid var(--filete); border-radius: var(--radio);
+  box-shadow: var(--sombra); transition: transform 160ms var(--curva), box-shadow 160ms var(--curva);
+}
+.tarjeta:hover { border-color: var(--filete-fuerte); }
+.tarjeta[aria-grabbed='true'] { opacity: 0.55; transform: rotate(1.5deg); }
+.tarjeta-cabeza { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.tarjeta-cabeza strong { font-weight: 700; line-height: 1.25; }
+.tarjeta-cabeza a { color: inherit; text-decoration: none; }
+.tarjeta-cabeza a:hover, .tarjeta-cabeza a:focus-visible { text-decoration: underline; }
+.tarjeta-cabeza .cifra { font-size: var(--t-xs); color: var(--tinta-suave); }
+.tarjeta p { font-size: var(--t-xs); color: var(--tinta-suave); line-height: 1.4; }
+.tarjeta-pie { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; }
+.tarjeta-pie select { min-height: 32px; padding: 4px 8px; font-size: var(--t-xs); max-width: 160px; }
+.tarjeta-vendedor { font-size: var(--t-xs); color: var(--tinta-suave); display: inline-flex; gap: 4px; align-items: center; }
+.tarjeta .alerta { color: var(--aviso); font-size: var(--t-xs); font-weight: 650; }
+
+/* ---------- Ficha del prospecto: capítulo con índice numerado ---------- */
+.agenda { display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); gap: var(--e-5); align-items: start; }
+.agenda-lista { position: sticky; top: 84px; max-height: calc(100dvh - 110px); display: flex; flex-direction: column; overflow: hidden; }
+.agenda-lista .hoja-cuerpo { padding: var(--e-3); border-bottom: 1px solid var(--filete); }
+.agenda-items { list-style: none; margin: 0; padding: 6px; overflow-y: auto; }
+.agenda-items button, .chat-list-item {
+  width: 100%; display: grid; gap: 2px; text-align: left; padding: 10px 12px; border: 0; background: transparent;
+  border-radius: var(--radio); cursor: pointer; flex-shrink: 0; height: max-content;
+}
+.agenda-items button:hover { background: var(--niebla-2); }
+.agenda-items button[aria-current='true'] { background: var(--acento-suave); outline: 1px solid color-mix(in srgb, var(--acento-texto) 55%, transparent); outline-offset: -1px; }
+.agenda-items strong { font-weight: 650; }
+.agenda-items small { color: var(--tinta-suave); font-size: var(--t-xs); }
+
+.ficha-portada {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--e-4); align-items: end;
+  padding: var(--e-5); border-radius: var(--radio-grande) var(--radio-grande) 0 0;
+  background: var(--portada); color: var(--portada-tinta);
+}
+.ficha-portada h2 { font-size: var(--t-3xl); }
+.ficha-portada p { color: var(--portada-suave); margin-top: 6px; }
+.ficha-portada .etiqueta { background: rgb(255 255 255 / 0.12); color: #fff; border-color: rgb(255 255 255 / 0.7); }
+.ficha-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--e-3) var(--e-5); padding: var(--e-4) var(--e-5); border-bottom: 1px solid var(--filete); }
+.ficha-datos dt { font-size: var(--t-xs); color: var(--tinta-suave); }
+.ficha-datos dd { margin: 2px 0 0; font-weight: 600; overflow-wrap: anywhere; }
+
+/* Historial cronológico (RF4.1) como índice numerado */
+.historial { list-style: none; margin: 0; padding: 0; counter-reset: paso; }
+.historial li {
+  counter-increment: paso; display: grid; grid-template-columns: 3.2rem minmax(0, 1fr); gap: 2px var(--e-3);
+  padding: var(--e-3) 0; border-bottom: 1px solid var(--filete);
+}
+.historial li::before {
+  content: counter(paso, decimal-leading-zero); grid-row: span 3;
+  font-family: var(--fuente-titulo); font-weight: 700; font-size: var(--t-2xl); line-height: 1;
+  color: var(--acento-2-texto); font-variant-numeric: tabular-nums;
+}
+.historial .tipo { font-size: var(--t-xs); font-weight: 750; color: var(--tinta-suave); }
+.historial p { overflow-wrap: anywhere; }
+.historial small { color: var(--tinta-suave); font-size: var(--t-xs); }
+
+.cuotas { display: grid; gap: 8px; }
+.cuota { display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--filete); border-radius: var(--radio); }
+.cuota > b { font-family: var(--fuente-titulo); font-size: var(--t-xl); color: var(--acento-2-texto); font-variant-numeric: tabular-nums; }
+.cuota small { color: var(--tinta-suave); font-size: var(--t-xs); }
+.metodo { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--filete); border-radius: var(--radio); }
+.metodo .cifra { letter-spacing: 0.04em; }
+
+/* ---------- Calendario del vendedor ---------- */
+.calendario { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--filete); border-radius: var(--radio-grande); overflow: hidden; background: var(--papel); }
+.calendario .dia-nombre { padding: 8px; font-size: var(--t-xs); font-weight: 700; color: var(--tinta-suave); text-align: center; background: var(--niebla-2); border-bottom: 1px solid var(--filete); }
+.calendario button { min-height: 76px; padding: 6px 8px; border: 0; border-right: 1px solid var(--filete); border-bottom: 1px solid var(--filete); background: var(--papel); text-align: left; display: grid; align-content: start; gap: 4px; cursor: pointer; }
+.calendario button:nth-child(7n) { border-right: 0; }
+.calendario button.fuera { color: var(--tinta-suave); background: var(--niebla-2); }
+.calendario button.hoy .n { background: var(--navy); color: #fff; border-radius: 999px; }
+:root[data-theme='dark'] .calendario button.hoy .n { background: var(--acento); color: var(--sobre-acento); }
+.calendario button[aria-pressed='true'] { box-shadow: inset 0 0 0 2px var(--acento); }
+.calendario .n { width: 26px; height: 26px; display: grid; place-items: center; font-weight: 700; font-size: var(--t-s); font-variant-numeric: tabular-nums; }
+.calendario .marcas { display: flex; gap: 3px; flex-wrap: wrap; }
+.calendario .marcas i { width: 8px; height: 8px; border-radius: 50%; background: var(--acento); }
+.calendario .marcas i.atrasada { background: var(--aviso); }
+
+/* ---------- Gráficos ---------- */
+.grafico { position: relative; height: 260px; }
+.barras { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.barras li { display: grid; grid-template-columns: minmax(110px, 34%) minmax(0, 1fr) 4.5rem; gap: 10px; align-items: center; font-size: var(--t-s); }
+.barras .pista { height: 12px; background: var(--niebla); border-radius: 999px; overflow: hidden; }
+.barras .relleno { height: 100%; background: var(--c, var(--navy)); border-radius: 999px; transition: width 600ms var(--curva); }
+:root[data-theme='dark'] .barras .relleno { background: var(--c, var(--acento)); }
+.barras .valor { text-align: right; font-variant-numeric: tabular-nums; font-weight: 650; }
+
+/* ---------- Matriz de acceso ---------- */
+.matriz td, .matriz th { text-align: center; }
+.matriz td:first-child, .matriz th:first-child { text-align: left; }
+.matriz select { min-height: 34px; padding: 4px 8px; font-size: var(--t-xs); }
+.matriz .cu { font-size: var(--t-xs); color: var(--tinta-suave); }
+
+/* Botones que solo tienen sentido con la lista y la ficha apiladas */
+.solo-movil { display: none; }
+.agenda-detail-window { scroll-margin-top: 24px; }
+
+@media (max-width: 1100px) {
+  .solo-movil { display: inline-flex; }
+  .agenda { grid-template-columns: minmax(0, 1fr); }
+  .agenda-lista { position: static; max-height: 360px; }
+}
+@media (max-width: 720px) {
+  .kanban { grid-auto-columns: 86vw; }
+  .columna { max-height: none; }
+  .ficha-portada { grid-template-columns: minmax(0, 1fr); }
+  .calendario button { min-height: 52px; }
+  .barras li { grid-template-columns: minmax(0, 1fr) 4rem; }
+  .barras .pista { grid-column: 1 / -1; grid-row: 2; }
+}
