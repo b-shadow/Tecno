@@ -66,6 +66,7 @@ AGENTS.md
 docs/informacion/Prompt_*.md
 docs/
 .codex/
+.impeccable/
 backend/.codex/
 frontend/.codex/
 .claude/

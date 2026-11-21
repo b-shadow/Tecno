@@ -4,10 +4,12 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="app-base" content="{{ url('/') }}">
-        <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
-        <title inertia>CRM Comercial Educativo</title>
+        <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
+        <meta name="theme-color" content="#083456">
+        <title inertia>UNEXO · CRM Comercial Educativo</title>
 
-        @vite('resources/js/app.js')
+        @viteReactRefresh
+        @vite('resources/js/app.jsx')
         @inertiaHead
     </head>
     <body>

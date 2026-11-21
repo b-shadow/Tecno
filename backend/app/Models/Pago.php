@@ -2,32 +2,34 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['orden_pago_id', 'monto', 'codigo_qr', 'estado', 'fecha_generacion', 'fecha_validacion', 'observacion_validacion'])]
 class Pago extends Model
 {
+    protected $table = 'pagos';
+
+    protected $primaryKey = 'nro_orden';
+
+    public $incrementing = false;
+
+    protected $guarded = [];
+
     public const ESTADOS = ['Pendiente de pago', 'En revision', 'Pago aprobado', 'Pago rechazado'];
 
     protected function casts(): array
     {
-        return [
-            'monto' => 'decimal:2',
-            'fecha_generacion' => 'datetime',
-            'fecha_validacion' => 'datetime',
-        ];
+        return ['fecha_validacion' => 'datetime'];
     }
 
     public function ordenPago(): BelongsTo
     {
-        return $this->belongsTo(OrdenPago::class);
+        return $this->belongsTo(OrdenPago::class, 'nro_orden', 'nro_orden');
     }
 
     public function comprobantes(): HasMany
     {
-        return $this->hasMany(ComprobantePago::class);
+        return $this->hasMany(ComprobantePago::class, 'nro_orden', 'nro_orden');
     }
 }

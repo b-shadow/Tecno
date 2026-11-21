@@ -1,23 +1,16 @@
 import { defineConfig } from 'vite'
 import laravel from 'laravel-vite-plugin'
-import vue from '@vitejs/plugin-vue'
+import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   // En el servidor de la facultad: CRM_ASSET_BASE=/inf513/grupo05sa/proyecto2/build/ npm run build
   base: process.env.CRM_ASSET_BASE || '/build/',
   plugins: [
     laravel({
-      input: 'resources/js/app.js',
+      input: 'resources/js/app.jsx',
       refresh: true,
     }),
-    vue({
-      template: {
-        transformAssetUrls: {
-          base: null,
-          includeAbsolute: false,
-        },
-      },
-    }),
+    react(),
   ],
   server: {
     // Escucha en todas las interfaces para correr dentro de Docker; el navegador entra por localhost.

@@ -1,134 +1,79 @@
-# CRM Comercial Educativo
+# UNEXO — CRM Comercial Educativo (INF513 · Proyecto 2 · Grupo 05 SA)
 
-Sistema de captacion y seguimiento comercial con roles de administrador, coordinador y vendedor.
-Construido con Laravel, Inertia y Vue 3 en un unico proyecto dentro de `backend/`, con PostgreSQL.
-Las paginas se sirven desde `routes/web.php`; Vue consume la API REST de `routes/api.php` mediante tokens Bearer.
+Sistema web de captación y seguimiento comercial para una institución que vende programas de formación (programas
+de varios módulos y módulos sueltos). Arquitectura de 3 capas pedida por el enunciado: **React** (cliente) +
+**Laravel API REST** + **PostgreSQL**, sobre la **misma base que el Proyecto 1** (`db_grupo05sa`, esquema `public`).
 
-## Funcionalidades
+- Qué exige el docente, cómo se cumple, estado y pendientes del equipo: **[`P2_WEB.md`](P2_WEB.md)** (leer primero).
+- Producto y usuarios: [`PRODUCT.md`](PRODUCT.md). Sistema visual (tokens, temas, componentes): [`DESIGN.md`](DESIGN.md).
 
-- Catalogo publico organizado por programas y modulos, con registro de interesados.
-- Usuarios y permisos por rol; vendedores con acceso a su cartera asignada.
-- Asignacion manual, reparto equitativo y reasignacion con historial de contactos.
-- Agenda: contactos realizados, actividades futuras y registro de cumplimiento.
-- Ordenes de pago, comprobantes, aprobacion por coordinacion y comisiones configurables.
-- Alumnos inscritos, exportacion academica, reportes por vendedor y estadisticas.
-- Interfaz adaptable a movil y escritorio, con modo claro y oscuro.
+## Stack
 
-El catalogo externo usa datos simulados (`CatalogoExternoDemo`). El QR y los pagos son demostrativos;
-no hay una pasarela bancaria integrada. La integracion academica real queda pendiente.
+| Capa | Tecnología | Dónde |
+|---|---|---|
+| Cliente | React 18 + `@inertiajs/react` (solo como enrutador de páginas), axios, Chart.js, lucide-react | `backend/resources/js/` |
+| API | Laravel 13, token propio (`api_tokens`, middleware `auth.token`), matriz de acceso (`acceso:recurso,nivel`) | `backend/routes/api.php`, `backend/app/` |
+| Datos | PostgreSQL; tablas creadas por migraciones con las claves del diseño (sin `id`); control de migraciones en el esquema `laravel` | `backend/database/migrations/` |
 
-## Requisitos
+Estilos: CSS propio en archivos aparte (`backend/resources/js/styles/`: `tokens.css`, `base.css`, `layout.css`,
+`components.css`, `catalogo.css`, `panel.css`). Fuentes alojadas en el sitio (sin CDN).
 
-- Docker con Compose para el entorno local; alternativamente PHP 8.3+, Composer, PostgreSQL y Node.js 22.12+.
-- Las versiones exactas de las dependencias estan en `backend/composer.lock` y `backend/package-lock.json`.
+## Levantar el entorno local (Docker)
 
-## Desarrollo local con Docker
-
-Desde la raiz del repositorio:
+Requisitos: Docker con Compose y Node.js 22.12+ (para compilar el frontend en el equipo).
 
 ```sh
-docker volume create tecno_postgres_data
-docker compose up -d --build
+docker volume create tecno_postgres_data     # solo la primera vez en un equipo nuevo
+docker compose up -d --build                 # app en http://localhost:8001
+docker compose exec app php artisan db:seed  # datos de demostración (SOLO en local)
+cd backend && npm ci && npm run build        # compila React a public/build
 ```
 
-El volumen externo `tecno_postgres_data` conserva la base entre reinicios. Crearlo es necesario en un equipo nuevo;
-si ya existe, el comando no lo reemplaza. El contenedor de la aplicacion prepara `.env`, instala dependencias,
-genera la clave cuando falta y ejecuta las migraciones.
+El contenedor `app` crea `.env` si falta, instala dependencias, genera `APP_KEY`, ejecuta
+`php artisan crm:preparar-bd` (esquema `laravel`) y `php artisan migrate --force`.
 
-- Aplicacion: http://localhost:8001 (catalogo en `/anuncios`, acceso interno en `/login`).
-- Salud de la API: http://localhost:8001/api/health.
-- PostgreSQL local: puerto 55432, base `crm_educativo`, usuario `crm_user`.
-- Vite: puerto 5173, con recarga durante el desarrollo.
-
-Las claves de PostgreSQL del Compose son valores de desarrollo. Las cuentas iniciales locales se crean
-**solo en una base de pruebas o desarrollo** con:
-
-```sh
-docker compose exec app php artisan db:seed
-```
-
-El seeder define cuentas demostrativas; no usarlo en un despliegue publico. Crear cuentas propias y claves
-unicas para produccion. Ninguna credencial del VPS o de la demo publicada forma parte del repositorio.
-
-## Compilacion y despliegue
-
-```sh
-cd backend
-npm ci
-npm run build
-composer install --no-dev --prefer-dist --optimize-autoloader
-```
-
-Publicar solamente `backend/public/` con Apache y PHP-FPM. Mantener el resto del proyecto fuera del directorio
-publico, configurar `.env` a partir de `.env.production.example` y usar una base PostgreSQL independiente.
-Configurar `APP_URL`, credenciales propias, `APP_KEY` y `APP_DEBUG=false`. Preparar permisos de escritura
-solo en `storage/` y `bootstrap/cache/`, y ejecutar `php artisan migrate --force` tras respaldar la base.
-
-Para una subruta, compilar con `CRM_ASSET_BASE` y ajustar `APP_URL` y `ASSET_URL`. Ejemplo para `/crm`:
-
-```sh
-CRM_ASSET_BASE=/crm/build/ npm run build
-```
-
-En PowerShell: `$env:CRM_ASSET_BASE='/crm/build/'; npm run build`.
-Las rutas internas conservan el prefijo que publica Laravel. No subir `.env`, `public/hot`, dependencias locales,
-sesiones ni respaldos a Git. El servidor de produccion debe usar los recursos compilados, sin Vite en desarrollo.
-
-## Respaldos y migraciones
-
-Los scripts `scripts/backup_postgres.ps1` y `scripts/restore_postgres.ps1` usan las herramientas de PostgreSQL.
-Para el Compose local, indicar `-Port 55432`; suministrar la clave mediante `PGPASSWORD` o el mecanismo seguro
-del cliente PostgreSQL. Los archivos de `backups/` estan excluidos de Git.
-
-Las migraciones de normalizacion protegen las referencias historicas. Si encuentran ventas antiguas que no
-pueden convertir automaticamente, se detienen para permitir su revision. No ejecutar `migrate:fresh` sobre una
-base que tenga datos que se deban conservar.
-
-## Verificacion
-
-La auditoria completa usa Docker y una base desechable, separada de los datos de trabajo:
-
-```sh
-python scripts/qa_local.py start
-python scripts/qa_local.py test
-python scripts/qa_browsers.py
-python scripts/qa_local.py stop
-```
-
-`qa_browsers.py` requiere descargar previamente
-`docker pull mcr.microsoft.com/playwright:v1.64.1-noble`. La version de la imagen coincide con Playwright
-en `backend/package-lock.json`. Ejecuta Chromium, Firefox y WebKit contra QA, con los tres roles,
-anchos de 320, 390, 768 y 1280 pixeles y temas claro/oscuro. Comprueba navegacion, registro publico,
-sesiones, permisos, errores JavaScript, recursos fallidos y desbordamientos. Las capturas y el resumen
-quedan en `qa-artifacts/`, excluido de Git. WebKit cubre el motor; no sustituye una prueba en un iPhone real.
-
-Las pruebas de API cubren carteras compartidas, CSV, actividades, sesiones revocadas, notificaciones,
-comprobantes, pagos simultaneos, inscripciones, comisiones, reportes e integracion academica simulada.
-No prueban cobros bancarios ni servicios externos reales: el catalogo y la integracion son de demostracion.
-
-Los scripts Python usan solo la biblioteca estandar. Los dos primeros crean datos y requieren una base de
-pruebas aislada, recien migrada y poblada con `DatabaseSeeder`; ejecutarlos en este orden:
-
-```sh
-python scripts/verificar_correcciones.py http://localhost:18001/api
-python scripts/verificar_seguridad.py http://localhost:18001/api
-```
-
-El puerto 18001 es un ejemplo para una instancia de pruebas separada; no lo levanta el Compose de desarrollo.
-No apuntar estos scripts a la demo ni a la base de trabajo. `scripts/verificar_integridad.sql` comprueba claves,
-restricciones y relaciones con una transaccion de solo lectura y rollback.
-
-Para revisar rutas y dependencias:
-
-```sh
-docker compose exec app php artisan route:list
-docker compose exec app composer validate --no-check-publish
-```
+- Catálogo público: http://localhost:8001/anuncios · Login: http://localhost:8001/login · Salud: `/up` y `/api/salud`.
+- PostgreSQL local: puerto 55432, base `db_grupo05sa`, usuario `crm_user` (clave de desarrollo del Compose).
+- Cuentas de demostración (las crea el seeder, solo en local): `admin@crm-educativo.local`, `coord@test.local`,
+  `vendedor.demo@crm-educativo.local`; las claves están en `backend/database/seeders/DatabaseSeeder.php`.
+  **Nunca** correr `db:seed` en el servidor de la facultad: allí se crean cuentas propias.
 
 ## Estructura
 
-- `backend/app/`: controladores, modelos, servicios y control de acceso.
-- `backend/resources/js/`: paginas Vue, componentes, estilos y cliente API.
-- `backend/database/migrations/`: esquema versionado y normalizacion de datos.
-- `backend/public/`: entrada web y recursos publicos del catalogo de demostracion.
-- `scripts/`: respaldos, restauracion y verificaciones reproducibles.
+- `backend/routes/api.php`: las ~70 rutas de la API; cada ruta de negocio lleva `acceso:<recurso>,<nivel>`.
+- `backend/routes/web.php`: qué página React sirve cada URL (`/anuncios`, `/login`, `/embudo`, `/agenda`…).
+- `backend/app/Http/Controllers/Api/`: un controlador por área (Auth, Usuarios, Seguridad, Catálogo, Prospectos,
+  Intereses, Pagos, Seguimiento, Reportes, Exportación, Notificaciones, Sitio).
+- `backend/app/Services/`: `Acceso` (matriz y menú), `Alcance` (vendedor: su cartera; coordinador: sus programas),
+  `Conversion` (matrícula al aprobar la 1.ª cuota), `Fotos` (nombres legibles), `CatalogoExternoDemo` (API simulada del Grupo 06).
+- `backend/app/Models/`: un modelo por tabla, con `$primaryKey`/`$keyType`/`$incrementing` del diseño.
+- `backend/database/migrations/`: `000001` esquema compartido con el P1 · `000002` estados RF3.2 · `000003` recursos y
+  permisos (menú dinámico) · `000004` bitácora + trigger de visitas · `000005` métodos de pago y cuotas · `000006` foto de usuario.
+- `backend/resources/js/Pages/`: una página por pantalla (Catalogo, Login, Dashboard, MiDia, Embudo, Agenda, …).
+- `backend/resources/js/layouts/AppShell.jsx`: plantilla base (público e interno) con el menú leído de la BD.
+- `backend/lang/es/validation.php`: mensajes de validación en español.
+
+Cambiar algo de punta a punta (p. ej. un campo nuevo): migración nueva → modelo (`$fillable`) → `validate()` del
+controlador → página en `Pages/` → `npm run build`. Una pantalla nueva además necesita su fila en `recursos` y
+`permisos` (migración) para aparecer en el menú.
+
+## Pruebas (siempre contra la base local, nunca contra producción)
+
+```sh
+python scripts/verificar_p2.py                                   # 32 casos de la API (repetible)
+QA_BASE=http://localhost:8001 QA_ENGINES=chromium node scripts/verificar_navegadores.mjs   # 321 casos: 3 roles × 4 anchos × 2 temas
+node scripts/capturas_p2.mjs                                     # capturas de cada página por rol
+```
+
+En PowerShell: `$env:QA_BASE='http://localhost:8001'; $env:QA_ENGINES='chromium'; node scripts/verificar_navegadores.mjs`.
+Firefox y WebKit necesitan `npx playwright install firefox webkit` (desde `backend/`).
+`scripts/estructura_esquema.sql` resume el esquema para compararlo con `p1/sql/esquema.sql`.
+
+## Despliegue
+
+Servidor de la facultad: `https://www.tecnoweb.org.bo/inf513/grupo05sa/proyecto2` (Apache + PHP 8.4, sin SSH).
+Compilar con `CRM_ASSET_BASE=/inf513/grupo05sa/proyecto2/build/ npm run build`. El procedimiento completo y los
+pasos previos de la migración de la base compartida están en [`P2_WEB.md`](P2_WEB.md) (§6 y pendientes): no migrar la
+base del servidor sin respaldo, sin detener el lector del P1 y sin el JAR nuevo del P1.
+
+No subir a Git: `.env`, `vendor/`, `node_modules/`, `public/build`, `public/hot`, respaldos ni credenciales.
