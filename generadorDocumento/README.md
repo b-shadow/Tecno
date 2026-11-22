@@ -1,5 +1,57 @@
 # Generador del documento P2 (INF513, Grupo 05 SA)
 
+## Mantenimiento del maestro con ediciones manuales
+
+Tras integrar `respaldo-documentacion-leonardo` con `main`, el maestro es el
+DOCX ampliado del respaldo. Sus 79 tablas incluyen un mapeo detallado de las
+31 tablas y 287 columnas del esquema. Las ocho secuencias actualizadas de 7.4
+se generaron en el subpaquete EA `Secuencias 7.4 integradas`, preservando los
+diagramas originales, y se insertaron en este maestro. El conceptual se
+sincronizó con el esquema y el DOCX se exportó a DOC y PDF.
+
+`actualizar_datos_docx.py` corresponde al mapeo compacto anterior y no reconoce
+el formato detallado del maestro integrado. Para un cambio posterior de esquema,
+revisar `actualizar_documento.py bd` y conservar una copia del DOCX antes de
+aplicarlo. El mapeo integrado se comprobó columna por columna contra
+`fuentes/esquema.sql`.
+
+La actualización documental de noviembre de 2026 se realiza sobre
+`documento/P2-INF513-GRUPO05SA.docx` y el proyecto original `ea/crm-p2.eapx`.
+El maestro contiene ediciones manuales: **no ejecutar `documento_p2.py` ni los
+comandos históricos de reconstrucción para actualizar esta entrega**.
+Las instrucciones específicas de actualización prevalecen sobre las reglas
+históricas de una página por CU, tamaños reducidos y franjas recortadas.
+Los ocho CU, los actores, el diagrama de actores y el capítulo IV se conservan.
+
+El mantenimiento incremental utiliza:
+
+- `actualizacion_contenido.py`: especificaciones completas de los ocho CU y
+  responsabilidades verificadas de las tres capas.
+- `actualizar_documento.py cu|bd|arquitectura`: ediciones puntuales del Word,
+  con comparación del capítulo IV antes y después de cada operación.
+- `diccionario_actual.py`: descripciones de columnas y de los cinco triggers.
+- `ea/sincronizar_documentacion.py`: catálogo de firmas desde código y edición
+  de clases originales por COM oficial, con vistas completas complementarias.
+- `ea/actualizar_interacciones.py`: secuencias y comunicaciones nativas de los
+  recorridos implementados, con guardas y participantes reales.
+- `ea/actualizar_datos_despliegue.py` y `ea/actualizar_navegacion.py`: vistas
+  nativas complementarias que reutilizan los elementos originales.
+- `ea/compatibilidad_emf.mjs`: normaliza el viewport omitido por ciertas
+  exportaciones de EA 15; conserva idénticos todos los registros gráficos.
+- `insertar_figuras_actuales.py`: sustituye las secciones gráficas autorizadas
+  usando exportaciones nativas y páginas grandes, sin reducir la tipografía.
+- `exportar.ps1`: actualiza campos con Microsoft Word y produce DOC y PDF.
+
+Respaldar el maestro y el EAPX antes de editar. No ejecutar dos escritores COM
+sobre el proyecto al mismo tiempo. Cerrar EA antes de versionar; excluir `.ldb`,
+respaldos, QA, credenciales y auditorías locales. La base efectiva de Laravel
+se verifica mediante consultas de metadatos de solo lectura; **no ejecutar
+migraciones para actualizar la documentación**. El SQL documental no contiene
+datos ni credenciales y no debe aplicarse sobre una base existente.
+
+Las instrucciones de reconstrucción siguientes se conservan como referencia
+histórica; no son el procedimiento de mantenimiento de este maestro.
+
 Carpeta **autosuficiente** dentro de `crm-web`: todo lo que necesita está aquí, y lo único que lee de fuera es el
 propio sistema documentado (`../negocio`, `../presentacion`, `../datos`, `../scripts`; ruta en `rutas.py`). Las reglas de
 forma y contenido están en `REGLAS_DOCUMENTO_P2.md` (calco del aprobado del Grupo 07, en `referencias/`), que manda

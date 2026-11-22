@@ -1,0 +1,931 @@
+Avance nativo guardado: 2026-11-26T12:16:25.773671-04:00
+No equivale a validación visual final del documento.
+
+Clases terminadas: 427
+Vistas de relaciones terminadas: 271
+Aristas de relaciones pendientes: 220
+Las vistas futuras agrupan hasta dos aristas; su total se confirma al terminar el lote.
+
+CLASES TERMINADAS
+CU1 | cls-cu1 | EA 1 | CU1. Gestión de Usuarios (Propietario, Clientes)
+CU1 | cls-cu1-detalle-01 | EA 153 | CU1. Clase AccesoRecurso — miembros completos
+CU1 | cls-cu1-detalle-02 | EA 154 | CU1. Clase ActualizarPerfilRequest — miembros completos
+CU1 | cls-cu1-detalle-03 | EA 155 | CU1. Clase ApiRequest — miembros completos
+CU1 | cls-cu1-detalle-04 | EA 156 | CU1. Clase ApiToken — miembros completos
+CU1 | cls-cu1-detalle-05 | EA 157 | CU1. Clase AppShell.jsx — miembros completos
+CU1 | cls-cu1-detalle-06 | EA 158 | CU1. Clase AsignarPermisoRequest — miembros completos
+CU1 | cls-cu1-detalle-07 | EA 159 | CU1. Clase Bitacora — miembros completos
+CU1 | cls-cu1-detalle-08 | EA 160 | CU1. Clase BitacoraRequest — miembros completos
+CU1 | cls-cu1-detalle-09 | EA 161 | CU1. Clase CambiarEstadoUsuarioRequest — miembros completos
+CU1 | cls-cu1-detalle-10 | EA 162 | CU1. Clase CambiarPasswordRequest — miembros completos
+CU1 | cls-cu1-detalle-11 | EA 163 | CU1. Clase CatalogoCache — miembros completos
+CU1 | cls-cu1-detalle-12 | EA 1550 | CU1. Clase Comision — miembros completos
+CU1 | cls-cu1-detalle-13 | EA 1551 | CU1. Clase ComprobantePago — miembros completos
+CU1 | cls-cu1-detalle-14 | EA 1552 | CU1. Clase Configuracion — miembros completos
+CU1 | cls-cu1-detalle-15 | EA 164 | CU1. Clase ConsultaRequest — miembros completos
+CU1 | cls-cu1-detalle-16 | EA 1553 | CU1. Clase Cuota — miembros completos
+CU1 | cls-cu1-detalle-17 | EA 165 | CU1. Clase DAcceso — miembros completos
+CU1 | cls-cu1-detalle-18 | EA 166 | CU1. Clase DAlcance — miembros completos
+CU1 | cls-cu1-detalle-19 | EA 167 | CU1. Clase DAuth — miembros completos
+CU1 | cls-cu1-detalle-20 | EA 168 | CU1. Clase DBitacora — miembros completos
+CU1 | cls-cu1-detalle-21 | EA 169 | CU1. Clase DCatalogo — miembros completos
+CU1 | cls-cu1-detalle-22 | EA 170 | CU1. Clase DSeguridad — miembros completos
+CU1 | cls-cu1-detalle-23 | EA 171 | CU1. Clase DSitio — miembros completos
+CU1 | cls-cu1-detalle-24 | EA 172 | CU1. Clase DUsuario — miembros completos
+CU1 | cls-cu1-detalle-25 | EA 1554 | CU1. Clase Descuento — miembros completos
+CU1 | cls-cu1-detalle-26 | EA 1555 | CU1. Clase Exportacion — miembros completos
+CU1 | cls-cu1-detalle-27 | EA 1556 | CU1. Clase InscripcionComercial — miembros completos
+CU1 | cls-cu1-detalle-28 | EA 1557 | CU1. Clase Interaccion — miembros completos
+CU1 | cls-cu1-detalle-29 | EA 173 | CU1. Clase Interes — miembros completos
+CU1 | cls-cu1-detalle-30 | EA 174 | CU1. Clase LoginRequest — miembros completos
+CU1 | cls-cu1-detalle-31 | EA 1558 | CU1. Clase MetodoPago — miembros completos
+CU1 | cls-cu1-detalle-32 | EA 1559 | CU1. Clase MovimientoInteres — miembros completos
+CU1 | cls-cu1-detalle-33 | EA 175 | CU1. Clase NAcceso — miembros completos
+CU1 | cls-cu1-detalle-34 | EA 176 | CU1. Clase NAuth — miembros completos
+CU1 | cls-cu1-detalle-35 | EA 177 | CU1. Clase NFoto — miembros completos
+CU1 | cls-cu1-detalle-36 | EA 178 | CU1. Clase NSeguridad — miembros completos
+CU1 | cls-cu1-detalle-37 | EA 179 | CU1. Clase NSitio — miembros completos
+CU1 | cls-cu1-detalle-38 | EA 180 | CU1. Clase NUsuario — miembros completos
+CU1 | cls-cu1-detalle-39 | EA 1560 | CU1. Clase OrdenPago — miembros completos
+CU1 | cls-cu1-detalle-40 | EA 1561 | CU1. Clase OrdenPagoDescuento — miembros completos
+CU1 | cls-cu1-detalle-41 | EA 181 | CU1. Clase PAsignacion.jsx — miembros completos
+CU1 | cls-cu1-detalle-42 | EA 182 | CU1. Clase PBitacora.jsx — miembros completos
+CU1 | cls-cu1-detalle-43 | EA 183 | CU1. Clase PEmbudo.jsx — miembros completos
+CU1 | cls-cu1-detalle-44 | EA 184 | CU1. Clase PLogin.jsx — miembros completos
+CU1 | cls-cu1-detalle-45 | EA 185 | CU1. Clase PMatriz.jsx — miembros completos
+CU1 | cls-cu1-detalle-46 | EA 186 | CU1. Clase PReportes.jsx — miembros completos
+CU1 | cls-cu1-detalle-47 | EA 187 | CU1. Clase PUsuarios.jsx — miembros completos
+CU1 | cls-cu1-detalle-48 | EA 1562 | CU1. Clase Pago — miembros completos
+CU1 | cls-cu1-detalle-49 | EA 188 | CU1. Clase Permiso — miembros completos
+CU1 | cls-cu1-detalle-50 | EA 189 | CU1. Clase Programa — miembros completos
+CU1 | cls-cu1-detalle-51 | EA 190 | CU1. Clase ProgramaResponsable — miembros completos
+CU1 | cls-cu1-detalle-52 | EA 191 | CU1. Clase Prospecto — miembros completos
+CU1 | cls-cu1-detalle-53 | EA 1563 | CU1. Clase Recordatorio — miembros completos
+CU1 | cls-cu1-detalle-54 | EA 192 | CU1. Clase ReglaNegocioException — miembros completos
+CU1 | cls-cu1-detalle-55 | EA 193 | CU1. Clase Shell.jsx — miembros completos
+CU1 | cls-cu1-detalle-56 | EA 1564 | CU1. Clase SolicitudCompra — miembros completos
+CU1 | cls-cu1-detalle-57 | EA 194 | CU1. Clase TokenAuthMiddleware — miembros completos
+CU1 | cls-cu1-detalle-58 | EA 1565 | CU1. Clase TransaccionStripe — miembros completos
+CU1 | cls-cu1-detalle-59 | EA 195 | CU1. Clase Usuario — miembros completos
+CU1 | cls-cu1-detalle-60 | EA 196 | CU1. Clase UsuarioRequest — miembros completos
+CU1 | cls-cu1-detalle-61 | EA 197 | CU1. Clase VisitaRequest — miembros completos
+CU1 | cls-cu1-detalle-62 | EA 198 | CU1. Clase api/auth.js — miembros completos
+CU1 | cls-cu1-detalle-63 | EA 199 | CU1. Clase api/seguridad.js — miembros completos
+CU1 | cls-cu1-detalle-64 | EA 200 | CU1. Clase api/sitio.js — miembros completos
+CU1 | cls-cu1-detalle-65 | EA 201 | CU1. Clase api/usuarios.js — miembros completos
+CU1 | cls-cu1-detalle-66 | EA 202 | CU1. Clase servicios/auth.js — miembros completos
+CU2 | cls-cu2 | EA 2 | CU2. Gestión de Captar, Consumir Oferta
+CU2 | cls-cu2-detalle-01 | EA 203 | CU2. Clase ApiRequest — miembros completos
+CU2 | cls-cu2-detalle-02 | EA 1566 | CU2. Clase ApiToken — miembros completos
+CU2 | cls-cu2-detalle-03 | EA 1567 | CU2. Clase Bitacora — miembros completos
+CU2 | cls-cu2-detalle-04 | EA 204 | CU2. Clase CatalogoCache — miembros completos
+CU2 | cls-cu2-detalle-05 | EA 1568 | CU2. Clase Comision — miembros completos
+CU2 | cls-cu2-detalle-06 | EA 1569 | CU2. Clase ComprobantePago — miembros completos
+CU2 | cls-cu2-detalle-07 | EA 1570 | CU2. Clase Configuracion — miembros completos
+CU2 | cls-cu2-detalle-08 | EA 205 | CU2. Clase ConsultaRequest — miembros completos
+CU2 | cls-cu2-detalle-09 | EA 942 | CU2. Clase CrearInteresRequest — miembros completos
+CU2 | cls-cu2-detalle-10 | EA 1571 | CU2. Clase Cuota — miembros completos
+CU2 | cls-cu2-detalle-11 | EA 1572 | CU2. Clase DAcceso — miembros completos
+CU2 | cls-cu2-detalle-12 | EA 206 | CU2. Clase DAlcance — miembros completos
+CU2 | cls-cu2-detalle-13 | EA 1573 | CU2. Clase DBitacora — miembros completos
+CU2 | cls-cu2-detalle-14 | EA 207 | CU2. Clase DCatalogo — miembros completos
+CU2 | cls-cu2-detalle-15 | EA 208 | CU2. Clase DProspecto — miembros completos
+CU2 | cls-cu2-detalle-16 | EA 1574 | CU2. Clase Descuento — miembros completos
+CU2 | cls-cu2-detalle-17 | EA 1575 | CU2. Clase Exportacion — miembros completos
+CU2 | cls-cu2-detalle-18 | EA 209 | CU2. Clase FormularioOrdenPago.jsx — miembros completos
+CU2 | cls-cu2-detalle-19 | EA 943 | CU2. Clase ImportarCsvRequest — miembros completos
+CU2 | cls-cu2-detalle-20 | EA 1576 | CU2. Clase InscripcionComercial — miembros completos
+CU2 | cls-cu2-detalle-21 | EA 1577 | CU2. Clase Interaccion — miembros completos
+CU2 | cls-cu2-detalle-22 | EA 210 | CU2. Clase Interes — miembros completos
+CU2 | cls-cu2-detalle-23 | EA 1578 | CU2. Clase MetodoPago — miembros completos
+CU2 | cls-cu2-detalle-24 | EA 1579 | CU2. Clase MovimientoInteres — miembros completos
+CU2 | cls-cu2-detalle-25 | EA 1580 | CU2. Clase NAcceso — miembros completos
+CU2 | cls-cu2-detalle-26 | EA 211 | CU2. Clase NCatalogo — miembros completos
+CU2 | cls-cu2-detalle-27 | EA 212 | CU2. Clase NCatalogoExterno — miembros completos
+CU2 | cls-cu2-detalle-28 | EA 213 | CU2. Clase NProspecto — miembros completos
+CU2 | cls-cu2-detalle-29 | EA 1581 | CU2. Clase OrdenPago — miembros completos
+CU2 | cls-cu2-detalle-30 | EA 1582 | CU2. Clase OrdenPagoDescuento — miembros completos
+CU2 | cls-cu2-detalle-31 | EA 214 | CU2. Clase PCatalogo.jsx — miembros completos
+CU2 | cls-cu2-detalle-32 | EA 215 | CU2. Clase PProspectos.jsx — miembros completos
+CU2 | cls-cu2-detalle-33 | EA 1583 | CU2. Clase Pago — miembros completos
+CU2 | cls-cu2-detalle-34 | EA 1584 | CU2. Clase Permiso — miembros completos
+CU2 | cls-cu2-detalle-35 | EA 216 | CU2. Clase Programa — miembros completos
+CU2 | cls-cu2-detalle-36 | EA 1585 | CU2. Clase ProgramaResponsable — miembros completos
+CU2 | cls-cu2-detalle-37 | EA 217 | CU2. Clase Prospecto — miembros completos
+CU2 | cls-cu2-detalle-38 | EA 218 | CU2. Clase ProspectoRequest — miembros completos
+CU2 | cls-cu2-detalle-39 | EA 1586 | CU2. Clase Recordatorio — miembros completos
+CU2 | cls-cu2-detalle-40 | EA 219 | CU2. Clase RegistrarInteresRequest — miembros completos
+CU2 | cls-cu2-detalle-41 | EA 220 | CU2. Clase ReglaNegocioException — miembros completos
+CU2 | cls-cu2-detalle-42 | EA 1587 | CU2. Clase SolicitudCompra — miembros completos
+CU2 | cls-cu2-detalle-43 | EA 944 | CU2. Clase StoreProspectoRequest — miembros completos
+CU2 | cls-cu2-detalle-44 | EA 1588 | CU2. Clase TransaccionStripe — miembros completos
+CU2 | cls-cu2-detalle-45 | EA 945 | CU2. Clase UpdateProspectoRequest — miembros completos
+CU2 | cls-cu2-detalle-46 | EA 221 | CU2. Clase Usuario — miembros completos
+CU2 | cls-cu2-detalle-47 | EA 222 | CU2. Clase api/catalogo.js — miembros completos
+CU3 | cls-cu3 | EA 3 | CU3. Gestión de Asignar Prospectos (Leads)
+CU3 | cls-cu3-detalle-01 | EA 223 | CU3. Clase ApiRequest — miembros completos
+CU3 | cls-cu3-detalle-02 | EA 1589 | CU3. Clase ApiToken — miembros completos
+CU3 | cls-cu3-detalle-03 | EA 224 | CU3. Clase AsignarInteresRequest — miembros completos
+CU3 | cls-cu3-detalle-04 | EA 225 | CU3. Clase Bitacora — miembros completos
+CU3 | cls-cu3-detalle-05 | EA 226 | CU3. Clase CatalogoCache — miembros completos
+CU3 | cls-cu3-detalle-06 | EA 1590 | CU3. Clase Comision — miembros completos
+CU3 | cls-cu3-detalle-07 | EA 1591 | CU3. Clase ComprobantePago — miembros completos
+CU3 | cls-cu3-detalle-08 | EA 1592 | CU3. Clase Configuracion — miembros completos
+CU3 | cls-cu3-detalle-09 | EA 227 | CU3. Clase ConsultaRequest — miembros completos
+CU3 | cls-cu3-detalle-10 | EA 228 | CU3. Clase CrearInteresRequest — miembros completos
+CU3 | cls-cu3-detalle-11 | EA 1593 | CU3. Clase Cuota — miembros completos
+CU3 | cls-cu3-detalle-12 | EA 229 | CU3. Clase DAcceso — miembros completos
+CU3 | cls-cu3-detalle-13 | EA 230 | CU3. Clase DAlcance — miembros completos
+CU3 | cls-cu3-detalle-14 | EA 231 | CU3. Clase DBitacora — miembros completos
+CU3 | cls-cu3-detalle-15 | EA 1594 | CU3. Clase DConversion — miembros completos
+CU3 | cls-cu3-detalle-16 | EA 232 | CU3. Clase DInteres — miembros completos
+CU3 | cls-cu3-detalle-17 | EA 946 | CU3. Clase DMotivo — miembros completos
+CU3 | cls-cu3-detalle-18 | EA 233 | CU3. Clase DProspecto — miembros completos
+CU3 | cls-cu3-detalle-19 | EA 234 | CU3. Clase DUsuario — miembros completos
+CU3 | cls-cu3-detalle-20 | EA 1595 | CU3. Clase Descuento — miembros completos
+CU3 | cls-cu3-detalle-21 | EA 1596 | CU3. Clase Exportacion — miembros completos
+CU3 | cls-cu3-detalle-22 | EA 235 | CU3. Clase ImportarCsvRequest — miembros completos
+CU3 | cls-cu3-detalle-23 | EA 1597 | CU3. Clase InscripcionComercial — miembros completos
+CU3 | cls-cu3-detalle-24 | EA 1598 | CU3. Clase Interaccion — miembros completos
+CU3 | cls-cu3-detalle-25 | EA 236 | CU3. Clase Interes — miembros completos
+CU3 | cls-cu3-detalle-26 | EA 1599 | CU3. Clase MetodoPago — miembros completos
+CU3 | cls-cu3-detalle-27 | EA 237 | CU3. Clase MotivoPerdida — miembros completos
+CU3 | cls-cu3-detalle-28 | EA 947 | CU3. Clase MoverInteresRequest — miembros completos
+CU3 | cls-cu3-detalle-29 | EA 1600 | CU3. Clase MovimientoInteres — miembros completos
+CU3 | cls-cu3-detalle-30 | EA 238 | CU3. Clase NAcceso — miembros completos
+CU3 | cls-cu3-detalle-31 | EA 239 | CU3. Clase NAlcance — miembros completos
+CU3 | cls-cu3-detalle-32 | EA 1601 | CU3. Clase NConversion — miembros completos
+CU3 | cls-cu3-detalle-33 | EA 240 | CU3. Clase NInteres — miembros completos
+CU3 | cls-cu3-detalle-34 | EA 241 | CU3. Clase NProspecto — miembros completos
+CU3 | cls-cu3-detalle-35 | EA 1602 | CU3. Clase OrdenPago — miembros completos
+CU3 | cls-cu3-detalle-36 | EA 1603 | CU3. Clase OrdenPagoDescuento — miembros completos
+CU3 | cls-cu3-detalle-37 | EA 242 | CU3. Clase PAgenda.jsx — miembros completos
+CU3 | cls-cu3-detalle-38 | EA 243 | CU3. Clase PAsignacion.jsx — miembros completos
+CU3 | cls-cu3-detalle-39 | EA 244 | CU3. Clase PProspectos.jsx — miembros completos
+CU3 | cls-cu3-detalle-40 | EA 1604 | CU3. Clase Pago — miembros completos
+CU3 | cls-cu3-detalle-41 | EA 245 | CU3. Clase Permiso — miembros completos
+CU3 | cls-cu3-detalle-42 | EA 246 | CU3. Clase Programa — miembros completos
+CU3 | cls-cu3-detalle-43 | EA 247 | CU3. Clase ProgramaResponsable — miembros completos
+CU3 | cls-cu3-detalle-44 | EA 248 | CU3. Clase Prospecto — miembros completos
+CU3 | cls-cu3-detalle-45 | EA 249 | CU3. Clase ProspectoRequest — miembros completos
+CU3 | cls-cu3-detalle-46 | EA 1605 | CU3. Clase Recordatorio — miembros completos
+CU3 | cls-cu3-detalle-47 | EA 948 | CU3. Clase RegistrarInteresRequest — miembros completos
+CU3 | cls-cu3-detalle-48 | EA 250 | CU3. Clase ReglaNegocioException — miembros completos
+CU3 | cls-cu3-detalle-49 | EA 1606 | CU3. Clase SolicitudCompra — miembros completos
+CU3 | cls-cu3-detalle-50 | EA 251 | CU3. Clase StoreProspectoRequest — miembros completos
+CU3 | cls-cu3-detalle-51 | EA 1607 | CU3. Clase TransaccionStripe — miembros completos
+CU3 | cls-cu3-detalle-52 | EA 252 | CU3. Clase UpdateProspectoRequest — miembros completos
+CU3 | cls-cu3-detalle-53 | EA 253 | CU3. Clase Usuario — miembros completos
+CU3 | cls-cu3-detalle-54 | EA 254 | CU3. Clase api/intereses.js — miembros completos
+CU3 | cls-cu3-detalle-55 | EA 255 | CU3. Clase api/prospectos.js — miembros completos
+CU4 | cls-cu4 | EA 4 | CU4. Gestión de Embudo de Ventas en Tablero Kanban
+CU4 | cls-cu4-detalle-01 | EA 256 | CU4. Clase ApiRequest — miembros completos
+CU4 | cls-cu4-detalle-02 | EA 1608 | CU4. Clase ApiToken — miembros completos
+CU4 | cls-cu4-detalle-03 | EA 949 | CU4. Clase AsignarInteresRequest — miembros completos
+CU4 | cls-cu4-detalle-04 | EA 1609 | CU4. Clase CatalogoCache — miembros completos
+CU4 | cls-cu4-detalle-05 | EA 257 | CU4. Clase Comision — miembros completos
+CU4 | cls-cu4-detalle-06 | EA 1610 | CU4. Clase ComprobantePago — miembros completos
+CU4 | cls-cu4-detalle-07 | EA 1611 | CU4. Clase Configuracion — miembros completos
+CU4 | cls-cu4-detalle-08 | EA 258 | CU4. Clase ConsultaRequest — miembros completos
+CU4 | cls-cu4-detalle-09 | EA 1612 | CU4. Clase Cuota — miembros completos
+CU4 | cls-cu4-detalle-10 | EA 259 | CU4. Clase DAlcance — miembros completos
+CU4 | cls-cu4-detalle-11 | EA 260 | CU4. Clase DConversion — miembros completos
+CU4 | cls-cu4-detalle-12 | EA 261 | CU4. Clase DInteres — miembros completos
+CU4 | cls-cu4-detalle-13 | EA 262 | CU4. Clase DMotivo — miembros completos
+CU4 | cls-cu4-detalle-14 | EA 950 | CU4. Clase DUsuario — miembros completos
+CU4 | cls-cu4-detalle-15 | EA 1613 | CU4. Clase Descuento — miembros completos
+CU4 | cls-cu4-detalle-16 | EA 1614 | CU4. Clase Exportacion — miembros completos
+CU4 | cls-cu4-detalle-17 | EA 263 | CU4. Clase InscripcionComercial — miembros completos
+CU4 | cls-cu4-detalle-18 | EA 264 | CU4. Clase Interaccion — miembros completos
+CU4 | cls-cu4-detalle-19 | EA 265 | CU4. Clase Interes — miembros completos
+CU4 | cls-cu4-detalle-20 | EA 1615 | CU4. Clase MetodoPago — miembros completos
+CU4 | cls-cu4-detalle-21 | EA 266 | CU4. Clase MotivoPerdida — miembros completos
+CU4 | cls-cu4-detalle-22 | EA 267 | CU4. Clase MoverInteresRequest — miembros completos
+CU4 | cls-cu4-detalle-23 | EA 1616 | CU4. Clase MovimientoInteres — miembros completos
+CU4 | cls-cu4-detalle-24 | EA 268 | CU4. Clase NAlcance — miembros completos
+CU4 | cls-cu4-detalle-25 | EA 269 | CU4. Clase NConversion — miembros completos
+CU4 | cls-cu4-detalle-26 | EA 270 | CU4. Clase NInteres — miembros completos
+CU4 | cls-cu4-detalle-27 | EA 271 | CU4. Clase OrdenPago — miembros completos
+CU4 | cls-cu4-detalle-28 | EA 1617 | CU4. Clase OrdenPagoDescuento — miembros completos
+CU4 | cls-cu4-detalle-29 | EA 272 | CU4. Clase PAgenda.jsx — miembros completos
+CU4 | cls-cu4-detalle-30 | EA 273 | CU4. Clase PAsignacion.jsx — miembros completos
+CU4 | cls-cu4-detalle-31 | EA 274 | CU4. Clase PEmbudo.jsx — miembros completos
+CU4 | cls-cu4-detalle-32 | EA 1618 | CU4. Clase Pago — miembros completos
+CU4 | cls-cu4-detalle-33 | EA 951 | CU4. Clase Programa — miembros completos
+CU4 | cls-cu4-detalle-34 | EA 952 | CU4. Clase ProgramaResponsable — miembros completos
+CU4 | cls-cu4-detalle-35 | EA 275 | CU4. Clase Prospecto — miembros completos
+CU4 | cls-cu4-detalle-36 | EA 1619 | CU4. Clase Recordatorio — miembros completos
+CU4 | cls-cu4-detalle-37 | EA 953 | CU4. Clase ReglaNegocioException — miembros completos
+CU4 | cls-cu4-detalle-38 | EA 1620 | CU4. Clase SolicitudCompra — miembros completos
+CU4 | cls-cu4-detalle-39 | EA 1621 | CU4. Clase TransaccionStripe — miembros completos
+CU4 | cls-cu4-detalle-40 | EA 276 | CU4. Clase Usuario — miembros completos
+CU4 | cls-cu4-detalle-41 | EA 277 | CU4. Clase api/intereses.js — miembros completos
+CU5 | cls-cu5 | EA 5 | CU5. Gestión de Pérdida de Prospectos y Clasificación de Motivos
+CU5 | cls-cu5-detalle-01 | EA 278 | CU5. Clase ApiRequest — miembros completos
+CU5 | cls-cu5-detalle-02 | EA 1622 | CU5. Clase ApiToken — miembros completos
+CU5 | cls-cu5-detalle-03 | EA 954 | CU5. Clase AsignarInteresRequest — miembros completos
+CU5 | cls-cu5-detalle-04 | EA 1623 | CU5. Clase CatalogoCache — miembros completos
+CU5 | cls-cu5-detalle-05 | EA 1624 | CU5. Clase Comision — miembros completos
+CU5 | cls-cu5-detalle-06 | EA 1625 | CU5. Clase ComprobantePago — miembros completos
+CU5 | cls-cu5-detalle-07 | EA 1626 | CU5. Clase Configuracion — miembros completos
+CU5 | cls-cu5-detalle-08 | EA 955 | CU5. Clase ConsultaRequest — miembros completos
+CU5 | cls-cu5-detalle-09 | EA 1627 | CU5. Clase Cuota — miembros completos
+CU5 | cls-cu5-detalle-10 | EA 279 | CU5. Clase DAlcance — miembros completos
+CU5 | cls-cu5-detalle-11 | EA 1628 | CU5. Clase DConversion — miembros completos
+CU5 | cls-cu5-detalle-12 | EA 280 | CU5. Clase DInteres — miembros completos
+CU5 | cls-cu5-detalle-13 | EA 281 | CU5. Clase DMotivo — miembros completos
+CU5 | cls-cu5-detalle-14 | EA 956 | CU5. Clase DUsuario — miembros completos
+CU5 | cls-cu5-detalle-15 | EA 1629 | CU5. Clase Descuento — miembros completos
+CU5 | cls-cu5-detalle-16 | EA 1630 | CU5. Clase Exportacion — miembros completos
+CU5 | cls-cu5-detalle-17 | EA 1631 | CU5. Clase InscripcionComercial — miembros completos
+CU5 | cls-cu5-detalle-18 | EA 1632 | CU5. Clase Interaccion — miembros completos
+CU5 | cls-cu5-detalle-19 | EA 282 | CU5. Clase Interes — miembros completos
+CU5 | cls-cu5-detalle-20 | EA 1633 | CU5. Clase MetodoPago — miembros completos
+CU5 | cls-cu5-detalle-21 | EA 283 | CU5. Clase MotivoPerdida — miembros completos
+CU5 | cls-cu5-detalle-22 | EA 284 | CU5. Clase MotivoRequest — miembros completos
+CU5 | cls-cu5-detalle-23 | EA 957 | CU5. Clase MoverInteresRequest — miembros completos
+CU5 | cls-cu5-detalle-24 | EA 1634 | CU5. Clase MovimientoInteres — miembros completos
+CU5 | cls-cu5-detalle-25 | EA 285 | CU5. Clase NAlcance — miembros completos
+CU5 | cls-cu5-detalle-26 | EA 1635 | CU5. Clase NConversion — miembros completos
+CU5 | cls-cu5-detalle-27 | EA 286 | CU5. Clase NInteres — miembros completos
+CU5 | cls-cu5-detalle-28 | EA 287 | CU5. Clase NMotivo — miembros completos
+CU5 | cls-cu5-detalle-29 | EA 1636 | CU5. Clase OrdenPago — miembros completos
+CU5 | cls-cu5-detalle-30 | EA 1637 | CU5. Clase OrdenPagoDescuento — miembros completos
+CU5 | cls-cu5-detalle-31 | EA 1638 | CU5. Clase PEmbudo.jsx — miembros completos
+CU5 | cls-cu5-detalle-32 | EA 288 | CU5. Clase PMotivos.jsx — miembros completos
+CU5 | cls-cu5-detalle-33 | EA 1639 | CU5. Clase Pago — miembros completos
+CU5 | cls-cu5-detalle-34 | EA 958 | CU5. Clase Programa — miembros completos
+CU5 | cls-cu5-detalle-35 | EA 959 | CU5. Clase ProgramaResponsable — miembros completos
+CU5 | cls-cu5-detalle-36 | EA 289 | CU5. Clase Prospecto — miembros completos
+CU5 | cls-cu5-detalle-37 | EA 1640 | CU5. Clase Recordatorio — miembros completos
+CU5 | cls-cu5-detalle-38 | EA 960 | CU5. Clase ReglaNegocioException — miembros completos
+CU5 | cls-cu5-detalle-39 | EA 1641 | CU5. Clase SolicitudCompra — miembros completos
+CU5 | cls-cu5-detalle-40 | EA 1642 | CU5. Clase TransaccionStripe — miembros completos
+CU5 | cls-cu5-detalle-41 | EA 290 | CU5. Clase Usuario — miembros completos
+CU5 | cls-cu5-detalle-42 | EA 1643 | CU5. Clase api/intereses.js — miembros completos
+CU5 | cls-cu5-detalle-43 | EA 291 | CU5. Clase api/motivos.js — miembros completos
+CU6 | cls-cu6 | EA 138 | CU6. Gestión de Validar Datos y Procesar Conversión a Matrícula
+CU6 | cls-cu6-detalle-01 | EA 961 | CU6. Clase ActualizarComisionRequest — miembros completos
+CU6 | cls-cu6-detalle-02 | EA 292 | CU6. Clase AnularOrdenRequest — miembros completos
+CU6 | cls-cu6-detalle-03 | EA 293 | CU6. Clase ApiRequest — miembros completos
+CU6 | cls-cu6-detalle-04 | EA 1644 | CU6. Clase ApiToken — miembros completos
+CU6 | cls-cu6-detalle-05 | EA 294 | CU6. Clase AprobarCuotaRequest — miembros completos
+CU6 | cls-cu6-detalle-06 | EA 295 | CU6. Clase CambiarEstadoMetodoRequest — miembros completos
+CU6 | cls-cu6-detalle-07 | EA 296 | CU6. Clase CatalogoCache — miembros completos
+CU6 | cls-cu6-detalle-08 | EA 297 | CU6. Clase Comision — miembros completos
+CU6 | cls-cu6-detalle-09 | EA 962 | CU6. Clase CompletarRecordatorioRequest — miembros completos
+CU6 | cls-cu6-detalle-10 | EA 298 | CU6. Clase ComprobantePago — miembros completos
+CU6 | cls-cu6-detalle-11 | EA 1645 | CU6. Clase Configuracion — miembros completos
+CU6 | cls-cu6-detalle-12 | EA 299 | CU6. Clase ConsultaRequest — miembros completos
+CU6 | cls-cu6-detalle-13 | EA 300 | CU6. Clase CrearCheckoutRequest — miembros completos
+CU6 | cls-cu6-detalle-14 | EA 301 | CU6. Clase CrearOrdenRequest — miembros completos
+CU6 | cls-cu6-detalle-15 | EA 963 | CU6. Clase CrearRecordatorioRequest — miembros completos
+CU6 | cls-cu6-detalle-16 | EA 302 | CU6. Clase CrearSetupTarjetaRequest — miembros completos
+CU6 | cls-cu6-detalle-17 | EA 303 | CU6. Clase Cuota — miembros completos
+CU6 | cls-cu6-detalle-18 | EA 304 | CU6. Clase DAlcance — miembros completos
+CU6 | cls-cu6-detalle-19 | EA 305 | CU6. Clase DCatalogo — miembros completos
+CU6 | cls-cu6-detalle-20 | EA 306 | CU6. Clase DConversion — miembros completos
+CU6 | cls-cu6-detalle-21 | EA 307 | CU6. Clase DExportacion — miembros completos
+CU6 | cls-cu6-detalle-22 | EA 308 | CU6. Clase DNotificacion — miembros completos
+CU6 | cls-cu6-detalle-23 | EA 309 | CU6. Clase DPago — miembros completos
+CU6 | cls-cu6-detalle-24 | EA 310 | CU6. Clase DSeguimiento — miembros completos
+CU6 | cls-cu6-detalle-25 | EA 311 | CU6. Clase DStripe — miembros completos
+CU6 | cls-cu6-detalle-26 | EA 312 | CU6. Clase Descuento — miembros completos
+CU6 | cls-cu6-detalle-27 | EA 964 | CU6. Clase EnviarNotificacionRequest — miembros completos
+CU6 | cls-cu6-detalle-28 | EA 313 | CU6. Clase Exportacion — miembros completos
+CU6 | cls-cu6-detalle-29 | EA 314 | CU6. Clase FormularioOrdenPago.jsx — miembros completos
+CU6 | cls-cu6-detalle-30 | EA 315 | CU6. Clase InscripcionComercial — miembros completos
+CU6 | cls-cu6-detalle-31 | EA 316 | CU6. Clase Interaccion — miembros completos
+CU6 | cls-cu6-detalle-32 | EA 317 | CU6. Clase Interes — miembros completos
+CU6 | cls-cu6-detalle-33 | EA 318 | CU6. Clase MetodoPago — miembros completos
+CU6 | cls-cu6-detalle-34 | EA 319 | CU6. Clase MetodosPago.jsx — miembros completos
+CU6 | cls-cu6-detalle-35 | EA 320 | CU6. Clase ModalCompartirPago.jsx — miembros completos
+CU6 | cls-cu6-detalle-36 | EA 1646 | CU6. Clase MovimientoInteres — miembros completos
+CU6 | cls-cu6-detalle-37 | EA 321 | CU6. Clase NAlcance — miembros completos
+CU6 | cls-cu6-detalle-38 | EA 322 | CU6. Clase NConversion — miembros completos
+CU6 | cls-cu6-detalle-39 | EA 323 | CU6. Clase NExportacion — miembros completos
+CU6 | cls-cu6-detalle-40 | EA 324 | CU6. Clase NNotificacion — miembros completos
+CU6 | cls-cu6-detalle-41 | EA 325 | CU6. Clase NPago — miembros completos
+CU6 | cls-cu6-detalle-42 | EA 326 | CU6. Clase NSeguimiento — miembros completos
+CU6 | cls-cu6-detalle-43 | EA 327 | CU6. Clase NStripe — miembros completos
+CU6 | cls-cu6-detalle-44 | EA 328 | CU6. Clase Notificacion — miembros completos
+CU6 | cls-cu6-detalle-45 | EA 329 | CU6. Clase OrdenPago — miembros completos
+CU6 | cls-cu6-detalle-46 | EA 1647 | CU6. Clase OrdenPagoDescuento — miembros completos
+CU6 | cls-cu6-detalle-47 | EA 330 | CU6. Clase PMatriculas.jsx — miembros completos
+CU6 | cls-cu6-detalle-48 | EA 331 | CU6. Clase PPagoCancelado.jsx — miembros completos
+CU6 | cls-cu6-detalle-49 | EA 332 | CU6. Clase PPagoConfirmacion.jsx — miembros completos
+CU6 | cls-cu6-detalle-50 | EA 333 | CU6. Clase PPagoCuota.jsx — miembros completos
+CU6 | cls-cu6-detalle-51 | EA 334 | CU6. Clase PValidacionPagos.jsx — miembros completos
+CU6 | cls-cu6-detalle-52 | EA 335 | CU6. Clase Pago — miembros completos
+CU6 | cls-cu6-detalle-53 | EA 336 | CU6. Clase PlanPagos.jsx — miembros completos
+CU6 | cls-cu6-detalle-54 | EA 337 | CU6. Clase Programa — miembros completos
+CU6 | cls-cu6-detalle-55 | EA 1648 | CU6. Clase ProgramaResponsable — miembros completos
+CU6 | cls-cu6-detalle-56 | EA 338 | CU6. Clase Prospecto — miembros completos
+CU6 | cls-cu6-detalle-57 | EA 339 | CU6. Clase RechazarCuotaRequest — miembros completos
+CU6 | cls-cu6-detalle-58 | EA 340 | CU6. Clase Recordatorio — miembros completos
+CU6 | cls-cu6-detalle-59 | EA 965 | CU6. Clase RegistrarComprobanteRequest — miembros completos
+CU6 | cls-cu6-detalle-60 | EA 966 | CU6. Clase RegistrarInteraccionRequest — miembros completos
+CU6 | cls-cu6-detalle-61 | EA 967 | CU6. Clase RegistrarMetodoRequest — miembros completos
+CU6 | cls-cu6-detalle-62 | EA 341 | CU6. Clase RegistrarResultadoRequest — miembros completos
+CU6 | cls-cu6-detalle-63 | EA 342 | CU6. Clase ReglaNegocioException — miembros completos
+CU6 | cls-cu6-detalle-64 | EA 1649 | CU6. Clase SolicitudCompra — miembros completos
+CU6 | cls-cu6-detalle-65 | EA 343 | CU6. Clase TransaccionStripe — miembros completos
+CU6 | cls-cu6-detalle-66 | EA 344 | CU6. Clase Usuario — miembros completos
+CU6 | cls-cu6-detalle-67 | EA 345 | CU6. Clase WebhookEventoStripe — miembros completos
+CU6 | cls-cu6-detalle-68 | EA 346 | CU6. Clase api/exportaciones.js — miembros completos
+CU6 | cls-cu6-detalle-69 | EA 347 | CU6. Clase api/pagos.js — miembros completos
+CU6 | cls-cu6-detalle-70 | EA 348 | CU6. Clase api/seguimiento.js — miembros completos
+CU6 | cls-cu6-detalle-71 | EA 349 | CU6. Clase HistorialPagos.jsx — miembros completos
+CU6 | cls-cu6-detalle-72 | EA 350 | CU6. Clase PagosProspecto.jsx — miembros completos
+CU6 | cls-cu6-detalle-73 | EA 351 | CU6. Clase ResumenPagos.jsx — miembros completos
+CU6 | cls-cu6-detalle-74 | EA 352 | CU6. Clase api/notificaciones.js — miembros completos
+CU6 | cls-cu6-detalle-75 | EA 353 | CU6. Clase servicios/pagosCompartir.js — miembros completos
+CU7 | cls-cu7 | EA 7 | CU7. Gestión de Bitácora, Interacciones y Recordatorios
+CU7 | cls-cu7-detalle-01 | EA 968 | CU7. Clase ActualizarComisionRequest — miembros completos
+CU7 | cls-cu7-detalle-02 | EA 354 | CU7. Clase ApiRequest — miembros completos
+CU7 | cls-cu7-detalle-03 | EA 1650 | CU7. Clase ApiToken — miembros completos
+CU7 | cls-cu7-detalle-04 | EA 1651 | CU7. Clase CatalogoCache — miembros completos
+CU7 | cls-cu7-detalle-05 | EA 355 | CU7. Clase Comision — miembros completos
+CU7 | cls-cu7-detalle-06 | EA 356 | CU7. Clase CompletarRecordatorioRequest — miembros completos
+CU7 | cls-cu7-detalle-07 | EA 1652 | CU7. Clase ComprobantePago — miembros completos
+CU7 | cls-cu7-detalle-08 | EA 1653 | CU7. Clase Configuracion — miembros completos
+CU7 | cls-cu7-detalle-09 | EA 357 | CU7. Clase ConsultaRequest — miembros completos
+CU7 | cls-cu7-detalle-10 | EA 358 | CU7. Clase CrearRecordatorioRequest — miembros completos
+CU7 | cls-cu7-detalle-11 | EA 1654 | CU7. Clase Cuota — miembros completos
+CU7 | cls-cu7-detalle-12 | EA 359 | CU7. Clase DAlcance — miembros completos
+CU7 | cls-cu7-detalle-13 | EA 360 | CU7. Clase DNotificacion — miembros completos
+CU7 | cls-cu7-detalle-14 | EA 361 | CU7. Clase DSeguimiento — miembros completos
+CU7 | cls-cu7-detalle-15 | EA 1655 | CU7. Clase Descuento — miembros completos
+CU7 | cls-cu7-detalle-16 | EA 362 | CU7. Clase EnviarNotificacionRequest — miembros completos
+CU7 | cls-cu7-detalle-17 | EA 1656 | CU7. Clase Exportacion — miembros completos
+CU7 | cls-cu7-detalle-18 | EA 363 | CU7. Clase InscripcionComercial — miembros completos
+CU7 | cls-cu7-detalle-19 | EA 364 | CU7. Clase Interaccion — miembros completos
+CU7 | cls-cu7-detalle-20 | EA 365 | CU7. Clase Interes — miembros completos
+CU7 | cls-cu7-detalle-21 | EA 1657 | CU7. Clase MetodoPago — miembros completos
+CU7 | cls-cu7-detalle-22 | EA 366 | CU7. Clase ModalCompartirPago.jsx — miembros completos
+CU7 | cls-cu7-detalle-23 | EA 1658 | CU7. Clase MovimientoInteres — miembros completos
+CU7 | cls-cu7-detalle-24 | EA 367 | CU7. Clase NAlcance — miembros completos
+CU7 | cls-cu7-detalle-25 | EA 368 | CU7. Clase NNotificacion — miembros completos
+CU7 | cls-cu7-detalle-26 | EA 369 | CU7. Clase NSeguimiento — miembros completos
+CU7 | cls-cu7-detalle-27 | EA 370 | CU7. Clase Notificacion — miembros completos
+CU7 | cls-cu7-detalle-28 | EA 1659 | CU7. Clase OrdenPago — miembros completos
+CU7 | cls-cu7-detalle-29 | EA 1660 | CU7. Clase OrdenPagoDescuento — miembros completos
+CU7 | cls-cu7-detalle-30 | EA 371 | CU7. Clase PAgenda.jsx — miembros completos
+CU7 | cls-cu7-detalle-31 | EA 372 | CU7. Clase PMiDia.jsx — miembros completos
+CU7 | cls-cu7-detalle-32 | EA 373 | CU7. Clase PNotificaciones.jsx — miembros completos
+CU7 | cls-cu7-detalle-33 | EA 1661 | CU7. Clase Pago — miembros completos
+CU7 | cls-cu7-detalle-34 | EA 1662 | CU7. Clase Programa — miembros completos
+CU7 | cls-cu7-detalle-35 | EA 1663 | CU7. Clase ProgramaResponsable — miembros completos
+CU7 | cls-cu7-detalle-36 | EA 374 | CU7. Clase Prospecto — miembros completos
+CU7 | cls-cu7-detalle-37 | EA 375 | CU7. Clase Recordatorio — miembros completos
+CU7 | cls-cu7-detalle-38 | EA 376 | CU7. Clase RegistrarInteraccionRequest — miembros completos
+CU7 | cls-cu7-detalle-39 | EA 377 | CU7. Clase ReglaNegocioException — miembros completos
+CU7 | cls-cu7-detalle-40 | EA 1664 | CU7. Clase SolicitudCompra — miembros completos
+CU7 | cls-cu7-detalle-41 | EA 1665 | CU7. Clase TransaccionStripe — miembros completos
+CU7 | cls-cu7-detalle-42 | EA 378 | CU7. Clase Usuario — miembros completos
+CU7 | cls-cu7-detalle-43 | EA 379 | CU7. Clase api/notificaciones.js — miembros completos
+CU7 | cls-cu7-detalle-44 | EA 380 | CU7. Clase api/seguimiento.js — miembros completos
+CU8 | cls-cu8 | EA 8 | CU8. Reportes y Estadísticas
+CU8 | cls-cu8-detalle-01 | EA 381 | CU8. Clase ActualizarComisionRequest — miembros completos
+CU8 | cls-cu8-detalle-02 | EA 382 | CU8. Clase ApiRequest — miembros completos
+CU8 | cls-cu8-detalle-03 | EA 1666 | CU8. Clase ApiToken — miembros completos
+CU8 | cls-cu8-detalle-04 | EA 383 | CU8. Clase Bitacora — miembros completos
+CU8 | cls-cu8-detalle-05 | EA 1667 | CU8. Clase CatalogoCache — miembros completos
+CU8 | cls-cu8-detalle-06 | EA 384 | CU8. Clase Comision — miembros completos
+CU8 | cls-cu8-detalle-07 | EA 969 | CU8. Clase CompletarRecordatorioRequest — miembros completos
+CU8 | cls-cu8-detalle-08 | EA 1668 | CU8. Clase ComprobantePago — miembros completos
+CU8 | cls-cu8-detalle-09 | EA 1669 | CU8. Clase Configuracion — miembros completos
+CU8 | cls-cu8-detalle-10 | EA 385 | CU8. Clase ConsultaRequest — miembros completos
+CU8 | cls-cu8-detalle-11 | EA 970 | CU8. Clase CrearRecordatorioRequest — miembros completos
+CU8 | cls-cu8-detalle-12 | EA 1670 | CU8. Clase Cuota — miembros completos
+CU8 | cls-cu8-detalle-13 | EA 386 | CU8. Clase DAcceso — miembros completos
+CU8 | cls-cu8-detalle-14 | EA 387 | CU8. Clase DAlcance — miembros completos
+CU8 | cls-cu8-detalle-15 | EA 388 | CU8. Clase DBitacora — miembros completos
+CU8 | cls-cu8-detalle-16 | EA 389 | CU8. Clase DReporte — miembros completos
+CU8 | cls-cu8-detalle-17 | EA 390 | CU8. Clase DSeguimiento — miembros completos
+CU8 | cls-cu8-detalle-18 | EA 1671 | CU8. Clase Descuento — miembros completos
+CU8 | cls-cu8-detalle-19 | EA 1672 | CU8. Clase Exportacion — miembros completos
+CU8 | cls-cu8-detalle-20 | EA 391 | CU8. Clase InscripcionComercial — miembros completos
+CU8 | cls-cu8-detalle-21 | EA 392 | CU8. Clase Interaccion — miembros completos
+CU8 | cls-cu8-detalle-22 | EA 393 | CU8. Clase Interes — miembros completos
+CU8 | cls-cu8-detalle-23 | EA 394 | CU8. Clase ListadoRequest — miembros completos
+CU8 | cls-cu8-detalle-24 | EA 1673 | CU8. Clase MetodoPago — miembros completos
+CU8 | cls-cu8-detalle-25 | EA 1674 | CU8. Clase MovimientoInteres — miembros completos
+CU8 | cls-cu8-detalle-26 | EA 395 | CU8. Clase NAcceso — miembros completos
+CU8 | cls-cu8-detalle-27 | EA 1675 | CU8. Clase NAlcance — miembros completos
+CU8 | cls-cu8-detalle-28 | EA 396 | CU8. Clase NReporte — miembros completos
+CU8 | cls-cu8-detalle-29 | EA 397 | CU8. Clase NSeguimiento — miembros completos
+CU8 | cls-cu8-detalle-30 | EA 1676 | CU8. Clase OrdenPago — miembros completos
+CU8 | cls-cu8-detalle-31 | EA 1677 | CU8. Clase OrdenPagoDescuento — miembros completos
+CU8 | cls-cu8-detalle-32 | EA 398 | CU8. Clase PComisiones.jsx — miembros completos
+CU8 | cls-cu8-detalle-33 | EA 399 | CU8. Clase PDashboard.jsx — miembros completos
+CU8 | cls-cu8-detalle-34 | EA 400 | CU8. Clase PMiDia.jsx — miembros completos
+CU8 | cls-cu8-detalle-35 | EA 401 | CU8. Clase PReportes.jsx — miembros completos
+CU8 | cls-cu8-detalle-36 | EA 1678 | CU8. Clase Pago — miembros completos
+CU8 | cls-cu8-detalle-37 | EA 402 | CU8. Clase Permiso — miembros completos
+CU8 | cls-cu8-detalle-38 | EA 1679 | CU8. Clase Programa — miembros completos
+CU8 | cls-cu8-detalle-39 | EA 1680 | CU8. Clase ProgramaResponsable — miembros completos
+CU8 | cls-cu8-detalle-40 | EA 403 | CU8. Clase Prospecto — miembros completos
+CU8 | cls-cu8-detalle-41 | EA 404 | CU8. Clase Recordatorio — miembros completos
+CU8 | cls-cu8-detalle-42 | EA 971 | CU8. Clase RegistrarInteraccionRequest — miembros completos
+CU8 | cls-cu8-detalle-43 | EA 972 | CU8. Clase ReglaNegocioException — miembros completos
+CU8 | cls-cu8-detalle-44 | EA 1681 | CU8. Clase SolicitudCompra — miembros completos
+CU8 | cls-cu8-detalle-45 | EA 1682 | CU8. Clase TransaccionStripe — miembros completos
+CU8 | cls-cu8-detalle-46 | EA 405 | CU8. Clase Usuario — miembros completos
+CU8 | cls-cu8-detalle-47 | EA 406 | CU8. Clase api/reportes.js — miembros completos
+CU8 | cls-cu8-detalle-48 | EA 407 | CU8. Clase api/seguimiento.js — miembros completos
+
+RELACIONES TERMINADAS
+CU1 | clases-relacion-001 | EA 973 | Relación de clases — api/auth.js / NAuth
+CU1 | clases-relacion-002 | EA 974 | Relación de clases — servicios/auth.js / api/auth.js
+CU1 | clases-relacion-003 | EA 979 | Relación de clases — PUsuarios.jsx / servicios/auth.js / api/usuarios.js
+CU1 | clases-relacion-004 | EA 976 | Relación de clases — PLogin.jsx / servicios/auth.js
+CU1 | clases-relacion-005 | EA 977 | Relación de clases — PMatriz.jsx / servicios/auth.js / api/seguridad.js
+CU1 | clases-relacion-006 | EA 978 | Relación de clases — AppShell.jsx / servicios/auth.js
+CU1 | clases-relacion-007 | EA 975 | Relación de clases — Shell.jsx / servicios/auth.js / api/sitio.js
+CU1 | clases-relacion-008 | EA 980 | Relación de clases — NAuth / DAuth / DBitacora
+CU1 | clases-relacion-009 | EA 981 | Relación de clases — DAuth / Usuario / ApiToken
+CU1 | clases-relacion-010 | EA 982 | Relación de clases — DBitacora / Bitacora
+CU1 | clases-relacion-011 | EA 983 | Relación de clases — NAuth / NAcceso / LoginRequest
+CU1 | clases-relacion-012 | EA 984 | Relación de clases — NAcceso / DAcceso / DBitacora
+CU1 | clases-relacion-013 | EA 985 | Relación de clases — api/sitio.js / NSitio
+CU1 | clases-relacion-014 | EA 986 | Relación de clases — NSitio / DSitio / NAuth
+CU1 | clases-relacion-015 | EA 987 | Relación de clases — NSitio / DBitacora / NAcceso
+CU1 | clases-relacion-016 | EA 988 | Relación de clases — NSitio / VisitaRequest / ConsultaRequest
+CU1 | clases-relacion-017 | EA 989 | Relación de clases — DSitio / DAlcance / Interes
+CU1 | clases-relacion-018 | EA 990 | Relación de clases — DSitio / Usuario
+CU1 | clases-relacion-019 | EA 991 | Relación de clases — NAuth / ConsultaRequest / NFoto
+CU1 | clases-relacion-020 | EA 992 | Relación de clases — NAuth / ActualizarPerfilRequest / CambiarPasswordRequest
+CU1 | clases-relacion-021 | EA 993 | Relación de clases — Shell.jsx / api/auth.js
+CU1 | clases-relacion-022 | EA 994 | Relación de clases — api/usuarios.js / NUsuario
+CU1 | clases-relacion-023 | EA 995 | Relación de clases — NUsuario / DUsuario / ConsultaRequest
+CU1 | clases-relacion-024 | EA 996 | Relación de clases — DUsuario / DAlcance / Usuario
+CU1 | clases-relacion-025 | EA 997 | Relación de clases — DUsuario / Programa / ProgramaResponsable
+CU1 | clases-relacion-026 | EA 998 | Relación de clases — NUsuario / NFoto / UsuarioRequest
+CU1 | clases-relacion-027 | EA 999 | Relación de clases — NUsuario / CambiarEstadoUsuarioRequest / Usuario
+CU1 | clases-relacion-028 | EA 1000 | Relación de clases — PAsignacion.jsx / api/usuarios.js
+CU1 | clases-relacion-029 | EA 1001 | Relación de clases — PEmbudo.jsx / api/usuarios.js
+CU1 | clases-relacion-030 | EA 1002 | Relación de clases — PReportes.jsx / api/usuarios.js
+CU1 | clases-relacion-031 | EA 1003 | Relación de clases — api/seguridad.js / NSeguridad
+CU1 | clases-relacion-032 | EA 1004 | Relación de clases — NSeguridad / DSeguridad / NAcceso
+CU1 | clases-relacion-033 | EA 1005 | Relación de clases — NSeguridad / AsignarPermisoRequest / BitacoraRequest
+CU1 | clases-relacion-034 | EA 1006 | Relación de clases — PBitacora.jsx / api/seguridad.js
+CU1 | clases-relacion-035 | EA 1007 | Relación de clases — DSeguridad / DAlcance
+CU1 | clases-relacion-036 | EA 1008 | Relación de clases — AccesoRecurso / NAcceso
+CU1 | clases-relacion-037 | EA 1009 | Relación de clases — ActualizarPerfilRequest / ApiRequest
+CU1 | clases-relacion-038 | EA 1010 | Relación de clases — ApiToken / Usuario
+CU1 | clases-relacion-039 | EA 1011 | Relación de clases — AsignarPermisoRequest / ApiRequest / DSeguridad
+CU1 | clases-relacion-040 | EA 1012 | Relación de clases — AsignarPermisoRequest / Permiso
+CU1 | clases-relacion-041 | EA 1013 | Relación de clases — BitacoraRequest / ApiRequest / Bitacora
+CU1 | clases-relacion-042 | EA 1014 | Relación de clases — CambiarEstadoUsuarioRequest / ApiRequest / Usuario
+CU1 | clases-relacion-043 | EA 1015 | Relación de clases — CambiarPasswordRequest / ApiRequest
+CU1 | clases-relacion-044 | EA 1016 | Relación de clases — CatalogoCache / Programa
+CU1 | clases-relacion-045 | EA 1683 | Relación de clases — Comision / Configuracion / SolicitudCompra
+CU1 | clases-relacion-046 | EA 1684 | Relación de clases — Comision / Usuario
+CU1 | clases-relacion-047 | EA 1017 | Relación de clases — ConsultaRequest / ApiRequest
+CU1 | clases-relacion-048 | EA 1685 | Relación de clases — Cuota / MetodoPago / OrdenPago
+CU1 | clases-relacion-049 | EA 1018 | Relación de clases — DAlcance / Prospecto / Usuario
+CU1 | clases-relacion-050 | EA 1019 | Relación de clases — DCatalogo / CatalogoCache / Programa
+CU1 | clases-relacion-051 | EA 1686 | Relación de clases — Exportacion / Usuario
+CU1 | clases-relacion-052 | EA 1687 | Relación de clases — InscripcionComercial / Exportacion / SolicitudCompra
+CU1 | clases-relacion-053 | EA 1688 | Relación de clases — Interaccion / Interes / Usuario
+CU1 | clases-relacion-054 | EA 1689 | Relación de clases — Interes / CatalogoCache / Interaccion
+CU1 | clases-relacion-055 | EA 1690 | Relación de clases — Interes / MovimientoInteres / OrdenPago
+CU1 | clases-relacion-056 | EA 1691 | Relación de clases — Interes / Prospecto / Recordatorio
+CU1 | clases-relacion-057 | EA 1021 | Relación de clases — Interes / Usuario
+CU1 | clases-relacion-058 | EA 1022 | Relación de clases — LoginRequest / ApiRequest
+CU1 | clases-relacion-059 | EA 1692 | Relación de clases — MetodoPago / Prospecto / Usuario
+CU1 | clases-relacion-060 | EA 1693 | Relación de clases — MovimientoInteres / Usuario
+CU1 | clases-relacion-061 | EA 1023 | Relación de clases — NAcceso / Permiso / Usuario
+CU1 | clases-relacion-062 | EA 1024 | Relación de clases — NAuth / ReglaNegocioException / Usuario
+CU1 | clases-relacion-063 | EA 1025 | Relación de clases — NSeguridad / Permiso
+CU1 | clases-relacion-064 | EA 1026 | Relación de clases — NSitio / NFoto / ReglaNegocioException
+CU1 | clases-relacion-065 | EA 1694 | Relación de clases — OrdenPago / Cuota / Interes
+CU1 | clases-relacion-066 | EA 1695 | Relación de clases — OrdenPago / OrdenPagoDescuento / Pago
+CU1 | clases-relacion-067 | EA 1696 | Relación de clases — OrdenPago / SolicitudCompra / TransaccionStripe
+CU1 | clases-relacion-068 | EA 1697 | Relación de clases — OrdenPago / Usuario
+CU1 | clases-relacion-069 | EA 1698 | Relación de clases — OrdenPagoDescuento / Descuento
+CU1 | clases-relacion-070 | EA 1699 | Relación de clases — Pago / ComprobantePago / OrdenPago
+CU1 | clases-relacion-071 | EA 1027 | Relación de clases — Programa / CatalogoCache / ProgramaResponsable
+CU1 | clases-relacion-072 | EA 1028 | Relación de clases — ProgramaResponsable / Programa / Usuario
+CU1 | clases-relacion-073 | EA 1700 | Relación de clases — Prospecto / Interes / MetodoPago
+CU1 | clases-relacion-074 | EA 1701 | Relación de clases — Prospecto / TransaccionStripe
+CU1 | clases-relacion-075 | EA 1702 | Relación de clases — Recordatorio / Interes / Usuario
+CU1 | clases-relacion-076 | EA 1703 | Relación de clases — SolicitudCompra / Comision / InscripcionComercial
+CU1 | clases-relacion-077 | EA 1704 | Relación de clases — SolicitudCompra / OrdenPago
+CU1 | clases-relacion-078 | EA 1030 | Relación de clases — TokenAuthMiddleware / NAuth
+CU1 | clases-relacion-079 | EA 1705 | Relación de clases — TransaccionStripe / OrdenPago / Prospecto
+CU1 | clases-relacion-080 | EA 1706 | Relación de clases — TransaccionStripe / Usuario
+CU1 | clases-relacion-081 | EA 1031 | Relación de clases — Usuario / ApiToken / ProgramaResponsable
+CU1 | clases-relacion-082 | EA 1032 | Relación de clases — UsuarioRequest / ApiRequest / DCatalogo
+CU1 | clases-relacion-083 | EA 1033 | Relación de clases — UsuarioRequest / DSeguridad / DUsuario
+CU1 | clases-relacion-084 | EA 1034 | Relación de clases — UsuarioRequest / Usuario
+CU1 | clases-relacion-085 | EA 1035 | Relación de clases — VisitaRequest / ApiRequest
+CU2 | clases-relacion-086 | EA 1036 | Relación de clases — api/catalogo.js / NCatalogo / NProspecto
+CU2 | clases-relacion-087 | EA 1037 | Relación de clases — FormularioOrdenPago.jsx / api/catalogo.js
+CU2 | clases-relacion-088 | EA 1038 | Relación de clases — PCatalogo.jsx / api/catalogo.js
+CU2 | clases-relacion-089 | EA 1039 | Relación de clases — PProspectos.jsx / api/catalogo.js
+CU2 | clases-relacion-090 | EA 1040 | Relación de clases — NCatalogo / NCatalogoExterno / DCatalogo
+CU2 | clases-relacion-091 | EA 1041 | Relación de clases — DCatalogo / Programa
+CU2 | clases-relacion-092 | EA 1042 | Relación de clases — NCatalogo / ConsultaRequest / CatalogoCache
+CU2 | clases-relacion-093 | EA 1043 | Relación de clases — NProspecto / DProspecto / RegistrarInteresRequest
+CU2 | clases-relacion-094 | EA 1044 | Relación de clases — DProspecto / Prospecto / CatalogoCache
+CU2 | clases-relacion-095 | EA 1045 | Relación de clases — DProspecto / Interes / DAlcance
+CU2 | clases-relacion-096 | EA 1046 | Relación de clases — CatalogoCache / Programa
+CU2 | clases-relacion-097 | EA 1047 | Relación de clases — CrearInteresRequest / ProspectoRequest
+CU2 | clases-relacion-098 | EA 1048 | Relación de clases — DProspecto / Usuario
+CU2 | clases-relacion-099 | EA 1049 | Relación de clases — ImportarCsvRequest / ApiRequest
+CU2 | clases-relacion-100 | EA 1707 | Relación de clases — Interaccion / Interes
+CU2 | clases-relacion-101 | EA 1708 | Relación de clases — Interes / CatalogoCache / Interaccion
+CU2 | clases-relacion-102 | EA 1709 | Relación de clases — Interes / MovimientoInteres / OrdenPago
+CU2 | clases-relacion-103 | EA 1710 | Relación de clases — Interes / Prospecto / Recordatorio
+CU2 | clases-relacion-104 | EA 1051 | Relación de clases — Interes / Usuario
+CU2 | clases-relacion-105 | EA 1052 | Relación de clases — NCatalogo / Programa
+CU2 | clases-relacion-106 | EA 1053 | Relación de clases — NProspecto / CatalogoCache / ConsultaRequest
+CU2 | clases-relacion-107 | EA 1054 | Relación de clases — NProspecto / CrearInteresRequest / ImportarCsvRequest
+CU2 | clases-relacion-108 | EA 1711 | Relación de clases — NProspecto / NAcceso / Prospecto
+CU2 | clases-relacion-109 | EA 1712 | Relación de clases — NProspecto / ReglaNegocioException / StoreProspectoRequest
+CU2 | clases-relacion-110 | EA 1713 | Relación de clases — NProspecto / UpdateProspectoRequest / Usuario
+CU2 | clases-relacion-111 | EA 1714 | Relación de clases — OrdenPago / Interes
+CU2 | clases-relacion-112 | EA 1715 | Relación de clases — Programa / CatalogoCache / ProgramaResponsable
+CU2 | clases-relacion-113 | EA 1716 | Relación de clases — ProgramaResponsable / Programa
+CU2 | clases-relacion-114 | EA 1059 | Relación de clases — Prospecto / Interes
+CU2 | clases-relacion-115 | EA 1060 | Relación de clases — ProspectoRequest / ApiRequest / NProspecto
+CU2 | clases-relacion-116 | EA 1717 | Relación de clases — Recordatorio / Interes
+CU2 | clases-relacion-117 | EA 1061 | Relación de clases — RegistrarInteresRequest / ProspectoRequest / NProspecto
+CU2 | clases-relacion-118 | EA 1062 | Relación de clases — StoreProspectoRequest / ProspectoRequest / DProspecto
+CU2 | clases-relacion-119 | EA 1063 | Relación de clases — StoreProspectoRequest / NProspecto
+CU2 | clases-relacion-120 | EA 1064 | Relación de clases — UpdateProspectoRequest / ProspectoRequest / DProspecto
+CU2 | clases-relacion-121 | EA 1065 | Relación de clases — UpdateProspectoRequest / NProspecto
+CU3 | clases-relacion-122 | EA 1066 | Relación de clases — api/prospectos.js / NProspecto
+CU3 | clases-relacion-123 | EA 1067 | Relación de clases — PProspectos.jsx / api/prospectos.js
+CU3 | clases-relacion-124 | EA 1068 | Relación de clases — NProspecto / DProspecto / ConsultaRequest
+CU3 | clases-relacion-125 | EA 1069 | Relación de clases — DProspecto / DAlcance / Prospecto
+CU3 | clases-relacion-126 | EA 1070 | Relación de clases — DAlcance / Usuario / Prospecto
+CU3 | clases-relacion-127 | EA 1071 | Relación de clases — DProspecto / Usuario / Interes
+CU3 | clases-relacion-128 | EA 1072 | Relación de clases — NProspecto / NAcceso / StoreProspectoRequest
+CU3 | clases-relacion-129 | EA 1073 | Relación de clases — DProspecto / CatalogoCache
+CU3 | clases-relacion-130 | EA 1074 | Relación de clases — NProspecto / ImportarCsvRequest / UpdateProspectoRequest
+CU3 | clases-relacion-131 | EA 1718 | Relación de clases — PAgenda.jsx / api/prospectos.js / api/intereses.js
+CU3 | clases-relacion-132 | EA 1076 | Relación de clases — NProspecto / CrearInteresRequest / CatalogoCache
+CU3 | clases-relacion-133 | EA 1077 | Relación de clases — api/intereses.js / NInteres
+CU3 | clases-relacion-134 | EA 1078 | Relación de clases — PAsignacion.jsx / api/intereses.js
+CU3 | clases-relacion-135 | EA 1079 | Relación de clases — NInteres / DInteres / NAlcance
+CU3 | clases-relacion-136 | EA 1080 | Relación de clases — DInteres / Interes / Usuario
+CU3 | clases-relacion-137 | EA 1081 | Relación de clases — NInteres / AsignarInteresRequest / ConsultaRequest
+CU3 | clases-relacion-138 | EA 1082 | Relación de clases — DInteres / DAlcance / MotivoPerdida
+CU3 | clases-relacion-139 | EA 1719 | Relación de clases — ApiToken / Usuario
+CU3 | clases-relacion-140 | EA 1083 | Relación de clases — AsignarInteresRequest / ApiRequest / DUsuario
+CU3 | clases-relacion-141 | EA 1084 | Relación de clases — CatalogoCache / Programa
+CU3 | clases-relacion-142 | EA 1720 | Relación de clases — Comision / Usuario
+CU3 | clases-relacion-143 | EA 1721 | Relación de clases — DConversion / Comision / InscripcionComercial
+CU3 | clases-relacion-144 | EA 1722 | Relación de clases — DConversion / Interaccion / Interes
+CU3 | clases-relacion-145 | EA 1723 | Relación de clases — DConversion / OrdenPago
+CU3 | clases-relacion-146 | EA 1085 | Relación de clases — DMotivo / Interes / MotivoPerdida
+CU3 | clases-relacion-147 | EA 1086 | Relación de clases — DUsuario / DAlcance / Usuario
+CU3 | clases-relacion-148 | EA 1724 | Relación de clases — Exportacion / Usuario
+CU3 | clases-relacion-149 | EA 1725 | Relación de clases — Interaccion / Interes / Usuario
+CU3 | clases-relacion-150 | EA 1726 | Relación de clases — Interes / CatalogoCache / Interaccion
+CU3 | clases-relacion-151 | EA 1727 | Relación de clases — Interes / MovimientoInteres / OrdenPago
+CU3 | clases-relacion-152 | EA 1728 | Relación de clases — Interes / Prospecto / Recordatorio
+CU3 | clases-relacion-153 | EA 1088 | Relación de clases — Interes / Usuario
+CU3 | clases-relacion-154 | EA 1729 | Relación de clases — MetodoPago / Prospecto / Usuario
+CU3 | clases-relacion-155 | EA 1089 | Relación de clases — MoverInteresRequest / ApiRequest / DMotivo
+CU3 | clases-relacion-156 | EA 1090 | Relación de clases — MoverInteresRequest / Interes
+CU3 | clases-relacion-157 | EA 1730 | Relación de clases — MovimientoInteres / Usuario
+CU3 | clases-relacion-158 | EA 1091 | Relación de clases — NAcceso / DAcceso / DBitacora
+CU3 | clases-relacion-159 | EA 1092 | Relación de clases — NAcceso / Permiso / Usuario
+CU3 | clases-relacion-160 | EA 1093 | Relación de clases — NAlcance / DAlcance / ReglaNegocioException
+CU3 | clases-relacion-161 | EA 1094 | Relación de clases — NAlcance / Usuario
+CU3 | clases-relacion-162 | EA 1731 | Relación de clases — NConversion / DConversion / Interes
+CU3 | clases-relacion-163 | EA 1732 | Relación de clases — NConversion / ReglaNegocioException / Usuario
+CU3 | clases-relacion-164 | EA 1095 | Relación de clases — NInteres / Interes / MoverInteresRequest
+CU3 | clases-relacion-165 | EA 1733 | Relación de clases — NInteres / NConversion / ReglaNegocioException
+CU3 | clases-relacion-166 | EA 1734 | Relación de clases — NInteres / Usuario
+CU3 | clases-relacion-167 | EA 1097 | Relación de clases — NProspecto / Prospecto / RegistrarInteresRequest
+CU3 | clases-relacion-168 | EA 1098 | Relación de clases — NProspecto / ReglaNegocioException / Usuario
+CU3 | clases-relacion-169 | EA 1735 | Relación de clases — OrdenPago / Interes / Usuario
+CU3 | clases-relacion-170 | EA 1099 | Relación de clases — Programa / CatalogoCache
+CU3 | clases-relacion-171 | EA 1100 | Relación de clases — ProgramaResponsable / Usuario
+CU3 | clases-relacion-172 | EA 1736 | Relación de clases — Prospecto / Interes / MetodoPago
+CU3 | clases-relacion-173 | EA 1737 | Relación de clases — Prospecto / TransaccionStripe
+CU3 | clases-relacion-174 | EA 1102 | Relación de clases — ProspectoRequest / NProspecto
+CU3 | clases-relacion-175 | EA 1738 | Relación de clases — Recordatorio / Interes / Usuario
+CU3 | clases-relacion-176 | EA 1103 | Relación de clases — RegistrarInteresRequest / NProspecto
+CU3 | clases-relacion-177 | EA 1104 | Relación de clases — StoreProspectoRequest / DProspecto / NProspecto
+CU3 | clases-relacion-178 | EA 1739 | Relación de clases — TransaccionStripe / Prospecto / Usuario
+CU3 | clases-relacion-179 | EA 1105 | Relación de clases — UpdateProspectoRequest / DProspecto / NProspecto
+CU3 | clases-relacion-180 | EA 1740 | Relación de clases — Usuario / ApiToken / ProgramaResponsable
+CU4 | clases-relacion-181 | EA 1107 | Relación de clases — api/intereses.js / NInteres
+CU4 | clases-relacion-182 | EA 1108 | Relación de clases — PAgenda.jsx / api/intereses.js
+CU4 | clases-relacion-183 | EA 1109 | Relación de clases — PAsignacion.jsx / api/intereses.js
+CU4 | clases-relacion-184 | EA 1110 | Relación de clases — PEmbudo.jsx / api/intereses.js
+CU4 | clases-relacion-185 | EA 1111 | Relación de clases — NInteres / DInteres / ConsultaRequest
+CU4 | clases-relacion-186 | EA 1112 | Relación de clases — DInteres / DAlcance / Interes
+CU4 | clases-relacion-187 | EA 1113 | Relación de clases — DInteres / Usuario / MotivoPerdida
+CU4 | clases-relacion-188 | EA 1114 | Relación de clases — NInteres / NAlcance / NConversion
+CU4 | clases-relacion-189 | EA 1115 | Relación de clases — NInteres / MoverInteresRequest / AsignarInteresRequest
+CU4 | clases-relacion-190 | EA 1741 | Relación de clases — ApiToken / Usuario
+CU4 | clases-relacion-191 | EA 1116 | Relación de clases — Comision / Usuario
+CU4 | clases-relacion-192 | EA 1117 | Relación de clases — DAlcance / Prospecto / Usuario
+CU4 | clases-relacion-193 | EA 1742 | Relación de clases — DConversion / Interes
+CU4 | clases-relacion-194 | EA 1121 | Relación de clases — DMotivo / Interes
+CU4 | clases-relacion-195 | EA 1122 | Relación de clases — DUsuario / DAlcance / Usuario
+CU4 | clases-relacion-196 | EA 1743 | Relación de clases — Exportacion / Usuario
+CU4 | clases-relacion-197 | EA 1123 | Relación de clases — Interaccion / Interes / Usuario
+CU4 | clases-relacion-198 | EA 1744 | Relación de clases — Interes / CatalogoCache / Interaccion
+CU4 | clases-relacion-199 | EA 1745 | Relación de clases — Interes / MovimientoInteres / OrdenPago
+CU4 | clases-relacion-200 | EA 1746 | Relación de clases — Interes / Prospecto / Recordatorio
+CU4 | clases-relacion-201 | EA 1747 | Relación de clases — Interes / Usuario
+CU4 | clases-relacion-202 | EA 1748 | Relación de clases — MetodoPago / Usuario
+CU4 | clases-relacion-203 | EA 1126 | Relación de clases — MoverInteresRequest / Interes
+CU4 | clases-relacion-204 | EA 1749 | Relación de clases — MovimientoInteres / Usuario
+CU4 | clases-relacion-205 | EA 1127 | Relación de clases — NAlcance / DAlcance / ReglaNegocioException
+CU4 | clases-relacion-206 | EA 1128 | Relación de clases — NAlcance / Usuario
+CU4 | clases-relacion-207 | EA 1750 | Relación de clases — NConversion / Interes / Usuario
+CU4 | clases-relacion-208 | EA 1131 | Relación de clases — NInteres / Interes / ReglaNegocioException
+CU4 | clases-relacion-209 | EA 1132 | Relación de clases — NInteres / Usuario
+CU4 | clases-relacion-210 | EA 1133 | Relación de clases — OrdenPago / Interes / Usuario
+CU4 | clases-relacion-211 | EA 1134 | Relación de clases — ProgramaResponsable / Usuario
+CU4 | clases-relacion-212 | EA 1135 | Relación de clases — Prospecto / Interes
+CU4 | clases-relacion-213 | EA 1751 | Relación de clases — Recordatorio / Interes / Usuario
+CU4 | clases-relacion-214 | EA 1752 | Relación de clases — TransaccionStripe / Usuario
+CU4 | clases-relacion-215 | EA 1753 | Relación de clases — Usuario / ApiToken / ProgramaResponsable
+CU5 | clases-relacion-216 | EA 1137 | Relación de clases — api/motivos.js / NMotivo
+CU5 | clases-relacion-217 | EA 1138 | Relación de clases — PMotivos.jsx / api/motivos.js
+CU5 | clases-relacion-218 | EA 1139 | Relación de clases — NMotivo / DMotivo / MotivoRequest
+CU5 | clases-relacion-219 | EA 1140 | Relación de clases — DMotivo / Interes / MotivoPerdida
+CU5 | clases-relacion-220 | EA 1754 | Relación de clases — DConversion / Interes
+CU5 | clases-relacion-221 | EA 1141 | Relación de clases — DInteres / DAlcance / Interes
+CU5 | clases-relacion-222 | EA 1142 | Relación de clases — DInteres / MotivoPerdida / Usuario
+CU5 | clases-relacion-223 | EA 1755 | Relación de clases — Interaccion / Interes
+CU5 | clases-relacion-224 | EA 1756 | Relación de clases — Interes / CatalogoCache / Interaccion
+CU5 | clases-relacion-225 | EA 1757 | Relación de clases — Interes / MovimientoInteres / OrdenPago
+CU5 | clases-relacion-226 | EA 1758 | Relación de clases — Interes / Prospecto / Recordatorio
+CU5 | clases-relacion-227 | EA 1759 | Relación de clases — Interes / Usuario
+CU5 | clases-relacion-228 | EA 1144 | Relación de clases — MotivoRequest / ApiRequest / MotivoPerdida
+CU5 | clases-relacion-229 | EA 1145 | Relación de clases — MoverInteresRequest / Interes
+CU5 | clases-relacion-230 | EA 1146 | Relación de clases — NAlcance / DAlcance / Usuario
+CU5 | clases-relacion-231 | EA 1760 | Relación de clases — NConversion / Interes / Usuario
+CU5 | clases-relacion-232 | EA 1147 | Relación de clases — NInteres / Interes / Usuario
+CU5 | clases-relacion-233 | EA 1148 | Relación de clases — NMotivo / MotivoPerdida
+CU5 | clases-relacion-234 | EA 1761 | Relación de clases — OrdenPago / Interes
+CU5 | clases-relacion-235 | EA 1762 | Relación de clases — PEmbudo.jsx / api/intereses.js
+CU5 | clases-relacion-236 | EA 1149 | Relación de clases — Prospecto / Interes
+CU5 | clases-relacion-237 | EA 1763 | Relación de clases — Recordatorio / Interes
+CU6 | clases-relacion-238 | EA 1150 | Relación de clases — api/pagos.js / NPago
+CU6 | clases-relacion-239 | EA 1151 | Relación de clases — PPagoCuota.jsx / api/pagos.js
+CU6 | clases-relacion-240 | EA 1152 | Relación de clases — NPago / NStripe / ConsultaRequest
+CU6 | clases-relacion-241 | EA 1153 | Relación de clases — NStripe / DPago
+CU6 | clases-relacion-242 | EA 1154 | Relación de clases — DPago / Cuota
+CU6 | clases-relacion-243 | EA 1155 | Relación de clases — NStripe / DStripe / NConversion
+CU6 | clases-relacion-244 | EA 1156 | Relación de clases — DStripe / OrdenPago / TransaccionStripe
+CU6 | clases-relacion-245 | EA 1157 | Relación de clases — DPago / Interes
+CU6 | clases-relacion-246 | EA 1158 | Relación de clases — DStripe / MetodoPago / Prospecto
+CU6 | clases-relacion-247 | EA 1159 | Relación de clases — NStripe / NPago / NAlcance
+CU6 | clases-relacion-248 | EA 1160 | Relación de clases — PPagoConfirmacion.jsx / api/pagos.js
+CU6 | clases-relacion-249 | EA 1161 | Relación de clases — DPago / Prospecto / DAlcance
+CU6 | clases-relacion-250 | EA 1162 | Relación de clases — DAlcance / Usuario / Prospecto
+CU6 | clases-relacion-251 | EA 1163 | Relación de clases — DPago / Usuario
+CU6 | clases-relacion-252 | EA 1164 | Relación de clases — PPagoCancelado.jsx / api/pagos.js
+CU6 | clases-relacion-253 | EA 1165 | Relación de clases — FormularioOrdenPago.jsx / api/pagos.js
+CU6 | clases-relacion-254 | EA 1166 | Relación de clases — NPago / DPago
+CU6 | clases-relacion-255 | EA 1167 | Relación de clases — DPago / Descuento / MetodoPago
+CU6 | clases-relacion-256 | EA 1764 | Relación de clases — ModalCompartirPago.jsx / api/pagos.js / api/notificaciones.js
+CU6 | clases-relacion-257 | EA 1169 | Relación de clases — NPago / CrearSetupTarjetaRequest / CambiarEstadoMetodoRequest
+CU6 | clases-relacion-258 | EA 1170 | Relación de clases — MetodosPago.jsx / api/pagos.js
+CU6 | clases-relacion-259 | EA 1171 | Relación de clases — DPago / CatalogoCache
+CU6 | clases-relacion-260 | EA 1172 | Relación de clases — DPago / OrdenPago
+CU6 | clases-relacion-261 | EA 1173 | Relación de clases — DPago / Pago / ComprobantePago
+CU6 | clases-relacion-262 | EA 1174 | Relación de clases — NPago / CrearOrdenRequest / AnularOrdenRequest
+CU6 | clases-relacion-263 | EA 1175 | Relación de clases — PlanPagos.jsx / api/pagos.js / Cuota
+CU6 | clases-relacion-264 | EA 1176 | Relación de clases — NPago / CrearCheckoutRequest / NConversion
+CU6 | clases-relacion-265 | EA 1177 | Relación de clases — PValidacionPagos.jsx / api/pagos.js
+CU6 | clases-relacion-266 | EA 1178 | Relación de clases — NPago / NAlcance / AprobarCuotaRequest
+CU6 | clases-relacion-267 | EA 1179 | Relación de clases — NPago / RechazarCuotaRequest / OrdenPago
+CU6 | clases-relacion-268 | EA 1180 | Relación de clases — api/seguimiento.js / NSeguimiento
+CU6 | clases-relacion-269 | EA 1181 | Relación de clases — PMatriculas.jsx / api/seguimiento.js / api/exportaciones.js
+CU6 | clases-relacion-270 | EA 1182 | Relación de clases — NSeguimiento / DSeguimiento / ConsultaRequest
+CU6 | clases-relacion-271 | EA 1183 | Relación de clases — DSeguimiento / DAlcance / InscripcionComercial
+
+ARISTAS PENDIENTES
+CU6 | DSeguimiento -> DAlcance
+CU6 | DSeguimiento -> InscripcionComercial
+CU6 | DSeguimiento -> Usuario
+CU6 | api/exportaciones.js -> NExportacion
+CU6 | NExportacion -> DExportacion
+CU6 | DExportacion -> InscripcionComercial
+CU6 | DExportacion -> Usuario
+CU6 | NExportacion -> NAlcance
+CU6 | NAlcance -> DAlcance
+CU6 | NExportacion -> ConsultaRequest
+CU6 | DExportacion -> Exportacion
+CU6 | NExportacion -> RegistrarResultadoRequest
+CU6 | ActualizarComisionRequest -> ApiRequest
+CU6 | AnularOrdenRequest -> ApiRequest
+CU6 | ApiToken -> Usuario
+CU6 | AprobarCuotaRequest -> ApiRequest
+CU6 | CambiarEstadoMetodoRequest -> ApiRequest
+CU6 | CatalogoCache -> Programa
+CU6 | Comision -> Usuario
+CU6 | CompletarRecordatorioRequest -> ApiRequest
+CU6 | CrearCheckoutRequest -> ApiRequest
+CU6 | CrearOrdenRequest -> ApiRequest
+CU6 | CrearOrdenRequest -> DCatalogo
+CU6 | CrearOrdenRequest -> DPago
+CU6 | CrearRecordatorioRequest -> ApiRequest
+CU6 | CrearSetupTarjetaRequest -> ApiRequest
+CU6 | DCatalogo -> CatalogoCache
+CU6 | DConversion -> Interes
+CU6 | DNotificacion -> Notificacion
+CU6 | DNotificacion -> Prospecto
+CU6 | DNotificacion -> Usuario
+CU6 | DSeguimiento -> Comision
+CU6 | DSeguimiento -> Interaccion
+CU6 | DSeguimiento -> Interes
+CU6 | DSeguimiento -> Recordatorio
+CU6 | DStripe -> Cuota
+CU6 | DStripe -> Pago
+CU6 | DStripe -> WebhookEventoStripe
+CU6 | EnviarNotificacionRequest -> ApiRequest
+CU6 | Exportacion -> Usuario
+CU6 | Interaccion -> Interes
+CU6 | Interaccion -> Usuario
+CU6 | Interes -> CatalogoCache
+CU6 | Interes -> Interaccion
+CU6 | Interes -> MovimientoInteres
+CU6 | Interes -> OrdenPago
+CU6 | Interes -> Prospecto
+CU6 | Interes -> Recordatorio
+CU6 | Interes -> Usuario
+CU6 | MetodoPago -> Prospecto
+CU6 | MetodoPago -> Usuario
+CU6 | MovimientoInteres -> Usuario
+CU6 | NAlcance -> ReglaNegocioException
+CU6 | NAlcance -> Usuario
+CU6 | NConversion -> DConversion
+CU6 | NConversion -> Interes
+CU6 | NConversion -> ReglaNegocioException
+CU6 | NConversion -> Usuario
+CU6 | NExportacion -> ReglaNegocioException
+CU6 | NExportacion -> Usuario
+CU6 | NNotificacion -> DNotificacion
+CU6 | NNotificacion -> ConsultaRequest
+CU6 | NNotificacion -> EnviarNotificacionRequest
+CU6 | NNotificacion -> ReglaNegocioException
+CU6 | NPago -> Prospecto
+CU6 | NPago -> RegistrarComprobanteRequest
+CU6 | NPago -> RegistrarMetodoRequest
+CU6 | NPago -> ReglaNegocioException
+CU6 | NPago -> Usuario
+CU6 | NSeguimiento -> ActualizarComisionRequest
+CU6 | NSeguimiento -> CompletarRecordatorioRequest
+CU6 | NSeguimiento -> CrearRecordatorioRequest
+CU6 | NSeguimiento -> NAlcance
+CU6 | NSeguimiento -> Recordatorio
+CU6 | NSeguimiento -> RegistrarInteraccionRequest
+CU6 | NSeguimiento -> ReglaNegocioException
+CU6 | NStripe -> OrdenPago
+CU6 | NStripe -> Prospecto
+CU6 | NStripe -> ReglaNegocioException
+CU6 | NStripe -> TransaccionStripe
+CU6 | NStripe -> Usuario
+CU6 | OrdenPago -> Interes
+CU6 | OrdenPago -> Usuario
+CU6 | Programa -> CatalogoCache
+CU6 | ProgramaResponsable -> Usuario
+CU6 | Prospecto -> Interes
+CU6 | Prospecto -> MetodoPago
+CU6 | Prospecto -> TransaccionStripe
+CU6 | RechazarCuotaRequest -> ApiRequest
+CU6 | Recordatorio -> Interes
+CU6 | Recordatorio -> Usuario
+CU6 | RegistrarComprobanteRequest -> ApiRequest
+CU6 | RegistrarInteraccionRequest -> ApiRequest
+CU6 | RegistrarMetodoRequest -> ApiRequest
+CU6 | RegistrarMetodoRequest -> MetodoPago
+CU6 | RegistrarResultadoRequest -> ApiRequest
+CU6 | TransaccionStripe -> Prospecto
+CU6 | TransaccionStripe -> Usuario
+CU6 | Usuario -> ApiToken
+CU6 | Usuario -> ProgramaResponsable
+CU6 | WebhookEventoStripe -> TransaccionStripe
+CU6 | HistorialPagos.jsx -> Cuota
+CU6 | api/notificaciones.js -> NNotificacion
+CU7 | api/seguimiento.js -> NSeguimiento
+CU7 | PAgenda.jsx -> api/seguimiento.js
+CU7 | NSeguimiento -> DSeguimiento
+CU7 | DSeguimiento -> Interes
+CU7 | DSeguimiento -> Interaccion
+CU7 | NSeguimiento -> NAlcance
+CU7 | NSeguimiento -> RegistrarInteraccionRequest
+CU7 | NSeguimiento -> CrearRecordatorioRequest
+CU7 | PMiDia.jsx -> api/seguimiento.js
+CU7 | DSeguimiento -> DAlcance
+CU7 | DAlcance -> Usuario
+CU7 | DSeguimiento -> Recordatorio
+CU7 | DSeguimiento -> Usuario
+CU7 | NSeguimiento -> ConsultaRequest
+CU7 | NSeguimiento -> CompletarRecordatorioRequest
+CU7 | PNotificaciones.jsx -> api/notificaciones.js
+CU7 | DNotificacion -> Usuario
+CU7 | DNotificacion -> Prospecto
+CU7 | ApiToken -> Usuario
+CU7 | Comision -> Usuario
+CU7 | DAlcance -> Prospecto
+CU7 | DSeguimiento -> Comision
+CU7 | DSeguimiento -> InscripcionComercial
+CU7 | Exportacion -> Usuario
+CU7 | Interaccion -> Interes
+CU7 | Interaccion -> Usuario
+CU7 | Interes -> CatalogoCache
+CU7 | Interes -> Interaccion
+CU7 | Interes -> MovimientoInteres
+CU7 | Interes -> OrdenPago
+CU7 | Interes -> Prospecto
+CU7 | Interes -> Recordatorio
+CU7 | Interes -> Usuario
+CU7 | MetodoPago -> Prospecto
+CU7 | MetodoPago -> Usuario
+CU7 | MovimientoInteres -> Usuario
+CU7 | NAlcance -> DAlcance
+CU7 | NAlcance -> ReglaNegocioException
+CU7 | NAlcance -> Usuario
+CU7 | NSeguimiento -> ActualizarComisionRequest
+CU7 | NSeguimiento -> Recordatorio
+CU7 | NSeguimiento -> ReglaNegocioException
+CU7 | OrdenPago -> Interes
+CU7 | OrdenPago -> Usuario
+CU7 | ProgramaResponsable -> Usuario
+CU7 | Prospecto -> Interes
+CU7 | Prospecto -> MetodoPago
+CU7 | Prospecto -> TransaccionStripe
+CU7 | Recordatorio -> Interes
+CU7 | Recordatorio -> Usuario
+CU7 | TransaccionStripe -> Prospecto
+CU7 | TransaccionStripe -> Usuario
+CU7 | Usuario -> ApiToken
+CU7 | Usuario -> ProgramaResponsable
+CU8 | api/seguimiento.js -> NSeguimiento
+CU8 | PComisiones.jsx -> api/seguimiento.js
+CU8 | NSeguimiento -> DSeguimiento
+CU8 | DSeguimiento -> DAlcance
+CU8 | DAlcance -> Usuario
+CU8 | DSeguimiento -> Comision
+CU8 | DSeguimiento -> Usuario
+CU8 | NSeguimiento -> ConsultaRequest
+CU8 | NSeguimiento -> ActualizarComisionRequest
+CU8 | api/reportes.js -> NReporte
+CU8 | PDashboard.jsx -> api/reportes.js
+CU8 | NReporte -> DReporte
+CU8 | DReporte -> DAlcance
+CU8 | DReporte -> Usuario
+CU8 | NReporte -> NAcceso
+CU8 | NReporte -> ConsultaRequest
+CU8 | PMiDia.jsx -> api/reportes.js
+CU8 | PReportes.jsx -> api/reportes.js
+CU8 | DReporte -> Interes
+CU8 | NReporte -> ListadoRequest
+CU8 | ApiToken -> Usuario
+CU8 | Comision -> Usuario
+CU8 | DAlcance -> Prospecto
+CU8 | DSeguimiento -> InscripcionComercial
+CU8 | DSeguimiento -> Interaccion
+CU8 | DSeguimiento -> Interes
+CU8 | DSeguimiento -> Recordatorio
+CU8 | Exportacion -> Usuario
+CU8 | Interaccion -> Interes
+CU8 | Interaccion -> Usuario
+CU8 | Interes -> CatalogoCache
+CU8 | Interes -> Interaccion
+CU8 | Interes -> MovimientoInteres
+CU8 | Interes -> OrdenPago
+CU8 | Interes -> Prospecto
+CU8 | Interes -> Recordatorio
+CU8 | Interes -> Usuario
+CU8 | ListadoRequest -> ApiRequest
+CU8 | MetodoPago -> Usuario
+CU8 | MovimientoInteres -> Usuario
+CU8 | NAcceso -> DAcceso
+CU8 | NAcceso -> DBitacora
+CU8 | NAcceso -> Permiso
+CU8 | NAcceso -> Usuario
+CU8 | NAlcance -> DAlcance
+CU8 | NAlcance -> Usuario
+CU8 | NReporte -> Interes
+CU8 | NSeguimiento -> CompletarRecordatorioRequest
+CU8 | NSeguimiento -> CrearRecordatorioRequest
+CU8 | NSeguimiento -> NAlcance
+CU8 | NSeguimiento -> Recordatorio
+CU8 | NSeguimiento -> RegistrarInteraccionRequest
+CU8 | NSeguimiento -> ReglaNegocioException
+CU8 | OrdenPago -> Interes
+CU8 | OrdenPago -> Usuario
+CU8 | PMiDia.jsx -> api/seguimiento.js
+CU8 | ProgramaResponsable -> Usuario
+CU8 | Prospecto -> Interes
+CU8 | Recordatorio -> Interes
+CU8 | Recordatorio -> Usuario
+CU8 | TransaccionStripe -> Usuario
+CU8 | Usuario -> ApiToken
+CU8 | Usuario -> ProgramaResponsable

@@ -1,0 +1,9546 @@
+[
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "api/auth.js",
+      "b": "NAuth",
+      "type": "Dependency",
+      "messages": [
+        "POST /login",
+        "GET /me",
+        "PUT /perfil",
+        "PUT /perfil/password",
+        "POST /logout"
+      ]
+    },
+    "diagram_id": 973
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "servicios/auth.js",
+      "b": "api/auth.js",
+      "type": "Dependency",
+      "messages": [
+        "login()",
+        "me()",
+        "actualizarPerfil()",
+        "logout()"
+      ]
+    },
+    "diagram_id": 974
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "PUsuarios.jsx",
+      "b": "servicios/auth.js",
+      "type": "Dependency",
+      "messages": []
+    },
+    "diagram_id": 979
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "PLogin.jsx",
+      "b": "servicios/auth.js",
+      "type": "Dependency",
+      "messages": []
+    },
+    "diagram_id": 976
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "PMatriz.jsx",
+      "b": "servicios/auth.js",
+      "type": "Dependency",
+      "messages": []
+    },
+    "diagram_id": 977
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "AppShell.jsx",
+      "b": "servicios/auth.js",
+      "type": "Dependency",
+      "messages": []
+    },
+    "diagram_id": 978
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Shell.jsx",
+      "b": "servicios/auth.js",
+      "type": "Dependency",
+      "messages": []
+    },
+    "diagram_id": 975
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NAuth",
+      "b": "DAuth",
+      "type": "Dependency",
+      "messages": [
+        "usuarioPorCorreo()",
+        "crearToken()",
+        "tokenPorPlano()",
+        "actualizarUsuario()",
+        "revocarOtrosTokens()",
+        "eliminarToken()"
+      ]
+    },
+    "diagram_id": 980
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "DAuth",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 981
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NAuth",
+      "b": "DBitacora",
+      "type": "Dependency",
+      "messages": [
+        "registrar()"
+      ]
+    },
+    "diagram_id": 980
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "DBitacora",
+      "b": "Bitacora",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 982
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "DAuth",
+      "b": "ApiToken",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 981
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NAuth",
+      "b": "NAcceso",
+      "type": "Dependency",
+      "messages": [
+        "menu()"
+      ]
+    },
+    "diagram_id": 983
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NAcceso",
+      "b": "DAcceso",
+      "type": "Dependency",
+      "messages": [
+        "menuPorRol()"
+      ]
+    },
+    "diagram_id": 984
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NAuth",
+      "b": "LoginRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 983
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "api/sitio.js",
+      "b": "NSitio",
+      "type": "Dependency",
+      "messages": [
+        "POST /visitas",
+        "GET /buscar"
+      ]
+    },
+    "diagram_id": 985
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Shell.jsx",
+      "b": "api/sitio.js",
+      "type": "Dependency",
+      "messages": [
+        "visita()",
+        "buscar()"
+      ]
+    },
+    "diagram_id": 975
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NSitio",
+      "b": "DSitio",
+      "type": "Dependency",
+      "messages": [
+        "recursoPorRuta()",
+        "visitas()",
+        "buscarCatalogo()",
+        "buscarIntereses()",
+        "buscarUsuarios()",
+        "buscarPaginas()"
+      ]
+    },
+    "diagram_id": 986
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NSitio",
+      "b": "NAuth",
+      "type": "Dependency",
+      "messages": [
+        "usuarioOpcional()"
+      ]
+    },
+    "diagram_id": 986
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NSitio",
+      "b": "DBitacora",
+      "type": "Dependency",
+      "messages": [
+        "registrar()"
+      ]
+    },
+    "diagram_id": 987
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NSitio",
+      "b": "NAcceso",
+      "type": "Dependency",
+      "messages": [
+        "permite()"
+      ]
+    },
+    "diagram_id": 987
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NSitio",
+      "b": "VisitaRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 988
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "DSitio",
+      "b": "DAlcance",
+      "type": "Dependency",
+      "messages": [
+        "codigosModuloCoordinador()"
+      ]
+    },
+    "diagram_id": 989
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "DSitio",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 989
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "DSitio",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 990
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NSitio",
+      "b": "ConsultaRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 988
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NAuth",
+      "b": "ConsultaRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 991
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NAuth",
+      "b": "NFoto",
+      "type": "Dependency",
+      "messages": [
+        "guardar()"
+      ]
+    },
+    "diagram_id": 991
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NAuth",
+      "b": "ActualizarPerfilRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 992
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Shell.jsx",
+      "b": "api/auth.js",
+      "type": "Dependency",
+      "messages": [
+        "cambiarPassword()"
+      ]
+    },
+    "diagram_id": 993
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NAuth",
+      "b": "CambiarPasswordRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 992
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "api/usuarios.js",
+      "b": "NUsuario",
+      "type": "Dependency",
+      "messages": [
+        "GET /usuarios",
+        "POST /usuarios",
+        "PUT /usuarios/{usuario}",
+        "PATCH /usuarios/{usuario}/estado",
+        "DELETE /usuarios/{usuario}/foto",
+        "GET /vendedores"
+      ]
+    },
+    "diagram_id": 994
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "PUsuarios.jsx",
+      "b": "api/usuarios.js",
+      "type": "Dependency",
+      "messages": [
+        "index()",
+        "store()",
+        "update()",
+        "cambiarEstado()",
+        "foto()"
+      ]
+    },
+    "diagram_id": 979
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NUsuario",
+      "b": "DUsuario",
+      "type": "Dependency",
+      "messages": [
+        "listar()",
+        "transaccion()",
+        "crear()",
+        "fresco()",
+        "actualizar()",
+        "asignarProgramas()",
+        "quitarProgramas()",
+        "bloquearAdministradoresActivos()",
+        "obtener()",
+        "revocarTokens()",
+        "existeOtroAdministradorActivo()",
+        "vendedores()"
+      ]
+    },
+    "diagram_id": 995
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "DUsuario",
+      "b": "DAlcance",
+      "type": "Dependency",
+      "messages": [
+        "escaparLike()"
+      ]
+    },
+    "diagram_id": 996
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "DUsuario",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 996
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "DUsuario",
+      "b": "Programa",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 997
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NUsuario",
+      "b": "ConsultaRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 995
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "DUsuario",
+      "b": "ProgramaResponsable",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 997
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NUsuario",
+      "b": "NFoto",
+      "type": "Dependency",
+      "messages": [
+        "guardar()",
+        "ruta()"
+      ]
+    },
+    "diagram_id": 998
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NUsuario",
+      "b": "UsuarioRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 998
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NUsuario",
+      "b": "CambiarEstadoUsuarioRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 999
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "PAsignacion.jsx",
+      "b": "api/usuarios.js",
+      "type": "Dependency",
+      "messages": [
+        "vendedores()"
+      ]
+    },
+    "diagram_id": 1000
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "PEmbudo.jsx",
+      "b": "api/usuarios.js",
+      "type": "Dependency",
+      "messages": [
+        "vendedores()"
+      ]
+    },
+    "diagram_id": 1001
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "PReportes.jsx",
+      "b": "api/usuarios.js",
+      "type": "Dependency",
+      "messages": [
+        "vendedores()"
+      ]
+    },
+    "diagram_id": 1002
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "api/seguridad.js",
+      "b": "NSeguridad",
+      "type": "Dependency",
+      "messages": [
+        "GET /matriz",
+        "PUT /matriz",
+        "GET /bitacora",
+        "GET /bitacora/resumen"
+      ]
+    },
+    "diagram_id": 1003
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "PMatriz.jsx",
+      "b": "api/seguridad.js",
+      "type": "Dependency",
+      "messages": [
+        "matriz()",
+        "asignar()"
+      ]
+    },
+    "diagram_id": 977
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NSeguridad",
+      "b": "DSeguridad",
+      "type": "Dependency",
+      "messages": [
+        "matriz()",
+        "guardarPermiso()",
+        "bitacora()",
+        "resumen()"
+      ]
+    },
+    "diagram_id": 1004
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NSeguridad",
+      "b": "NAcceso",
+      "type": "Dependency",
+      "messages": [
+        "olvidar()"
+      ]
+    },
+    "diagram_id": 1004
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NSeguridad",
+      "b": "AsignarPermisoRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1005
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "PBitacora.jsx",
+      "b": "api/seguridad.js",
+      "type": "Dependency",
+      "messages": [
+        "bitacora()",
+        "resumen()"
+      ]
+    },
+    "diagram_id": 1006
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "DSeguridad",
+      "b": "DAlcance",
+      "type": "Dependency",
+      "messages": [
+        "escaparLike()"
+      ]
+    },
+    "diagram_id": 1007
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NSeguridad",
+      "b": "BitacoraRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1005
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "AccesoRecurso",
+      "b": "NAcceso",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1008
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "ActualizarPerfilRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1009
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "ApiToken",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1010
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "AsignarPermisoRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1011
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "AsignarPermisoRequest",
+      "b": "DSeguridad",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1011
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "AsignarPermisoRequest",
+      "b": "Permiso",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1012
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "BitacoraRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1013
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "BitacoraRequest",
+      "b": "Bitacora",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1013
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "CambiarEstadoUsuarioRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1014
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "CambiarEstadoUsuarioRequest",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1014
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "CambiarPasswordRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1015
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "CatalogoCache",
+      "b": "Programa",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1016
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Comision",
+      "b": "Configuracion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1683
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Comision",
+      "b": "SolicitudCompra",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1683
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Comision",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1684
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "ConsultaRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1017
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Cuota",
+      "b": "MetodoPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1685
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Cuota",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1685
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "DAlcance",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1018
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "DAlcance",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1018
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "DCatalogo",
+      "b": "CatalogoCache",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1019
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "DCatalogo",
+      "b": "Programa",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1019
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Exportacion",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1686
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "InscripcionComercial",
+      "b": "Exportacion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1687
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "InscripcionComercial",
+      "b": "SolicitudCompra",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1687
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Interaccion",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1688
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Interaccion",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1688
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Interes",
+      "b": "CatalogoCache",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1689
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Interes",
+      "b": "Interaccion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1689
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Interes",
+      "b": "MovimientoInteres",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1690
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Interes",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1690
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Interes",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1691
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Interes",
+      "b": "Recordatorio",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1691
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Interes",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1021
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "LoginRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1022
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "MetodoPago",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1692
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "MetodoPago",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1692
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "MovimientoInteres",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1693
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NAcceso",
+      "b": "DBitacora",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 984
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NAcceso",
+      "b": "Permiso",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1023
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NAcceso",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1023
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NAuth",
+      "b": "DAuth",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 980
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NAuth",
+      "b": "DBitacora",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 980
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NAuth",
+      "b": "ReglaNegocioException",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1024
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NAuth",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1024
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NSeguridad",
+      "b": "DSeguridad",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 1004
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NSeguridad",
+      "b": "Permiso",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1025
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NSitio",
+      "b": "DSitio",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 986
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NSitio",
+      "b": "DBitacora",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 987
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NSitio",
+      "b": "NAuth",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 986
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NSitio",
+      "b": "NFoto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1026
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NSitio",
+      "b": "ReglaNegocioException",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1026
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NUsuario",
+      "b": "DUsuario",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 995
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "NUsuario",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 999
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Cuota",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1694
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1694
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "OrdenPagoDescuento",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1695
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Pago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1695
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "SolicitudCompra",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1696
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "TransaccionStripe",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1696
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1697
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "OrdenPagoDescuento",
+      "b": "Descuento",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1698
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Pago",
+      "b": "ComprobantePago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1699
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Pago",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1699
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Programa",
+      "b": "CatalogoCache",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1027
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Programa",
+      "b": "ProgramaResponsable",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1027
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "ProgramaResponsable",
+      "b": "Programa",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1028
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "ProgramaResponsable",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1028
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Prospecto",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1700
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Prospecto",
+      "b": "MetodoPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1700
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Prospecto",
+      "b": "TransaccionStripe",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1701
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Recordatorio",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1702
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Recordatorio",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1702
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "SolicitudCompra",
+      "b": "Comision",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1703
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "SolicitudCompra",
+      "b": "InscripcionComercial",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1703
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "SolicitudCompra",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1704
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "TokenAuthMiddleware",
+      "b": "NAuth",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 1030
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "TransaccionStripe",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1705
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "TransaccionStripe",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1705
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "TransaccionStripe",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1706
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Usuario",
+      "b": "ApiToken",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1031
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "Usuario",
+      "b": "ProgramaResponsable",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1031
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "UsuarioRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1032
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "UsuarioRequest",
+      "b": "DCatalogo",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1032
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "UsuarioRequest",
+      "b": "DSeguridad",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1033
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "UsuarioRequest",
+      "b": "DUsuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1033
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "UsuarioRequest",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1034
+  },
+  {
+    "cu": "CU1",
+    "edge": {
+      "a": "VisitaRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1035
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "api/catalogo.js",
+      "b": "NCatalogo",
+      "type": "Dependency",
+      "messages": [
+        "GET /catalogo",
+        "POST /catalogo/sincronizar"
+      ]
+    },
+    "diagram_id": 1036
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "FormularioOrdenPago.jsx",
+      "b": "api/catalogo.js",
+      "type": "Dependency",
+      "messages": [
+        "programas()"
+      ]
+    },
+    "diagram_id": 1037
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "PCatalogo.jsx",
+      "b": "api/catalogo.js",
+      "type": "Dependency",
+      "messages": [
+        "programas()",
+        "registrarInteres()",
+        "sincronizar()"
+      ]
+    },
+    "diagram_id": 1038
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "PProspectos.jsx",
+      "b": "api/catalogo.js",
+      "type": "Dependency",
+      "messages": [
+        "programas()"
+      ]
+    },
+    "diagram_id": 1039
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NCatalogo",
+      "b": "NCatalogoExterno",
+      "type": "Dependency",
+      "messages": [
+        "ofertas()"
+      ]
+    },
+    "diagram_id": 1040
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NCatalogo",
+      "b": "DCatalogo",
+      "type": "Dependency",
+      "messages": [
+        "programasAbiertos()",
+        "sincronizar()"
+      ]
+    },
+    "diagram_id": 1040
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "DCatalogo",
+      "b": "Programa",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1041
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NCatalogo",
+      "b": "ConsultaRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1042
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "api/catalogo.js",
+      "b": "NProspecto",
+      "type": "Dependency",
+      "messages": [
+        "POST /registro-interes"
+      ]
+    },
+    "diagram_id": 1036
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NProspecto",
+      "b": "DProspecto",
+      "type": "Dependency",
+      "messages": [
+        "transaccion()",
+        "encontrarPorDocumentoOCorreoBloqueado()",
+        "crear()",
+        "modulosSolicitados()",
+        "vendedorExistente()",
+        "crearInteres()"
+      ]
+    },
+    "diagram_id": 1043
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "DProspecto",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1044
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "DProspecto",
+      "b": "CatalogoCache",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1044
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "DProspecto",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1045
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NProspecto",
+      "b": "RegistrarInteresRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1043
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "DCatalogo",
+      "b": "CatalogoCache",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1019
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "ApiToken",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1010
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "CatalogoCache",
+      "b": "Programa",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1046
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Comision",
+      "b": "Configuracion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1683
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Comision",
+      "b": "SolicitudCompra",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1683
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Comision",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1684
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "ConsultaRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1017
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "CrearInteresRequest",
+      "b": "ProspectoRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1047
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Cuota",
+      "b": "MetodoPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1685
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Cuota",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1685
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "DAlcance",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1018
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "DAlcance",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1018
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "DBitacora",
+      "b": "Bitacora",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 982
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "DProspecto",
+      "b": "DAlcance",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1045
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "DProspecto",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1048
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Exportacion",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1686
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "ImportarCsvRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1049
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "InscripcionComercial",
+      "b": "Exportacion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1687
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "InscripcionComercial",
+      "b": "SolicitudCompra",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1687
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Interaccion",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1707
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Interaccion",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1688
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Interes",
+      "b": "CatalogoCache",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1708
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Interes",
+      "b": "Interaccion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1708
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Interes",
+      "b": "MovimientoInteres",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1709
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Interes",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1709
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Interes",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1710
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Interes",
+      "b": "Recordatorio",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1710
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Interes",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1051
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "MetodoPago",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1692
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "MetodoPago",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1692
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "MovimientoInteres",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1693
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NAcceso",
+      "b": "DAcceso",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 984
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NAcceso",
+      "b": "DBitacora",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 984
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NAcceso",
+      "b": "Permiso",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1023
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NAcceso",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1023
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NCatalogo",
+      "b": "DCatalogo",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 1040
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NCatalogo",
+      "b": "NCatalogoExterno",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 1040
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NCatalogo",
+      "b": "CatalogoCache",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1042
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NCatalogo",
+      "b": "Programa",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1052
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NProspecto",
+      "b": "DProspecto",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 1043
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NProspecto",
+      "b": "CatalogoCache",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1053
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NProspecto",
+      "b": "ConsultaRequest",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1053
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NProspecto",
+      "b": "CrearInteresRequest",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1054
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NProspecto",
+      "b": "ImportarCsvRequest",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1054
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NProspecto",
+      "b": "NAcceso",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1711
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NProspecto",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1711
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NProspecto",
+      "b": "ReglaNegocioException",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1712
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NProspecto",
+      "b": "StoreProspectoRequest",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1712
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NProspecto",
+      "b": "UpdateProspectoRequest",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1713
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "NProspecto",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1713
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Cuota",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1694
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1714
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "OrdenPagoDescuento",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1695
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Pago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1695
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "SolicitudCompra",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1696
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "TransaccionStripe",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1696
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1697
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "OrdenPagoDescuento",
+      "b": "Descuento",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1698
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Pago",
+      "b": "ComprobantePago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1699
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Pago",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1699
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Programa",
+      "b": "CatalogoCache",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1715
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Programa",
+      "b": "ProgramaResponsable",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1715
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "ProgramaResponsable",
+      "b": "Programa",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1716
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "ProgramaResponsable",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1028
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Prospecto",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1059
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Prospecto",
+      "b": "MetodoPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1700
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Prospecto",
+      "b": "TransaccionStripe",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1701
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "ProspectoRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1060
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "ProspectoRequest",
+      "b": "NProspecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1060
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Recordatorio",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1717
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Recordatorio",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1702
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "RegistrarInteresRequest",
+      "b": "ProspectoRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1061
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "RegistrarInteresRequest",
+      "b": "NProspecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1061
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "SolicitudCompra",
+      "b": "Comision",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1703
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "SolicitudCompra",
+      "b": "InscripcionComercial",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1703
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "SolicitudCompra",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1704
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "StoreProspectoRequest",
+      "b": "ProspectoRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1062
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "StoreProspectoRequest",
+      "b": "DProspecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1062
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "StoreProspectoRequest",
+      "b": "NProspecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1063
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "TransaccionStripe",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1705
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "TransaccionStripe",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1705
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "TransaccionStripe",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1706
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "UpdateProspectoRequest",
+      "b": "ProspectoRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1064
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "UpdateProspectoRequest",
+      "b": "DProspecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1064
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "UpdateProspectoRequest",
+      "b": "NProspecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1065
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Usuario",
+      "b": "ApiToken",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1031
+  },
+  {
+    "cu": "CU2",
+    "edge": {
+      "a": "Usuario",
+      "b": "ProgramaResponsable",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1031
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "api/prospectos.js",
+      "b": "NProspecto",
+      "type": "Dependency",
+      "messages": [
+        "GET /prospectos",
+        "POST /prospectos",
+        "POST /prospectos/importar",
+        "PUT /prospectos/{prospecto}",
+        "POST /prospectos/{prospecto}/intereses"
+      ]
+    },
+    "diagram_id": 1066
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "PProspectos.jsx",
+      "b": "api/prospectos.js",
+      "type": "Dependency",
+      "messages": [
+        "index()",
+        "store()",
+        "importarCSV()",
+        "crearInteres()"
+      ]
+    },
+    "diagram_id": 1067
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NProspecto",
+      "b": "DProspecto",
+      "type": "Dependency",
+      "messages": [
+        "buscar()",
+        "transaccion()",
+        "crear()",
+        "conIntereses()",
+        "vendedorExistente()",
+        "crearInteres()",
+        "modulosSolicitados()",
+        "existeDocumentoOCorreo()",
+        "obtener()",
+        "estaDentroDeCartera()",
+        "actualizar()",
+        "actualizado()"
+      ]
+    },
+    "diagram_id": 1068
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DProspecto",
+      "b": "DAlcance",
+      "type": "Dependency",
+      "messages": [
+        "prospectos()",
+        "intereses()",
+        "escaparLike()"
+      ]
+    },
+    "diagram_id": 1069
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DAlcance",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": []
+    },
+    "diagram_id": 1070
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DProspecto",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1069
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DProspecto",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": []
+    },
+    "diagram_id": 1071
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NProspecto",
+      "b": "ConsultaRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1068
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NProspecto",
+      "b": "NAcceso",
+      "type": "Dependency",
+      "messages": [
+        "permite()"
+      ]
+    },
+    "diagram_id": 1072
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DProspecto",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1071
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DProspecto",
+      "b": "CatalogoCache",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1073
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NProspecto",
+      "b": "StoreProspectoRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1072
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NProspecto",
+      "b": "ImportarCsvRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1074
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "PAgenda.jsx",
+      "b": "api/prospectos.js",
+      "type": "Dependency",
+      "messages": [
+        "update()"
+      ]
+    },
+    "diagram_id": 1718
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NProspecto",
+      "b": "UpdateProspectoRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1074
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NProspecto",
+      "b": "CrearInteresRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1076
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "api/intereses.js",
+      "b": "NInteres",
+      "type": "Dependency",
+      "messages": [
+        "PATCH /intereses/{interes}/asignar",
+        "POST /intereses/distribuir"
+      ]
+    },
+    "diagram_id": 1077
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "PAsignacion.jsx",
+      "b": "api/intereses.js",
+      "type": "Dependency",
+      "messages": [
+        "asignar()",
+        "distribuir()"
+      ]
+    },
+    "diagram_id": 1078
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NInteres",
+      "b": "DInteres",
+      "type": "Dependency",
+      "messages": [
+        "obtener()",
+        "vendedor()",
+        "transaccion()",
+        "refrescarDetalle()",
+        "vendedorAsignado()",
+        "guardar()",
+        "actualizarRecordatoriosPendientes()",
+        "registrarInteraccion()",
+        "vendedoresVigentes()",
+        "cargaPorVendedor()",
+        "pendientesSinAsignar()",
+        "vendedorExistenteParaDocumento()"
+      ]
+    },
+    "diagram_id": 1079
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DInteres",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1080
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DInteres",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1080
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NInteres",
+      "b": "NAlcance",
+      "type": "Dependency",
+      "messages": [
+        "autorizarTarjeta()"
+      ]
+    },
+    "diagram_id": 1079
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NInteres",
+      "b": "AsignarInteresRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1081
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DInteres",
+      "b": "DAlcance",
+      "type": "Dependency",
+      "messages": [
+        "codigosModuloCoordinador()"
+      ]
+    },
+    "diagram_id": 1082
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NInteres",
+      "b": "ConsultaRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1081
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "ApiToken",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1719
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "AsignarInteresRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1083
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "AsignarInteresRequest",
+      "b": "DUsuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1083
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "CatalogoCache",
+      "b": "Programa",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1084
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Comision",
+      "b": "Configuracion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1683
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Comision",
+      "b": "SolicitudCompra",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1683
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Comision",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1720
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "ConsultaRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1017
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "CrearInteresRequest",
+      "b": "ProspectoRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1047
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Cuota",
+      "b": "MetodoPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1685
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Cuota",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1685
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DAlcance",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1070
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DBitacora",
+      "b": "Bitacora",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 982
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DConversion",
+      "b": "Comision",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1721
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DConversion",
+      "b": "InscripcionComercial",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1721
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DConversion",
+      "b": "Interaccion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1722
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DConversion",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1722
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DConversion",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1723
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DInteres",
+      "b": "MotivoPerdida",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1082
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DMotivo",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1085
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DMotivo",
+      "b": "MotivoPerdida",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1085
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DUsuario",
+      "b": "DAlcance",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1086
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DUsuario",
+      "b": "Programa",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 997
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DUsuario",
+      "b": "ProgramaResponsable",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 997
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "DUsuario",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1086
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Exportacion",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1724
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "ImportarCsvRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1049
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "InscripcionComercial",
+      "b": "Exportacion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1687
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "InscripcionComercial",
+      "b": "SolicitudCompra",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1687
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Interaccion",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1725
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Interaccion",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1725
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Interes",
+      "b": "CatalogoCache",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1726
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Interes",
+      "b": "Interaccion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1726
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Interes",
+      "b": "MovimientoInteres",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1727
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Interes",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1727
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Interes",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1728
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Interes",
+      "b": "Recordatorio",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1728
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Interes",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1088
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "MetodoPago",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1729
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "MetodoPago",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1729
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "MoverInteresRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1089
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "MoverInteresRequest",
+      "b": "DMotivo",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1089
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "MoverInteresRequest",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1090
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "MovimientoInteres",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1730
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NAcceso",
+      "b": "DAcceso",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1091
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NAcceso",
+      "b": "DBitacora",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1091
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NAcceso",
+      "b": "Permiso",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1092
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NAcceso",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1092
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NAlcance",
+      "b": "DAlcance",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1093
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NAlcance",
+      "b": "ReglaNegocioException",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1093
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NAlcance",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1094
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NConversion",
+      "b": "DConversion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1731
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NConversion",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1731
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NConversion",
+      "b": "ReglaNegocioException",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1732
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NConversion",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1732
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NInteres",
+      "b": "DInteres",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 1079
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NInteres",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1095
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NInteres",
+      "b": "MoverInteresRequest",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1095
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NInteres",
+      "b": "NConversion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1733
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NInteres",
+      "b": "ReglaNegocioException",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1733
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NInteres",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1734
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NProspecto",
+      "b": "DProspecto",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 1068
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NProspecto",
+      "b": "CatalogoCache",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1076
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NProspecto",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1097
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NProspecto",
+      "b": "RegistrarInteresRequest",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1097
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NProspecto",
+      "b": "ReglaNegocioException",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1098
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "NProspecto",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1098
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Cuota",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1694
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1735
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "OrdenPagoDescuento",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1695
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Pago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1695
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "SolicitudCompra",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1696
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "TransaccionStripe",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1696
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1735
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "OrdenPagoDescuento",
+      "b": "Descuento",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1698
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "PAgenda.jsx",
+      "b": "api/intereses.js",
+      "type": "Dependency",
+      "messages": [
+        "intereses.show"
+      ]
+    },
+    "diagram_id": 1718
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Pago",
+      "b": "ComprobantePago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1699
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Pago",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1699
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Programa",
+      "b": "CatalogoCache",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1099
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Programa",
+      "b": "ProgramaResponsable",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1027
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "ProgramaResponsable",
+      "b": "Programa",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1028
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "ProgramaResponsable",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1100
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Prospecto",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1736
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Prospecto",
+      "b": "MetodoPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1736
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Prospecto",
+      "b": "TransaccionStripe",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1737
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "ProspectoRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1060
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "ProspectoRequest",
+      "b": "NProspecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1102
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Recordatorio",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1738
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Recordatorio",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1738
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "RegistrarInteresRequest",
+      "b": "ProspectoRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1061
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "RegistrarInteresRequest",
+      "b": "NProspecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1103
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "SolicitudCompra",
+      "b": "Comision",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1703
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "SolicitudCompra",
+      "b": "InscripcionComercial",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1703
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "SolicitudCompra",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1704
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "StoreProspectoRequest",
+      "b": "ProspectoRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1062
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "StoreProspectoRequest",
+      "b": "DProspecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1104
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "StoreProspectoRequest",
+      "b": "NProspecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1104
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "TransaccionStripe",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1705
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "TransaccionStripe",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1739
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "TransaccionStripe",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1739
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "UpdateProspectoRequest",
+      "b": "ProspectoRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1064
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "UpdateProspectoRequest",
+      "b": "DProspecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1105
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "UpdateProspectoRequest",
+      "b": "NProspecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1105
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Usuario",
+      "b": "ApiToken",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1740
+  },
+  {
+    "cu": "CU3",
+    "edge": {
+      "a": "Usuario",
+      "b": "ProgramaResponsable",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1740
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "api/intereses.js",
+      "b": "NInteres",
+      "type": "Dependency",
+      "messages": [
+        "GET /intereses",
+        "GET /intereses/{interes}",
+        "PATCH /intereses/{interes}/estado"
+      ]
+    },
+    "diagram_id": 1107
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "PAgenda.jsx",
+      "b": "api/intereses.js",
+      "type": "Dependency",
+      "messages": [
+        "index()",
+        "show()",
+        "mover()"
+      ]
+    },
+    "diagram_id": 1108
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "PAsignacion.jsx",
+      "b": "api/intereses.js",
+      "type": "Dependency",
+      "messages": [
+        "index()"
+      ]
+    },
+    "diagram_id": 1109
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "PEmbudo.jsx",
+      "b": "api/intereses.js",
+      "type": "Dependency",
+      "messages": [
+        "index()",
+        "mover()"
+      ]
+    },
+    "diagram_id": 1110
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "NInteres",
+      "b": "DInteres",
+      "type": "Dependency",
+      "messages": [
+        "listar()",
+        "motivos()",
+        "detalle()",
+        "obtener()",
+        "transaccion()",
+        "bloquear()",
+        "guardar()",
+        "actualizarEstadoProspecto()",
+        "registrarInteraccion()",
+        "refrescarDetalle()"
+      ]
+    },
+    "diagram_id": 1111
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "DInteres",
+      "b": "DAlcance",
+      "type": "Dependency",
+      "messages": [
+        "codigosModuloCoordinador()",
+        "escaparLike()"
+      ]
+    },
+    "diagram_id": 1112
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "DInteres",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1112
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "DInteres",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": []
+    },
+    "diagram_id": 1113
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "DInteres",
+      "b": "MotivoPerdida",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1113
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "NInteres",
+      "b": "ConsultaRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1111
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "NInteres",
+      "b": "NAlcance",
+      "type": "Dependency",
+      "messages": [
+        "autorizarTarjeta()"
+      ]
+    },
+    "diagram_id": 1114
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "NInteres",
+      "b": "NConversion",
+      "type": "Dependency",
+      "messages": [
+        "faltantes()",
+        "procesar()"
+      ]
+    },
+    "diagram_id": 1114
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "NInteres",
+      "b": "MoverInteresRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1115
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "ApiToken",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1741
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "AsignarInteresRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1083
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "AsignarInteresRequest",
+      "b": "DUsuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1083
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "CatalogoCache",
+      "b": "Programa",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1016
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Comision",
+      "b": "Configuracion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1683
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Comision",
+      "b": "SolicitudCompra",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1683
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Comision",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1116
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "ConsultaRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1017
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Cuota",
+      "b": "MetodoPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1685
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Cuota",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1685
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "DAlcance",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1117
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "DAlcance",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1117
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "DConversion",
+      "b": "Comision",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1721
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "DConversion",
+      "b": "InscripcionComercial",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1721
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "DConversion",
+      "b": "Interaccion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1722
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "DConversion",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1742
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "DConversion",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1723
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "DMotivo",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1121
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "DMotivo",
+      "b": "MotivoPerdida",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1085
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "DUsuario",
+      "b": "DAlcance",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1122
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "DUsuario",
+      "b": "Programa",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 997
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "DUsuario",
+      "b": "ProgramaResponsable",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 997
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "DUsuario",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1122
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Exportacion",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1743
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "InscripcionComercial",
+      "b": "Exportacion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1687
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "InscripcionComercial",
+      "b": "SolicitudCompra",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1687
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Interaccion",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1123
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Interaccion",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1123
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Interes",
+      "b": "CatalogoCache",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1744
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Interes",
+      "b": "Interaccion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1744
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Interes",
+      "b": "MovimientoInteres",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1745
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Interes",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1745
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Interes",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1746
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Interes",
+      "b": "Recordatorio",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1746
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Interes",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1747
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "MetodoPago",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1692
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "MetodoPago",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1748
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "MoverInteresRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1089
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "MoverInteresRequest",
+      "b": "DMotivo",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1089
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "MoverInteresRequest",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1126
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "MovimientoInteres",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1749
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "NAlcance",
+      "b": "DAlcance",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1127
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "NAlcance",
+      "b": "ReglaNegocioException",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1127
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "NAlcance",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1128
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "NConversion",
+      "b": "DConversion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1731
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "NConversion",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1750
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "NConversion",
+      "b": "ReglaNegocioException",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1732
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "NConversion",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1750
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "NInteres",
+      "b": "DInteres",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 1111
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "NInteres",
+      "b": "AsignarInteresRequest",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1115
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "NInteres",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1131
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "NInteres",
+      "b": "ReglaNegocioException",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1131
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "NInteres",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1132
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Cuota",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1694
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1133
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "OrdenPagoDescuento",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1695
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Pago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1695
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "SolicitudCompra",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1696
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "TransaccionStripe",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1696
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1133
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "OrdenPagoDescuento",
+      "b": "Descuento",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1698
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Pago",
+      "b": "ComprobantePago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1699
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Pago",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1699
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Programa",
+      "b": "CatalogoCache",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1027
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Programa",
+      "b": "ProgramaResponsable",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1027
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "ProgramaResponsable",
+      "b": "Programa",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1028
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "ProgramaResponsable",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1134
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Prospecto",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1135
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Prospecto",
+      "b": "MetodoPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1700
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Prospecto",
+      "b": "TransaccionStripe",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1701
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Recordatorio",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1751
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Recordatorio",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1751
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "SolicitudCompra",
+      "b": "Comision",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1703
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "SolicitudCompra",
+      "b": "InscripcionComercial",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1703
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "SolicitudCompra",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1704
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "TransaccionStripe",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1705
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "TransaccionStripe",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1705
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "TransaccionStripe",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1752
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Usuario",
+      "b": "ApiToken",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1753
+  },
+  {
+    "cu": "CU4",
+    "edge": {
+      "a": "Usuario",
+      "b": "ProgramaResponsable",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1753
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "api/motivos.js",
+      "b": "NMotivo",
+      "type": "Dependency",
+      "messages": [
+        "GET /motivos",
+        "POST /motivos",
+        "PUT /motivos/{motivo}",
+        "DELETE /motivos/{motivo}"
+      ]
+    },
+    "diagram_id": 1137
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "PMotivos.jsx",
+      "b": "api/motivos.js",
+      "type": "Dependency",
+      "messages": [
+        "index()",
+        "store()",
+        "update()",
+        "destroy()"
+      ]
+    },
+    "diagram_id": 1138
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "NMotivo",
+      "b": "DMotivo",
+      "type": "Dependency",
+      "messages": [
+        "listarConUsos()",
+        "crear()",
+        "existeNombre()",
+        "obtener()",
+        "actualizar()",
+        "estaEnUso()",
+        "eliminar()"
+      ]
+    },
+    "diagram_id": 1139
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "DMotivo",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1140
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "DMotivo",
+      "b": "MotivoPerdida",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1140
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "NMotivo",
+      "b": "MotivoRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1139
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "ApiToken",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1010
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "AsignarInteresRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1083
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "AsignarInteresRequest",
+      "b": "DUsuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1083
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "CatalogoCache",
+      "b": "Programa",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1016
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Comision",
+      "b": "Configuracion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1683
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Comision",
+      "b": "SolicitudCompra",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1683
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Comision",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1684
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "ConsultaRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1017
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Cuota",
+      "b": "MetodoPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1685
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Cuota",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1685
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "DAlcance",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1018
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "DAlcance",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1018
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "DConversion",
+      "b": "Comision",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1721
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "DConversion",
+      "b": "InscripcionComercial",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1721
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "DConversion",
+      "b": "Interaccion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1722
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "DConversion",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1754
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "DConversion",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1723
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "DInteres",
+      "b": "DAlcance",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1141
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "DInteres",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1141
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "DInteres",
+      "b": "MotivoPerdida",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1142
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "DInteres",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1142
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "DUsuario",
+      "b": "DAlcance",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 996
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "DUsuario",
+      "b": "Programa",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 997
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "DUsuario",
+      "b": "ProgramaResponsable",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 997
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "DUsuario",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 996
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Exportacion",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1686
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "InscripcionComercial",
+      "b": "Exportacion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1687
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "InscripcionComercial",
+      "b": "SolicitudCompra",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1687
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Interaccion",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1755
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Interaccion",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1688
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Interes",
+      "b": "CatalogoCache",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1756
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Interes",
+      "b": "Interaccion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1756
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Interes",
+      "b": "MovimientoInteres",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1757
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Interes",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1757
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Interes",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1758
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Interes",
+      "b": "Recordatorio",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1758
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Interes",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1759
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "MetodoPago",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1692
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "MetodoPago",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1692
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "MotivoRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1144
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "MotivoRequest",
+      "b": "MotivoPerdida",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1144
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "MoverInteresRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1089
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "MoverInteresRequest",
+      "b": "DMotivo",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1089
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "MoverInteresRequest",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1145
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "MovimientoInteres",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1693
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "NAlcance",
+      "b": "DAlcance",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1146
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "NAlcance",
+      "b": "ReglaNegocioException",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1093
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "NAlcance",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1146
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "NConversion",
+      "b": "DConversion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1731
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "NConversion",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1760
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "NConversion",
+      "b": "ReglaNegocioException",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1732
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "NConversion",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1760
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "NInteres",
+      "b": "DInteres",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 1079
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "NInteres",
+      "b": "AsignarInteresRequest",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1081
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "NInteres",
+      "b": "ConsultaRequest",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1081
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "NInteres",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1147
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "NInteres",
+      "b": "MoverInteresRequest",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1095
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "NInteres",
+      "b": "NAlcance",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1079
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "NInteres",
+      "b": "NConversion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1733
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "NInteres",
+      "b": "ReglaNegocioException",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1733
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "NInteres",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1147
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "NMotivo",
+      "b": "DMotivo",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 1139
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "NMotivo",
+      "b": "MotivoPerdida",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1148
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Cuota",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1694
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1761
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "OrdenPagoDescuento",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1695
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Pago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1695
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "SolicitudCompra",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1696
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "TransaccionStripe",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1696
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1697
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "OrdenPagoDescuento",
+      "b": "Descuento",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1698
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "PEmbudo.jsx",
+      "b": "api/intereses.js",
+      "type": "Dependency",
+      "messages": [
+        "intereses.mover"
+      ]
+    },
+    "diagram_id": 1762
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Pago",
+      "b": "ComprobantePago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1699
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Pago",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1699
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Programa",
+      "b": "CatalogoCache",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1027
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Programa",
+      "b": "ProgramaResponsable",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1027
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "ProgramaResponsable",
+      "b": "Programa",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1028
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "ProgramaResponsable",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1028
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Prospecto",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1149
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Prospecto",
+      "b": "MetodoPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1700
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Prospecto",
+      "b": "TransaccionStripe",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1701
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Recordatorio",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1763
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Recordatorio",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1702
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "SolicitudCompra",
+      "b": "Comision",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1703
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "SolicitudCompra",
+      "b": "InscripcionComercial",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1703
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "SolicitudCompra",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1704
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "TransaccionStripe",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1705
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "TransaccionStripe",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1705
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "TransaccionStripe",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1706
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Usuario",
+      "b": "ApiToken",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1031
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "Usuario",
+      "b": "ProgramaResponsable",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1031
+  },
+  {
+    "cu": "CU5",
+    "edge": {
+      "a": "api/intereses.js",
+      "b": "NInteres",
+      "type": "Dependency",
+      "messages": [
+        "GET /intereses"
+      ]
+    },
+    "diagram_id": 1077
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "api/pagos.js",
+      "b": "NPago",
+      "type": "Dependency",
+      "messages": [
+        "GET /pagos/publico/cuotas/{token}",
+        "GET /pagos/publico/sesiones/{sessionId}",
+        "POST /pagos/publico/sesiones/{sessionId}/cancelar",
+        "GET /descuentos",
+        "POST /prospectos/{prospecto}/metodos-pago/stripe-setup",
+        "PATCH /metodos-pago/{metodo}/estado",
+        "POST /intereses/{interes}/ordenes-pago",
+        "PATCH /ordenes-pago/{orden}/anular",
+        "POST /ordenes-pago/{orden}/cuotas/{cuota}/checkout",
+        "GET /pagos/stripe/sesiones/{sessionId}",
+        "POST /pagos/stripe/sesiones/{sessionId}/cancelar",
+        "GET /cuotas",
+        "PATCH /ordenes-pago/{orden}/cuotas/{cuota}/aprobar",
+        "PATCH /ordenes-pago/{orden}/cuotas/{cuota}/rechazar",
+        "GET /comprobantes/{comprobante}"
+      ]
+    },
+    "diagram_id": 1150
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "PPagoCuota.jsx",
+      "b": "api/pagos.js",
+      "type": "Dependency",
+      "messages": [
+        "abrirEnlaceCuotaPublico()"
+      ]
+    },
+    "diagram_id": 1151
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NPago",
+      "b": "NStripe",
+      "type": "Dependency",
+      "messages": [
+        "resolverEnlacePublicoCuota()",
+        "verificarRetornoPublico()",
+        "cancelarRetornoPublico()",
+        "iniciarSetupTarjeta()",
+        "anularOrden()",
+        "iniciarCheckoutCuota()",
+        "verificarSesion()",
+        "cancelarSesion()"
+      ]
+    },
+    "diagram_id": 1152
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NStripe",
+      "b": "DPago",
+      "type": "Dependency",
+      "messages": [
+        "cuotaPorToken()",
+        "asegurarTokenCuota()",
+        "registrarInteraccion()",
+        "actualizarInteres()",
+        "interesBloqueado()",
+        "montoCuotasEnEstado()",
+        "prospecto()",
+        "prospectoEnCartera()",
+        "actualizarOrden()",
+        "hayCuotasEnEstados()"
+      ]
+    },
+    "diagram_id": 1153
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DPago",
+      "b": "Cuota",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1154
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NStripe",
+      "b": "DStripe",
+      "type": "Dependency",
+      "messages": [
+        "ordenConDetalle()",
+        "transaccion()",
+        "cuotaBloqueada()",
+        "transaccionAbiertaPorCuota()",
+        "actualizarTransaccion()",
+        "contarIntentosCuota()",
+        "transaccionPorSesionBloqueada()",
+        "crearTransaccion()",
+        "registrarMetodoStripe()",
+        "transaccionPorSesion()",
+        "prospectoBloqueado()",
+        "guardarClienteProspecto()",
+        "vencimientoMetodoStripe()",
+        "transaccionSetupAbierta()",
+        "transaccionesPendientesDeOrden()",
+        "ordenBloqueada()",
+        "hayTransaccionesEnEstado()"
+      ]
+    },
+    "diagram_id": 1155
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DStripe",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1156
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DStripe",
+      "b": "TransaccionStripe",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1156
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DPago",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1157
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DStripe",
+      "b": "MetodoPago",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1158
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NStripe",
+      "b": "NConversion",
+      "type": "Dependency",
+      "messages": [
+        "faltantes()",
+        "procesar()"
+      ]
+    },
+    "diagram_id": 1155
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NStripe",
+      "b": "NPago",
+      "type": "Dependency",
+      "messages": [
+        "estadoCuota()"
+      ]
+    },
+    "diagram_id": 1159
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DStripe",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1158
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NPago",
+      "b": "ConsultaRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1152
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "PPagoConfirmacion.jsx",
+      "b": "api/pagos.js",
+      "type": "Dependency",
+      "messages": [
+        "consultarRetornoPublico()",
+        "confirmarCheckout()"
+      ]
+    },
+    "diagram_id": 1160
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DPago",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1161
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DPago",
+      "b": "DAlcance",
+      "type": "Dependency",
+      "messages": [
+        "prospectos()",
+        "intereses()"
+      ]
+    },
+    "diagram_id": 1161
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DAlcance",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": []
+    },
+    "diagram_id": 1162
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DPago",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": []
+    },
+    "diagram_id": 1163
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NStripe",
+      "b": "NAlcance",
+      "type": "Dependency",
+      "messages": [
+        "autorizarTarjeta()"
+      ]
+    },
+    "diagram_id": 1159
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "PPagoCancelado.jsx",
+      "b": "api/pagos.js",
+      "type": "Dependency",
+      "messages": [
+        "cancelarRetornoPublico()",
+        "cancelarCheckout()"
+      ]
+    },
+    "diagram_id": 1164
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "FormularioOrdenPago.jsx",
+      "b": "api/pagos.js",
+      "type": "Dependency",
+      "messages": [
+        "descuentos()",
+        "crearOrden()"
+      ]
+    },
+    "diagram_id": 1165
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NPago",
+      "b": "DPago",
+      "type": "Dependency",
+      "messages": [
+        "descuentos()",
+        "metodo()",
+        "metodoConProspecto()",
+        "actualizarMetodo()",
+        "prospectoEnCartera()",
+        "interes()",
+        "transaccion()",
+        "interesBloqueado()",
+        "ordenAbierta()",
+        "modulos()",
+        "descuentosPorCodigo()",
+        "crearOrden()",
+        "insertarDescuentosOrden()",
+        "insertarItems()",
+        "insertarCuotas()",
+        "crearPago()",
+        "registrarInteraccion()",
+        "actualizarInteres()",
+        "ordenCompleta()",
+        "cantidadModulosAbiertos()",
+        "cuotas()",
+        "orden()",
+        "interesDeOrden()",
+        "actualizarComprobantes()",
+        "cuotaBloqueada()",
+        "comprobante()",
+        "ordenDeComprobante()"
+      ]
+    },
+    "diagram_id": 1166
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DPago",
+      "b": "Descuento",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1167
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "ModalCompartirPago.jsx",
+      "b": "api/pagos.js",
+      "type": "Dependency",
+      "messages": [
+        "crearSetupTarjeta()",
+        "crearCheckout()"
+      ]
+    },
+    "diagram_id": 1764
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NPago",
+      "b": "CrearSetupTarjetaRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1169
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "MetodosPago.jsx",
+      "b": "api/pagos.js",
+      "type": "Dependency",
+      "messages": [
+        "cambiarEstadoMetodo()"
+      ]
+    },
+    "diagram_id": 1170
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DPago",
+      "b": "MetodoPago",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1167
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NPago",
+      "b": "CambiarEstadoMetodoRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1169
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DPago",
+      "b": "CatalogoCache",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1171
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DPago",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1172
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DPago",
+      "b": "Pago",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1173
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NPago",
+      "b": "CrearOrdenRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1174
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "PlanPagos.jsx",
+      "b": "api/pagos.js",
+      "type": "Dependency",
+      "messages": [
+        "anularOrden()"
+      ]
+    },
+    "diagram_id": 1175
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NPago",
+      "b": "AnularOrdenRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1174
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NPago",
+      "b": "CrearCheckoutRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1176
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "PValidacionPagos.jsx",
+      "b": "api/pagos.js",
+      "type": "Dependency",
+      "messages": [
+        "cuotas()",
+        "aprobar()",
+        "rechazar()",
+        "comprobante()"
+      ]
+    },
+    "diagram_id": 1177
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DPago",
+      "b": "ComprobantePago",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1173
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NPago",
+      "b": "NConversion",
+      "type": "Dependency",
+      "messages": [
+        "faltantes()",
+        "procesar()"
+      ]
+    },
+    "diagram_id": 1176
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NPago",
+      "b": "NAlcance",
+      "type": "Dependency",
+      "messages": [
+        "autorizarTarjeta()"
+      ]
+    },
+    "diagram_id": 1178
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NPago",
+      "b": "AprobarCuotaRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1178
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NPago",
+      "b": "RechazarCuotaRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1179
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "api/seguimiento.js",
+      "b": "NSeguimiento",
+      "type": "Dependency",
+      "messages": [
+        "GET /inscripciones"
+      ]
+    },
+    "diagram_id": 1180
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "PMatriculas.jsx",
+      "b": "api/seguimiento.js",
+      "type": "Dependency",
+      "messages": [
+        "inscripciones()"
+      ]
+    },
+    "diagram_id": 1181
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NSeguimiento",
+      "b": "DSeguimiento",
+      "type": "Dependency",
+      "messages": [
+        "inscripciones()"
+      ]
+    },
+    "diagram_id": 1182
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DSeguimiento",
+      "b": "DAlcance",
+      "type": "Dependency",
+      "messages": [
+        "intereses()"
+      ]
+    },
+    "diagram_id": 1183
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DSeguimiento",
+      "b": "InscripcionComercial",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1183
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DSeguimiento",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": []
+    },
+    "diagram_id": 1184
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NSeguimiento",
+      "b": "ConsultaRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1182
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "api/exportaciones.js",
+      "b": "NExportacion",
+      "type": "Dependency",
+      "messages": [
+        "GET /exportaciones/pendientes",
+        "POST /exportaciones",
+        "PATCH /exportaciones/{exportacion}"
+      ]
+    },
+    "diagram_id": 1185
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "PMatriculas.jsx",
+      "b": "api/exportaciones.js",
+      "type": "Dependency",
+      "messages": [
+        "pendientes()",
+        "exportar()",
+        "registrarResultado()"
+      ]
+    },
+    "diagram_id": 1181
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NExportacion",
+      "b": "DExportacion",
+      "type": "Dependency",
+      "messages": [
+        "exportables()",
+        "exportarPendientes()",
+        "registrarResultado()",
+        "historial()"
+      ]
+    },
+    "diagram_id": 1186
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DExportacion",
+      "b": "InscripcionComercial",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1187
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DExportacion",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": []
+    },
+    "diagram_id": 1187
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NExportacion",
+      "b": "NAlcance",
+      "type": "Dependency",
+      "messages": [
+        "modulosACargo()"
+      ]
+    },
+    "diagram_id": 1186
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NAlcance",
+      "b": "DAlcance",
+      "type": "Dependency",
+      "messages": [
+        "codigosModuloCoordinador()"
+      ]
+    },
+    "diagram_id": 1188
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NExportacion",
+      "b": "ConsultaRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1189
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DExportacion",
+      "b": "Exportacion",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1190
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NExportacion",
+      "b": "RegistrarResultadoRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1189
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "ActualizarComisionRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1191
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "AnularOrdenRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1192
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "ApiToken",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1765
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "AprobarCuotaRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1193
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "CambiarEstadoMetodoRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1194
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "CatalogoCache",
+      "b": "Programa",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1195
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Comision",
+      "b": "Configuracion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1683
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Comision",
+      "b": "SolicitudCompra",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1683
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Comision",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1196
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "CompletarRecordatorioRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1197
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "ConsultaRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1017
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "CrearCheckoutRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1198
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "CrearOrdenRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1199
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "CrearOrdenRequest",
+      "b": "DCatalogo",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1199
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "CrearOrdenRequest",
+      "b": "DPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1200
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "CrearRecordatorioRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1201
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "CrearSetupTarjetaRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1202
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Cuota",
+      "b": "MetodoPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1685
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Cuota",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1685
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DAlcance",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1162
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DCatalogo",
+      "b": "CatalogoCache",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1204
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DCatalogo",
+      "b": "Programa",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1019
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DConversion",
+      "b": "Comision",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1721
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DConversion",
+      "b": "InscripcionComercial",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1721
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DConversion",
+      "b": "Interaccion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1722
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DConversion",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1205
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DConversion",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1723
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DNotificacion",
+      "b": "Notificacion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1206
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DNotificacion",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1206
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DNotificacion",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1207
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DSeguimiento",
+      "b": "Comision",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1184
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DSeguimiento",
+      "b": "Interaccion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1208
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DSeguimiento",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1208
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DSeguimiento",
+      "b": "Recordatorio",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1209
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DStripe",
+      "b": "Cuota",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1210
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DStripe",
+      "b": "Pago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1210
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "DStripe",
+      "b": "WebhookEventoStripe",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1211
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "EnviarNotificacionRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1212
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Exportacion",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1213
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "InscripcionComercial",
+      "b": "Exportacion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1687
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "InscripcionComercial",
+      "b": "SolicitudCompra",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1687
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Interaccion",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1215
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Interaccion",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1215
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Interes",
+      "b": "CatalogoCache",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1216
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Interes",
+      "b": "Interaccion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1216
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Interes",
+      "b": "MovimientoInteres",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1766
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Interes",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1766
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Interes",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1767
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Interes",
+      "b": "Recordatorio",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1767
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Interes",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1768
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "MetodoPago",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1219
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "MetodoPago",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1219
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "ModalCompartirPago.jsx",
+      "b": "api/notificaciones.js",
+      "type": "Dependency",
+      "messages": [
+        "notificaciones.enviar"
+      ]
+    },
+    "diagram_id": 1764
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "MovimientoInteres",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1769
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NAlcance",
+      "b": "ReglaNegocioException",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1188
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NAlcance",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1220
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NConversion",
+      "b": "DConversion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1221
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NConversion",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1221
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NConversion",
+      "b": "ReglaNegocioException",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1222
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NConversion",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1222
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NExportacion",
+      "b": "DExportacion",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 1186
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NExportacion",
+      "b": "ReglaNegocioException",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1223
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NExportacion",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1223
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NNotificacion",
+      "b": "DNotificacion",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 1224
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NNotificacion",
+      "b": "ConsultaRequest",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1224
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NNotificacion",
+      "b": "EnviarNotificacionRequest",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1225
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NNotificacion",
+      "b": "ReglaNegocioException",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1225
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NPago",
+      "b": "DPago",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 1166
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NPago",
+      "b": "NStripe",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 1152
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NPago",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1179
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NPago",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1226
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NPago",
+      "b": "RegistrarComprobanteRequest",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1226
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NPago",
+      "b": "RegistrarMetodoRequest",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1227
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NPago",
+      "b": "ReglaNegocioException",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1227
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NPago",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1228
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NSeguimiento",
+      "b": "DSeguimiento",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 1182
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NSeguimiento",
+      "b": "ActualizarComisionRequest",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1229
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NSeguimiento",
+      "b": "CompletarRecordatorioRequest",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1229
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NSeguimiento",
+      "b": "CrearRecordatorioRequest",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1230
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NSeguimiento",
+      "b": "NAlcance",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1230
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NSeguimiento",
+      "b": "Recordatorio",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1231
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NSeguimiento",
+      "b": "RegistrarInteraccionRequest",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1231
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NSeguimiento",
+      "b": "ReglaNegocioException",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1232
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NStripe",
+      "b": "DStripe",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 1155
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NStripe",
+      "b": "DPago",
+      "type": "Dependency",
+      "messages": [
+        "inyección declarada"
+      ]
+    },
+    "diagram_id": 1153
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NStripe",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1233
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NStripe",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1233
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NStripe",
+      "b": "ReglaNegocioException",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1234
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NStripe",
+      "b": "TransaccionStripe",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1235
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "NStripe",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1236
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Cuota",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1694
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1770
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "OrdenPagoDescuento",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1695
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Pago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1695
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "SolicitudCompra",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1696
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "TransaccionStripe",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1696
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "OrdenPago",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1770
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "OrdenPagoDescuento",
+      "b": "Descuento",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1698
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Pago",
+      "b": "ComprobantePago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1699
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Pago",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1699
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "PlanPagos.jsx",
+      "b": "Cuota",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1175
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Programa",
+      "b": "CatalogoCache",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1241
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Programa",
+      "b": "ProgramaResponsable",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1027
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "ProgramaResponsable",
+      "b": "Programa",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1028
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "ProgramaResponsable",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1771
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Prospecto",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1242
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Prospecto",
+      "b": "MetodoPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1242
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Prospecto",
+      "b": "TransaccionStripe",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1243
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "RechazarCuotaRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1244
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Recordatorio",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1245
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Recordatorio",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1245
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "RegistrarComprobanteRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1246
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "RegistrarInteraccionRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1247
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "RegistrarMetodoRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1248
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "RegistrarMetodoRequest",
+      "b": "MetodoPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1248
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "RegistrarResultadoRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1249
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "SolicitudCompra",
+      "b": "Comision",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1703
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "SolicitudCompra",
+      "b": "InscripcionComercial",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1703
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "SolicitudCompra",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1704
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "TransaccionStripe",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1705
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "TransaccionStripe",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1772
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "TransaccionStripe",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1772
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Usuario",
+      "b": "ApiToken",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1773
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "Usuario",
+      "b": "ProgramaResponsable",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1773
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "WebhookEventoStripe",
+      "b": "TransaccionStripe",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1252
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "HistorialPagos.jsx",
+      "b": "Cuota",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1253
+  },
+  {
+    "cu": "CU6",
+    "edge": {
+      "a": "api/notificaciones.js",
+      "b": "NNotificacion",
+      "type": "Dependency",
+      "messages": [
+        "GET /notificaciones"
+      ]
+    },
+    "diagram_id": 1774
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "api/seguimiento.js",
+      "b": "NSeguimiento",
+      "type": "Dependency",
+      "messages": [
+        "POST /intereses/{interes}/interacciones",
+        "POST /intereses/{interes}/recordatorios",
+        "GET /recordatorios",
+        "PATCH /recordatorios/{recordatorio}/completar",
+        "PATCH /recordatorios/{recordatorio}/cancelar"
+      ]
+    },
+    "diagram_id": 1254
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "PAgenda.jsx",
+      "b": "api/seguimiento.js",
+      "type": "Dependency",
+      "messages": [
+        "registrarInteraccion()",
+        "crearRecordatorio()",
+        "completarRecordatorio()",
+        "cancelarRecordatorio()"
+      ]
+    },
+    "diagram_id": 1255
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "NSeguimiento",
+      "b": "DSeguimiento",
+      "type": "Dependency",
+      "messages": [
+        "interes()",
+        "transaccion()",
+        "registrarInteraccion()",
+        "actualizarInteres()",
+        "cargarInteraccion()",
+        "crearRecordatorio()",
+        "listarRecordatorios()",
+        "obtenerRecordatorio()",
+        "cargarInteresRecordatorio()",
+        "buscarRecordatorioBloqueado()",
+        "recordatorio()",
+        "insertarInteraccion()"
+      ]
+    },
+    "diagram_id": 1256
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "DSeguimiento",
+      "b": "Interes",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1257
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "DSeguimiento",
+      "b": "Interaccion",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1257
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "NSeguimiento",
+      "b": "NAlcance",
+      "type": "Dependency",
+      "messages": [
+        "autorizarTarjeta()"
+      ]
+    },
+    "diagram_id": 1256
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "NSeguimiento",
+      "b": "RegistrarInteraccionRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1258
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "NSeguimiento",
+      "b": "CrearRecordatorioRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1258
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "PMiDia.jsx",
+      "b": "api/seguimiento.js",
+      "type": "Dependency",
+      "messages": [
+        "recordatorios()",
+        "completarRecordatorio()"
+      ]
+    },
+    "diagram_id": 1259
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "DSeguimiento",
+      "b": "DAlcance",
+      "type": "Dependency",
+      "messages": [
+        "intereses()"
+      ]
+    },
+    "diagram_id": 1260
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "DAlcance",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": []
+    },
+    "diagram_id": 1261
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "DSeguimiento",
+      "b": "Recordatorio",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1260
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "DSeguimiento",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": []
+    },
+    "diagram_id": 1262
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "NSeguimiento",
+      "b": "ConsultaRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1263
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "NSeguimiento",
+      "b": "CompletarRecordatorioRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1263
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "api/notificaciones.js",
+      "b": "NNotificacion",
+      "type": "Dependency",
+      "messages": [
+        "GET /notificaciones",
+        "POST /notificaciones",
+        "PATCH /notificaciones/{notificacion}/leida"
+      ]
+    },
+    "diagram_id": 1774
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "PNotificaciones.jsx",
+      "b": "api/notificaciones.js",
+      "type": "Dependency",
+      "messages": [
+        "index()",
+        "enviar()",
+        "marcarLeida()"
+      ]
+    },
+    "diagram_id": 1265
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "NNotificacion",
+      "b": "DNotificacion",
+      "type": "Dependency",
+      "messages": [
+        "listar()",
+        "prospectoAsignadoA()",
+        "crear()",
+        "obtener()",
+        "marcarLeida()"
+      ]
+    },
+    "diagram_id": 1224
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "DNotificacion",
+      "b": "Notificacion",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1206
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "DNotificacion",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": []
+    },
+    "diagram_id": 1266
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "NNotificacion",
+      "b": "ConsultaRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1224
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "ModalCompartirPago.jsx",
+      "b": "api/notificaciones.js",
+      "type": "Dependency",
+      "messages": [
+        "enviar()"
+      ]
+    },
+    "diagram_id": 1764
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "DNotificacion",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "query()"
+      ]
+    },
+    "diagram_id": 1266
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "NNotificacion",
+      "b": "EnviarNotificacionRequest",
+      "type": "Dependency",
+      "messages": [
+        "validated()"
+      ]
+    },
+    "diagram_id": 1225
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "ActualizarComisionRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1191
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "ApiToken",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1775
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "CatalogoCache",
+      "b": "Programa",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1016
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "Comision",
+      "b": "Configuracion",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1683
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "Comision",
+      "b": "SolicitudCompra",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1683
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "Comision",
+      "b": "Usuario",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1268
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "CompletarRecordatorioRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1197
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "ConsultaRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1017
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "CrearRecordatorioRequest",
+      "b": "ApiRequest",
+      "type": "Generalization",
+      "messages": []
+    },
+    "diagram_id": 1201
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "Cuota",
+      "b": "MetodoPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1685
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "Cuota",
+      "b": "OrdenPago",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1685
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "DAlcance",
+      "b": "Prospecto",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1261
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "DSeguimiento",
+      "b": "Comision",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1262
+  },
+  {
+    "cu": "CU7",
+    "edge": {
+      "a": "DSeguimiento",
+      "b": "InscripcionComercial",
+      "type": "Dependency",
+      "messages": [
+        "referencia en fuente"
+      ]
+    },
+    "diagram_id": 1269
+  }
+]

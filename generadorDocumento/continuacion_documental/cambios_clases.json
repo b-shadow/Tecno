@@ -1,0 +1,58 @@
+[
+  {
+    "cu": "CU1",
+    "diagram_id": 1,
+    "classes": 66,
+    "methods": 251,
+    "attrs": 374
+  },
+  {
+    "cu": "CU2",
+    "diagram_id": 2,
+    "classes": 47,
+    "methods": 174,
+    "attrs": 371
+  },
+  {
+    "cu": "CU3",
+    "diagram_id": 3,
+    "classes": 55,
+    "methods": 222,
+    "attrs": 380
+  },
+  {
+    "cu": "CU4",
+    "diagram_id": 4,
+    "classes": 41,
+    "methods": 167,
+    "attrs": 351
+  },
+  {
+    "cu": "CU5",
+    "diagram_id": 5,
+    "classes": 43,
+    "methods": 171,
+    "attrs": 353
+  },
+  {
+    "cu": "CU6",
+    "diagram_id": 138,
+    "classes": 75,
+    "methods": 377,
+    "attrs": 377
+  },
+  {
+    "cu": "CU7",
+    "diagram_id": 7,
+    "classes": 44,
+    "methods": 175,
+    "attrs": 355
+  },
+  {
+    "cu": "CU8",
+    "diagram_id": 8,
+    "classes": 48,
+    "methods": 177,
+    "attrs": 368
+  }
+]

@@ -407,6 +407,12 @@ def solo_secuencias(cus=None):
             ea = ea_base.EA.abrir_existente()
             try:
                 seq = paquete(ea, ea.modelo, 'Diseño de Secuencia')
+                # El respaldo documental contiene cientos de elementos auxiliares en
+                # este paquete. EA de 32 bits falla al enumerarlos para cada línea
+                # de vida; una subcarpeta conserva los originales y permite
+                # regenerar las ocho secuencias verificadas contra el código.
+                if seq.Elements.Count >= 100:
+                    seq = paquete(ea, seq, 'Secuencias 7.4 integradas')
                 for cu in lista: secuencia(ea, seq, cu, f'sd-{cu.lower()}.png', pt)
             finally: ea.cerrar()
         print(f'  letra {pt} pt: {", ".join(lista)}')
