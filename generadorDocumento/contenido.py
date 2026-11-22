@@ -1,4 +1,4 @@
-"""Texto y datos del documento P2, en el orden de G07. Editar aquí y correr `python documento_p2.py`.
+"""Texto y datos del documento P2, en el orden de G07. No regenerar el maestro con ediciones manuales.
 None (o lista vacía) = todavía no escrito: el documento muestra [PENDIENTE] en rojo y lo lista al final.
 Nada inventado: cada dato sale del código (crm-web), de la BD, de P2_WEB.md o de lo aprobado por el docente."""
 import re
@@ -356,10 +356,12 @@ ALCANCE = {      # ../P2_WEB.md §1, columna "Cómo se cumple en la web"
            'tarjetas que se arrastran y la opción "Mover a…" en el celular.',
     'CU5': 'Pasar una tarjeta a Perdido exige un motivo de la lista de motivos de pérdida, clasificados por categoría; el '
            'Administrador y el Coordinador gestionan esa lista.',
-    'CU6': 'Métodos de pago manuales (QR y transferencia) o tarjeta mediante Stripe Sandbox; orden de pago al contado '
-            'o en cuotas, anulación controlada, comprobantes con validación manual y conciliación de Stripe por sesión '
-            'o webhook firmado. La conversión exige datos completos y la primera cuota aprobada, y genera la inscripción, '
-            'la comisión del vendedor y la exportación al SIS.',
+    'CU6': 'Órdenes de pago al contado o en cuotas mediante Stripe Sandbox; Checkout para pagar y Setup para registrar '
+            'tarjetas sin cobro. Los enlaces se comparten manualmente por correo, WhatsApp o copia. Se mantienen la '
+            'anulación controlada, la consulta/revisión de comprobantes históricos y la conciliación idempotente por '
+            'sesión o webhook firmado. No se admiten nuevos pagos QR, transferencias ni comprobantes manuales. La '
+            'conversión exige datos completos y primera cuota aprobada y genera inscripción y comisión. La exportación '
+            'académica se solicita por separado y no acredita recepción remota del SIS.',
     'CU7': 'Historial cronológico por tarjeta, registro de interacciones y notas, recordatorios de contacto con la agenda '
            'del día y notificaciones internas.',
     'CU8': 'Dashboard con indicadores, reportes como listados, estadísticas porcentuales del embudo y de los accesos, y '
@@ -367,168 +369,15 @@ ALCANCE = {      # ../P2_WEB.md §1, columna "Cómo se cumple en la web"
 }
 # Detalle de CU: flujo de las pantallas reales (navegacion.py) y excepciones con el mensaje literal del código;
 # documento_p2.py comprueba que cada mensaje entre comillas exista en negocio/ o datos/.
-DETALLE = {
-    'CU1': dict(
-        gestionar='Gestionar Usuarios', iniciador='Administrador',
-        proposito='Administrar las cuentas de usuario, su rol, vigencia y permisos, y controlar el acceso al sistema.',
-        descripcion='El usuario inicia sesión con su correo y contraseña y el sistema arma su menú desde la matriz de '
-                    'acceso. El Administrador registra, modifica y cambia el estado de los usuarios, asigna permisos en '
-                    'la matriz y consulta la bitácora de accesos.',
-        precondicion='El usuario tiene una cuenta activa y vigente; para gestionar usuarios, matriz y bitácora tiene '
-                     'permiso sobre esos recursos.',
-        proceso=['El usuario ingresa su correo y contraseña en Iniciar Sesión.',
-                 'El sistema valida la credencial y su vigencia, registra el acceso en la bitácora y muestra el menú de su rol.',
-                 'El Administrador abre Usuarios y registra o edita un usuario con nombre, correo, rol, vigencia y foto.',
-                 'El sistema valida los datos y guarda el usuario.',
-                 'El Administrador asigna permisos de lectura, modificación o eliminación en la Matriz de Acceso.',
-                 'El Administrador consulta la Bitácora de Accesos filtrando por evento, usuario, IP y fechas.'],
-        postcondicion='El usuario queda registrado o actualizado, sus permisos definen su menú y cada acceso queda en la bitácora.',
-        excepciones=['- Credencial incorrecta: "Correo o contraseña incorrectos."',
-                     '- Cuenta inactiva o vencida: "Su cuenta está inactiva o fuera de vigencia."',
-                     '- Sin permiso sobre el recurso: "No tiene permiso para realizar esta acción."',
-                     '- Último administrador: "Debe conservar al menos un administrador activo."',
-                     '- Matriz del administrador: "El administrador debe conservar acceso total a Usuarios y Matriz de acceso."',
-                     '- Foto demasiado grande: "La foto no debe superar 2 MB."', SIN_BD]),
-    'CU2': dict(
-        gestionar='Gestionar Captación de la Oferta', iniciador='Visitante',
-        proposito='Captar prospectos desde el catálogo público de programas y módulos.',
-        descripcion='El visitante consulta el catálogo por área y programa, busca módulos y registra su interés con sus '
-                    'datos; el registro crea el prospecto y su interés. En el panel, el Administrador y el Coordinador '
-                    'consultan la oferta académica y la sincronizan desde el catálogo del Grupo 06 (simulado).',
-        precondicion='El catálogo tiene programas y módulos abiertos.',
-        proceso=['El visitante abre el Catálogo de Programas.',
-                 'El sistema lista los programas y módulos abiertos y cuenta la visita.',
-                 'El visitante elige un programa o un módulo y presiona Me interesa.',
-                 'El visitante ingresa nombre, apellido, documento, teléfono, correo, profesión y ubicación.',
-                 'El sistema valida los datos y registra el prospecto y su interés.',
-                 'El sistema muestra el mensaje de registro exitoso.'],
-        postcondicion='El prospecto y su interés quedan registrados, listos para asignarse a un vendedor.',
-        excepciones=['- Módulos de varios programas: "Seleccione módulos de un solo programa por registro."',
-                     '- Módulo cerrado: "Uno o más módulos seleccionados ya no están disponibles. Revise la selección."',
-                     '- Datos de otra persona: "Ese correo o carnet ya está registrado con otros datos. Comuníquese con coordinación."',
-                     SIN_BD]),
-    'CU3': dict(
-        gestionar='Gestionar Asignación de Prospectos', iniciador='Coordinador',
-        proposito='Registrar prospectos y repartirlos entre los vendedores.',
-        descripcion='El Coordinador o el Administrador registran prospectos a mano o por CSV con su origen y los asignan a '
-                    'un vendedor de forma manual o por reparto Round-Robin; cada vendedor ve su cartera.',
-        precondicion='El usuario tiene permiso de modificación sobre Asignación de prospectos y hay vendedores activos.',
-        proceso=['El Coordinador abre Prospectos y registra un prospecto o importa un archivo CSV.',
-                 'El sistema valida cada fila y registra los prospectos con su interés.',
-                 'El Coordinador abre Asignación de Prospectos y filtra las tarjetas sin asignar.',
-                 'El Coordinador asigna una tarjeta a un vendedor o reparte las pendientes por Round-Robin.',
-                 'El sistema guarda la asignación y la tarjeta aparece en la cartera del vendedor.'],
-        postcondicion='Cada prospecto asignado queda en la cartera de su vendedor.',
-        excepciones=['- Registro por un vendedor: "Solo coordinación registra e importa prospectos."',
-                     '- CSV con errores: "El archivo tiene errores; no se cargó ningún prospecto."',
-                     '- CSV con columnas repetidas: "El archivo tiene columnas repetidas."',
-                     '- Usuario que no es vendedor: "El usuario seleccionado no es vendedor."',
-                     '- Sin vendedores: "No hay vendedores activos para repartir."',
-                     '- Nada que repartir: "No había prospectos sin asignar."', SIN_BD]),
-    'CU4': dict(
-        gestionar='Gestionar Embudo de Ventas', iniciador='Vendedor',
-        proposito='Llevar cada prospecto por las etapas del embudo de ventas.',
-        descripcion='El usuario ve las tarjetas de su alcance en un tablero Kanban de seis columnas y las mueve '
-                    'arrastrándolas o con la opción Mover a…; el sistema valida cada cambio de estado.',
-        precondicion='El usuario tiene permiso de modificación sobre Embudo de ventas y la tarjeta está en su alcance '
-                     '(cartera del vendedor o programas del coordinador).',
-        proceso=['El usuario abre Embudo de Ventas.',
-                 'El sistema muestra las tarjetas por estado: Nuevo, En Contacto, Seguimiento, Promesa de Pago, Convertido y Perdido.',
-                 'El usuario arrastra una tarjeta o elige Mover a… y el estado de destino.',
-                 'El sistema valida la regla del estado de destino y guarda el cambio.',
-                 'El tablero muestra la tarjeta en su nueva columna.'],
-        postcondicion='La tarjeta queda en el nuevo estado del embudo.',
-        excepciones=['- Tarjeta fuera de su cartera: "Este prospecto no está dentro de su cartera."',
-                     '- Tarjeta convertida: "Una tarjeta convertida ya tiene matrícula: no se puede mover."',
-                     '- Tarjeta cerrada: "La tarjeta ya está cerrada."',
-                     '- Tarjeta sin vendedor: "La tarjeta no tiene vendedor asignado."', SIN_BD]),
-    'CU5': dict(
-        gestionar='Gestionar Pérdida y Motivos', iniciador='Vendedor',
-        proposito='Registrar por qué se pierde un prospecto, con un motivo clasificado.',
-        descripcion='Al pasar una tarjeta a Perdido, el usuario elige un motivo de la lista clasificada por categoría y '
-                    'puede añadir una observación. El Administrador y el Coordinador registran, modifican y eliminan los motivos.',
-        precondicion='Existen motivos de pérdida registrados y el usuario tiene permiso de modificación sobre Embudo de '
-                     'ventas (o sobre Motivos de pérdida para gestionarlos).',
-        proceso=['El usuario elige Perdido para una tarjeta del Embudo de Ventas.',
-                 'El sistema muestra el formulario Marcar como Perdido con los motivos agrupados por categoría.',
-                 'El usuario elige el motivo y escribe una observación.',
-                 'El sistema guarda el estado Perdido con su motivo.',
-                 'El Administrador o el Coordinador gestionan la lista en Motivos de Pérdida.'],
-        postcondicion='La tarjeta queda en Perdido con su motivo.',
-        excepciones=['- Perdido sin motivo: el sistema rechaza el cambio y pide el motivo.',
-                     '- Motivo repetido: "El motivo ya está registrado."',
-                     '- Motivo en uso: "No se puede eliminar: hay prospectos perdidos con este motivo."',
-                     '- Motivo del sistema: "Este motivo lo usa el sistema y no se puede cambiar ni eliminar."', SIN_BD]),
-    'CU6': dict(
-        gestionar='Gestionar Conversión a Matrícula', iniciador='Vendedor',
-        proposito='Cobrar al prospecto y convertirlo en alumno matriculado con sus datos validados.',
-        descripcion='Desde la ficha del prospecto, el Vendedor crea una orden de pago único o en cuotas. Para una cuota '
-                    'pendiente puede iniciar Stripe Checkout Sandbox o registrar un comprobante de pago manual. Stripe '
-                    'confirma el pago mediante consulta de la sesión o webhook firmado; los comprobantes manuales son '
-                    'revisados por el Coordinador o Administrador. La primera cuota aprobada y los datos completos '
-                    'permiten convertir el interés, registrar inscripción y comisión y exportar la matrícula al SIS.',
-        precondicion='El prospecto está en la cartera del vendedor y tiene un interés abierto.',
-        proceso=['El Vendedor abre la ficha del prospecto y genera una orden con módulos, descuentos y cuotas.',
-                 'El Vendedor selecciona una cuota pendiente e inicia Stripe Checkout Sandbox.',
-                 'El sistema valida la orden y el importe en BOB, registra la sesión y redirige a Stripe.',
-                 'Tras el pago, el sistema consulta la sesión de retorno o procesa el webhook firmado y verifica su importe.',
-                 'El sistema registra la transacción y marca la cuota como Pago aprobado de forma idempotente.',
-                 'Si es la primera cuota y los datos están completos, el sistema convierte el interés y registra la '
-                 'inscripción y la comisión.',
-                 'El Coordinador exporta las matrículas pendientes al SIS y registra el resultado.'],
-        alternativos=['A1. Pago manual: el Vendedor registra un método QR o transferencia y sube el comprobante; '
-                     'la cuota queda En revisión hasta que el Coordinador o Administrador la apruebe o rechace.',
-                     'A2. Registro previo de tarjeta: el Vendedor inicia Stripe Setup; el sistema consulta la sesión '
-                     'de retorno y, si Stripe la confirma, asocia el método al prospecto.',
-                     'A3. Checkout cancelado: el sistema consulta la sesión, conserva la cuota pendiente si no hubo '
-                     'confirmación y permite volver a intentar el pago.',
-                     'A4. Anulación de orden: el Vendedor indica el motivo; el sistema solo anula una orden sin cuotas '
-                     'pagadas o en revisión ni pagos Stripe confirmados.'],
-        postcondicion='El prospecto queda convertido en alumno, con su inscripción, comisión y exportación registradas.',
-        excepciones=['- Orden de otro vendedor: "Solo el vendedor asignado genera la orden de pago."',
-                     '- Total inválido: "El total de la orden debe ser mayor a cero."',
-                     '- Orden anulada: "La orden de pago fue anulada y no admite cobros."',
-                     '- Cuota ya pagada: "Esta cuota ya fue pagada."',
-                     '- Cuota en revisión manual: "Esta cuota tiene un comprobante manual en revisión."',
-                     '- Confirmación manual indebida: "Las cuotas procesadas por Stripe solo se confirman mediante la pasarela oficial."',
-                     '- Comprobante repetido: "Ya hay un comprobante en revisión para esta cuota."',
-                     '- Aprobación fuera de revisión: "Solo se aprueba una cuota en revisión."',
-                     '- Conversión sin pago: "La primera cuota de una orden de pago todavía no está aprobada."',
-                     '- Exportación vacía: "No hay matrículas pendientes de enviar."', SIN_BD]),
-    'CU7': dict(
-        gestionar='Gestionar Seguimiento del Prospecto', iniciador='Vendedor',
-        proposito='Registrar el seguimiento de cada prospecto para que ningún contacto se olvide.',
-        descripcion='En la ficha del prospecto el usuario ve el historial cronológico de la tarjeta, registra '
-                    'interacciones y notas y agenda recordatorios; en Mi Día ve su agenda y marca los recordatorios '
-                    'realizados. Las notificaciones internas avisan de las novedades.',
-        precondicion='La tarjeta está en el alcance del usuario.',
-        proceso=['El Vendedor abre Seguimiento y Agenda y elige una tarjeta.',
-                 'El sistema muestra la ficha con el historial cronológico, los recordatorios y las órdenes de pago.',
-                 'El Vendedor registra una interacción con su tipo, descripción y resultado.',
-                 'El Vendedor agenda un recordatorio con fecha, hora y descripción.',
-                 'En Mi Día, el Vendedor marca el recordatorio como realizado con su resultado, o lo cancela.',
-                 'El usuario consulta sus notificaciones y las marca como leídas.'],
-        postcondicion='La interacción y el recordatorio quedan en el historial de la tarjeta.',
-        excepciones=['- Fecha pasada: "La actividad debe programarse para una fecha y hora futura."',
-                     '- Actividad cerrada: "La actividad ya fue realizada o cancelada."',
-                     '- Notificación a un prospecto ajeno: "Solo puede escribir a prospectos de su cartera."', SIN_BD]),
-    'CU8': dict(
-        gestionar='Gestionar Reportes y Estadísticas', iniciador='Coordinador',
-        proposito='Medir el avance comercial y el uso del sistema.',
-        descripcion='El usuario consulta el dashboard con indicadores y gráficos, los reportes como listados filtrados '
-                    'por fechas, estado y vendedor, y las estadísticas porcentuales del embudo; en Ventas y Comisiones '
-                    'se consultan y pagan las comisiones de los vendedores.',
-        precondicion='El usuario tiene permiso de lectura sobre Dashboard, Reportes y estadísticas o Ventas y comisiones.',
-        proceso=['El usuario abre el Dashboard y ve los indicadores y gráficos de su alcance.',
-                 'El usuario abre Reportes y Estadísticas y filtra por fechas, estado y vendedor.',
-                 'El sistema muestra el listado y las estadísticas porcentuales.',
-                 'El usuario descarga el listado en CSV.',
-                 'En Ventas y Comisiones, el usuario con permiso de modificación consulta el resumen y paga las comisiones; '
-                 'solo el Administrador cambia el porcentaje de comisión.'],
-        postcondicion='El usuario obtiene los reportes y estadísticas de su alcance; las comisiones pagadas quedan registradas.',
-        excepciones=['- Porcentaje de comisión: "Solo el administrador cambia el porcentaje de comisión."',
-                     '- Sin permiso: "No tiene permiso para realizar esta acción."', SIN_BD]),
-}
+from actualizacion_contenido import aplicar_a_contenido
+DETALLE = aplicar_a_contenido({'CU1': {'gestionar': 'Gestionar Usuarios', 'iniciador': 'Administrador'},
+ 'CU2': {'gestionar': 'Gestionar Captación de la Oferta', 'iniciador': 'Visitante'},
+ 'CU3': {'gestionar': 'Gestionar Asignación de Prospectos', 'iniciador': 'Coordinador'},
+ 'CU4': {'gestionar': 'Gestionar Embudo de Ventas', 'iniciador': 'Vendedor'},
+ 'CU5': {'gestionar': 'Gestionar Pérdida y Motivos', 'iniciador': 'Vendedor'},
+ 'CU6': {'gestionar': 'Gestionar Conversión a Matrícula', 'iniciador': 'Vendedor'},
+ 'CU7': {'gestionar': 'Gestionar Seguimiento del Prospecto', 'iniciador': 'Vendedor'},
+ 'CU8': {'gestionar': 'Gestionar Reportes y Estadísticas', 'iniciador': 'Coordinador'}})
 
 
 # Actores por CU según lo que cada rol HACE en el sistema (navegacion.py usa los mismos permisos). La matriz liga cada
@@ -540,7 +389,7 @@ ACTORES_CU = {
     'CU3': ['Administrador', 'Coordinador', 'Vendedor'],    # alta/CSV/asignación: admin y coord.; vendedor: su cartera
     'CU4': ['Administrador', 'Coordinador', 'Vendedor'],    # embudo Kanban
     'CU5': ['Administrador', 'Coordinador', 'Vendedor'],    # vendedor marca Perdido con motivo; admin y coord. gestionan motivos
-    'CU6': ['Administrador', 'Coordinador', 'Vendedor'],    # vendedor: orden y comprobante; coord.: validación, matrícula y SIS
+    'CU6': ['Administrador', 'Coordinador', 'Vendedor', 'Visitante'],  # enlace público; personal autorizado: orden, seguimiento, conversión y SIS
     'CU7': ['Administrador', 'Coordinador', 'Vendedor'],    # interacciones, recordatorios, notificaciones
     'CU8': ['Administrador', 'Coordinador', 'Vendedor'],    # dashboard / Mi día, reportes, comisiones
 }
@@ -582,7 +431,7 @@ PAQUETES = {
 # Descripción None = pendiente.
 HERRAMIENTAS = {
     'Herramientas de Programación y Desarrollo': [
-        ('PHP', '8.4', 'Lenguaje de la capa de negocio y de la capa de datos; el servidor de la facultad ejecuta PHP 8.4.'),
+        ('PHP', '8.4.24', 'Versión CLI comprobada localmente. Lenguaje de negocio y datos; la versión del servidor institucional previsto no fue verificada.'),
         ('Laravel', 'composer:laravel/framework', 'Framework de la capa de negocio: expone la API RESTful '
                     '(negocio/routes/api.php) con controladores, requests de validación, servicios y los middleware de '
                     'token y de matriz de acceso; sus migraciones crean la base de datos.'),
@@ -598,9 +447,8 @@ HERRAMIENTAS = {
         ('Lucide React', 'npm:lucide-react', 'Íconos de la interfaz.'),
         ('Playwright', 'npm:playwright', 'Pruebas de caja negra en los navegadores Chromium, Firefox y WebKit '
                                          '(scripts/verificar_navegadores.mjs).')],
-    'Herramientas de Gestión de Bases de Datos': [('PostgreSQL', '18', 'Gestor de la base de datos db_grupo05sa (esquema '
-                                                                       'public), compartida con el Proyecto 1.')],
-    'Herramientas de Diseño y Modelado': [('Enterprise Architect', '15 Trial', 'Modelado UML del sistema (casos de uso, '
+    'Herramientas de Gestión de Bases de Datos': [('PostgreSQL', '17.4', 'Versión local verificada de crm_educativo, esquema public. db.tecnoweb.org.bo es el destino institucional previsto; su versión no fue comprobada.')],
+    'Herramientas de Diseño y Modelado': [('Enterprise Architect', '15', 'Modelado UML del sistema (casos de uso, '
                                            'paquetes, clases, base de datos y navegación), automatizado por COM desde generadorDocumento/ea.')],
     'Herramientas de Control de Versiones y Colaboración': [('Git', '', 'Control de versiones del código fuente.'),
                                                             ('GitHub', '', 'Repositorio remoto del grupo (ver 13. Anexo).')],

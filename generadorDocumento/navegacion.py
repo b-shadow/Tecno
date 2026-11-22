@@ -45,8 +45,8 @@ def bd(d, *claves):
          'programas': 'codigo, nombre', 'catalogo_cache': 'codigo, programa_codigo, nombre, descripcion, precio, estado',
          'metodos_pago': 'nro_metodo, documento, tipo, titular, marca, ultimos_digitos, vencimiento, estado, proveedor, stripe_cliente, stripe_metodo, registrado_por',
          'ordenes_pago': 'nro_orden, nro_tarjeta, subtotal, descuento_total, total, vendedor_correo, estado, motivo_anulacion, fecha_anulacion, anulada_por',
-         'cuotas': 'nro_orden, nro_cuota, monto, fecha_vencimiento, estado, fecha_pago, proveedor, moneda, stripe_sesion, stripe_pago_intent, stripe_metodo, stripe_recibo_url',
-         'transacciones_stripe': 'nro_transaccion, tipo, nro_orden, nro_cuota, documento, usuario_correo, stripe_sesion, stripe_pago_intent, estado_interno, monto_confirmado',
+         'cuotas': 'nro_orden, nro_cuota, monto, fecha_vencimiento, estado, fecha_pago, proveedor, moneda, stripe_sesion, stripe_pago_intent, stripe_metodo, stripe_recibo_url, token_pago',
+         'transacciones_stripe': 'nro_transaccion, tipo, nro_orden, nro_cuota, documento, usuario_correo, stripe_sesion, stripe_pago_intent, estado_interno, monto_confirmado, token_publico, expira_en',
          'webhook_eventos_stripe': 'stripe_evento, tipo, nro_transaccion, estado, procesado_en',
          'orden_pago_descuentos': 'nro_orden, descuento_codigo, porcentaje, monto', 'pagos': 'nro_orden, codigo_qr, estado',
          'descuentos': 'codigo, nombre, porcentaje, estado',
@@ -70,7 +70,7 @@ def sesion(d, actor):
     d.p('login', 'cliente', 'Login', 'redirect', 'mostrarClave()')
     d.p('f_login', 'form', 'Iniciar Sesion', 'correo, password, recordar', 'ingresar()')
     d.p('ps_login', 'ps', 'ps Login', 'correo, password', 'login()')
-    d.p('error', 'cliente', 'PC Message', 'mensaje = "Correo o contraseña incorrectos."', 'cerrar()')
+    d.p('error', 'cliente', 'PC Message', 'mensaje', 'cerrar()')
     d.p('menu', 'cliente', f'Menu {actor}', 'menu, permisos, visitas', 'navegar(), buscar(), cambiarTema(), abrirPerfil()')
     d.p('ps_visita', 'ps', 'ps Registrar Visita', 'ruta', 'visita()')
     d.p('ps_buscar', 'ps', 'ps Busqueda Global', 'q', 'buscar()')
@@ -251,13 +251,9 @@ def agenda(d):   # CU7 y pagos de CU6
          'ps_crearrec', 'ps Crear Recordatorio', 'nro_tarjeta, fecha_programada, descripcion', 'crearRecordatorio()', 'INSERT', ('recordatorios',)),
         ('f_editar', 'Editar Prospecto', 'nombre, apellido, correo, telefono, profesion, ubicacion, origen', 'link', 'editar',
          'ps_update', 'ps Actualizar Prospecto', 'documento, nombre, apellido, correo, telefono', 'update()', 'UPDATE', ('prospectos',)),
-        ('f_metodo', 'Registrar Metodo de Pago', 'tipo, titular, numero, vencimiento', 'link', 'metodo de pago',
-         'ps_metodo', 'ps Registrar Metodo', 'documento, tipo, titular, numero, vencimiento', 'registrarMetodo()', 'INSERT', ('metodos_pago',)),
         ('f_orden', 'Generar Orden de Pago', 'modulos, descuentos, cuotas, primer_vencimiento', 'link', 'generar orden',
          'ps_orden', 'ps Crear Orden', 'nro_tarjeta, modulos, descuentos, cuotas', 'crearOrden()', 'INSERT',
          ('ordenes_pago', 'cuotas', 'orden_pago_descuentos', 'pagos')),
-        ('f_comprob', 'Subir Comprobante', 'archivo, nro_metodo, remitente, hora_pago, observacion', 'link', 'comprobante',
-         'ps_comprob', 'ps Registrar Comprobante', 'nro_orden, nro_cuota, archivo', 'registrarComprobante()', 'INSERT', ('comprobantes_pago',)),
     ]
     for f, fn, fa, rel, txt, ps, psn, psa, op, sql, tablas in formularios:
         d.p(f, 'form', fn, fa, 'guardar()'); d.p(ps, 'ps', psn, psa, op)
@@ -287,7 +283,13 @@ def agenda(d):   # CU7 y pagos de CU6
         d.e(origen, 'pago_cancelado', 'build', 'retorno cancelado')
     d.e('pago_confirmacion', 'ps_confirmar_checkout', 'submit', 'verificar sesión')
     d.e('pago_cancelado', 'ps_cancelar_checkout', 'submit', 'consultar cancelación')
-    d.e('pago_cancelado', 'ps_checkout', 'submit', 'reintentar pago')
+    d.p('f_compartir_pago','form','Compartir Enlace Manualmente','destinatario, tipo, mensaje, nro_orden, nro_cuota, enlace','enviarCorreo(), abrirWhatsApp(), copiar()')
+    d.p('ps_correo_pago','ps','ps Enviar Correo Manual','destinatario, tipo, mensaje, nro_tarjeta, nro_orden, nro_cuota','enviar()')
+    d.e('ficha','f_compartir_pago','link','solicitar pago o registrar tarjeta')
+    d.e('f_compartir_pago','ps_setup_stripe','submit','modo Setup: registrar tarjeta sin cobro')
+    d.e('f_compartir_pago','ps_checkout','submit','modo pago: obtener sesión/enlace vigente')
+    d.e('f_compartir_pago','ps_correo_pago','submit','acción explícita Enviar correo')
+    acceso(d,'ps_correo_pago','INSERT resultado de envío manual','notificaciones')
     acceso(d, 'ps_confirmar_checkout', 'SELECT / UPDATE', 'transacciones_stripe', 'cuotas', 'metodos_pago')
     acceso(d, 'ps_cancelar_checkout', 'UPDATE estado', 'transacciones_stripe')
     d.e('pago_confirmacion', 'ficha', 'link', 'volver a la orden')
@@ -489,6 +491,7 @@ def rol(nombre_rol, actor):
     d = Diagrama(PERMISOS[nombre_rol])
     sesion(d, actor)
     for codigo in d.permisos: BLOQUES[codigo](d)
+    pagos_publicos(d)
     return d.paginas, d.enlaces
 
 
@@ -502,7 +505,7 @@ def visitante():
     d.p('ps_buscar', 'ps', 'ps Busqueda Global', 'q', 'buscar()')
     d.p('f_interes', 'form', 'Me Interesa', 'nombre, apellido, documento, telefono, correo, profesion, ubicacion', 'enviar()')
     d.p('ps_registro', 'ps', 'ps Registrar Interes', 'nombre, apellido, documento, telefono, correo, modulo_codigo, programa_codigo', 'registrarInteres()')
-    d.p('exito', 'cliente', 'PC Message', 'mensaje = "Su interés fue registrado."', 'volver()')
+    d.p('exito', 'cliente', 'PC Message', 'mensaje, detalle, nuevo_prospecto', 'volver()')
     d.p('login', 'cliente', 'Login', 'redirect', 'mostrarClave()')
     d.e('actor', 'catalogo', 'link', 'usa el sistema')
     d.e('catalogo', 'ps_catalogo', 'submit', 'cargar()')
@@ -523,7 +526,29 @@ def visitante():
     d.e('catalogo', 'error404', 'link', 'ruta inexistente')
     d.e('error404', 'catalogo', 'link', 'Ir al catálogo')
     d.e('error404', 'ps_visita', 'submit', 'visita("/error")')
+    pagos_publicos(d)
     return d.paginas, d.enlaces
+
+
+def pagos_publicos(d):
+    """CU6 sin sesión: autorización por token público; Setup no cobra."""
+    d.p('pago_cuota','cliente','Pago Publico de Cuota','token, cuota, orden, estado','pagar()')
+    d.p('pago_confirmacion','cliente','Confirmacion de Stripe','session_id, token, estado','consultar()')
+    d.p('pago_cancelado','cliente','Cancelacion de Stripe','session_id, token, estado','volver()')
+    d.p('ps_cuota_publica','ps','ps Abrir Enlace Publico de Cuota','token','abrirEnlaceCuotaPublico()')
+    d.p('ps_retorno_publico','ps','ps Consultar Retorno Publico','session_id, token','consultarRetornoPublico()')
+    d.p('ps_cancelar_publico','ps','ps Cancelar Retorno Publico','session_id, token','cancelarRetornoPublico()')
+    d.p('stripe_checkout','externo','Stripe Checkout / Setup Sandbox','modo, estado','')
+    d.e('actor','pago_cuota','link','enlace público autorizado por token')
+    d.e('pago_cuota','ps_cuota_publica','submit','pagar(): validar token y estado')
+    d.e('ps_cuota_publica','stripe_checkout','link','Checkout vigente autorizado')
+    d.e('stripe_checkout','pago_confirmacion','link','success_url: pago o Setup')
+    d.e('stripe_checkout','pago_cancelado','link','cancel_url')
+    d.e('pago_confirmacion','ps_retorno_publico','submit','token público: consultarRetornoPublico()')
+    d.e('pago_cancelado','ps_cancelar_publico','submit','token público: cancelarRetornoPublico()')
+    acceso(d,'ps_cuota_publica','SELECT / sesión vigente','cuotas','ordenes_pago','transacciones_stripe')
+    acceso(d,'ps_retorno_publico','SELECT / UPDATE idempotente','transacciones_stripe','cuotas','metodos_pago')
+    acceso(d,'ps_cancelar_publico','SELECT / UPDATE según estado Stripe','transacciones_stripe')
 
 
 # Un diagrama por actor del Capítulo V, en el orden de 7.5 (contenido.ACTORES)
@@ -549,8 +574,9 @@ API = {
     'ps_intereses': 'intereses.index', 'ps_show': 'intereses.show', 'ps_mover': 'intereses.mover',
     'ps_asignar': 'intereses.asignar', 'ps_repartir': 'intereses.distribuir',
     'ps_motivos': 'motivos.index', 'ps_motivo_g': 'motivos.store motivos.update', 'ps_motivo_d': 'motivos.destroy',
-    'ps_desc': 'pagos.descuentos', 'ps_metodo': 'pagos.registrarMetodo', 'ps_estmetodo': 'pagos.cambiarEstadoMetodo',
-    'ps_orden': 'pagos.crearOrden', 'ps_comprob': 'pagos.registrarComprobante',
+    'ps_desc': 'pagos.descuentos', 'ps_estmetodo': 'pagos.cambiarEstadoMetodo',
+    'ps_orden': 'pagos.crearOrden', 'ps_correo_pago':'notificaciones.enviar',
+    'ps_cuota_publica':'pagos.abrirEnlaceCuotaPublico','ps_retorno_publico':'pagos.consultarRetornoPublico','ps_cancelar_publico':'pagos.cancelarRetornoPublico',
     'ps_setup_stripe': 'pagos.crearSetupTarjeta', 'ps_checkout': 'pagos.crearCheckout',
     'ps_confirmar_checkout': 'pagos.confirmarCheckout', 'ps_cancelar_checkout': 'pagos.cancelarCheckout',
     'ps_anular_orden': 'pagos.anularOrden',
@@ -567,6 +593,7 @@ API = {
 }
 # client page -> archivo de presentacion/src. Las del menú salen de RECURSOS + rutas.jsx; estas no son un recurso propio:
 PAGINA_EXTRA = {'login': 'paginas/PLogin.jsx', 'catalogo': 'paginas/PCatalogo.jsx', 'error404': 'paginas/PError404.jsx',
+                'pago_cuota':'paginas/PPagoCuota.jsx',
                 'pago_confirmacion': 'paginas/PPagoConfirmacion.jsx', 'pago_cancelado': 'paginas/PPagoCancelado.jsx',
                 'ficha': 'paginas/PAgenda.jsx',            # /agenda?interes=n abre la ficha dentro de Agenda.jsx
                 'menu': 'plantilla/AppShell.jsx',         # menú, búsqueda, perfil y contador: AppShell + componentes/Shell
@@ -584,7 +611,23 @@ def verificar():
     errores, usadas, paginas_vistas = [], set(), set()
 
     def usos(arch):
-        u = set(U.get(arch, ()))
+        # Las llamadas de pagos viven en componentes importados por PAgenda.
+        # Resolver imports locales evita atribuirlas a una página inexistente
+        # o exigir que el padre duplique la llamada de su componente.
+        import re
+        pending=[arch];seen=set();u=set()
+        while pending:
+            current=pending.pop()
+            if current in seen:continue
+            seen.add(current);u.update(U.get(current,()))
+            path=codigo.PRE/current
+            if not path.exists():continue
+            for rel in re.findall(r"(?:from\s*|import\s*)['\"]([^'\"]+)['\"]",path.read_text(encoding='utf-8')):
+                if not rel.startswith('.'):continue
+                target=(path.parent/rel).resolve()
+                for candidate in (target,target.with_suffix('.jsx'),target.with_suffix('.js')):
+                    if candidate.suffix in ('.js','.jsx') and candidate.is_file() and candidate.is_relative_to(codigo.PRE.resolve()):
+                        pending.append(candidate.relative_to(codigo.PRE.resolve()).as_posix());break
         if arch.rsplit('/', 1)[-1] in con_auth or arch in SHELL: u |= U.get('servicios/auth.js', set())
         for s in SHELL: u |= {x for x in U.get(s, ()) if x.startswith(('sitio.', 'auth.'))}
         return u

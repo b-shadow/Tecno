@@ -1,0 +1,352 @@
+[
+  {
+    "id": 2072,
+    "guid": "{862FF81B-23C1-4504-B68A-F4485B302917}",
+    "from": 4,
+    "to": 6,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2073,
+    "guid": "{2BB3CEEE-AE3C-43bc-847B-683497B165F8}",
+    "from": 4,
+    "to": 6,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2074,
+    "guid": "{81851A50-92CD-4d5a-BCC4-402AE4F8D272}",
+    "from": 4,
+    "to": 6,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2075,
+    "guid": "{CA2313A2-793C-4373-B497-F770D8243A3A}",
+    "from": 4,
+    "to": 6,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2076,
+    "guid": "{B8884310-15E4-4c03-9CE2-1678EA512F18}",
+    "from": 4,
+    "to": 6,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2077,
+    "guid": "{46F978C8-9CD3-4daa-9E8E-4026162D0710}",
+    "from": 4,
+    "to": 6,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2078,
+    "guid": "{C536B188-27DC-49b6-89AF-888664CA7DE0}",
+    "from": 4,
+    "to": 6,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2079,
+    "guid": "{897599FA-570B-451c-9AB4-35B13F27AE19}",
+    "from": 4,
+    "to": 6,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2080,
+    "guid": "{E1668E3B-FDAA-4368-8B2A-6943A8754593}",
+    "from": 4,
+    "to": 7,
+    "layer": "Datos"
+  },
+  {
+    "id": 2081,
+    "guid": "{9C638029-952A-4c0b-AF24-79815731F398}",
+    "from": 4,
+    "to": 6,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2082,
+    "guid": "{12E07149-FC7C-44f4-A466-78D8E1EFF0F6}",
+    "from": 4,
+    "to": 6,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2083,
+    "guid": "{1C039126-4164-44c0-A9F8-54B91B7313BF}",
+    "from": 4,
+    "to": 6,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2084,
+    "guid": "{3B124D2B-2816-4f57-9E2B-E865FC7C5857}",
+    "from": 4,
+    "to": 6,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2085,
+    "guid": "{31397D8A-F185-43c3-8DE7-76F8DAB2B362}",
+    "from": 8,
+    "to": 9,
+    "layer": "Presentación"
+  },
+  {
+    "id": 2086,
+    "guid": "{E09C177B-68B0-428c-B83E-96D8F72A6454}",
+    "from": 8,
+    "to": 10,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2087,
+    "guid": "{F92C94EF-83B8-455a-9DCB-F8A32B6AD3B8}",
+    "from": 8,
+    "to": 10,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2088,
+    "guid": "{2FD7D35D-B541-474b-9C92-570C0D4346E0}",
+    "from": 12,
+    "to": 14,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2089,
+    "guid": "{01DE5EE9-124B-42f3-9521-91159D174932}",
+    "from": 12,
+    "to": 14,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2090,
+    "guid": "{44FBA1F4-22F2-41fa-B55B-50E0EA885966}",
+    "from": 12,
+    "to": 14,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2091,
+    "guid": "{493A3D6A-B1BA-4a08-93A5-0FBBB2CD1CF0}",
+    "from": 12,
+    "to": 14,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2092,
+    "guid": "{9702B4BA-01C9-4af6-BB83-9A3F818747F2}",
+    "from": 12,
+    "to": 14,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2093,
+    "guid": "{473C36BA-DB10-4a3f-B99F-002FE751684E}",
+    "from": 16,
+    "to": 19,
+    "layer": "Datos"
+  },
+  {
+    "id": 2094,
+    "guid": "{CC7B246A-2503-4498-ACC8-FA7416A51866}",
+    "from": 16,
+    "to": 18,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2095,
+    "guid": "{D50D0DA5-1EF2-49d4-B0A7-D623456692AB}",
+    "from": 20,
+    "to": 22,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2096,
+    "guid": "{E3B8D9A0-A7B1-4c93-AA2B-612D001B3B41}",
+    "from": 66,
+    "to": 68,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2097,
+    "guid": "{E1C45D6A-6797-4179-AAF8-3855E2744D8D}",
+    "from": 66,
+    "to": 68,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2071,
+    "guid": "{E1D2C0FA-DD98-49da-A444-9A04FE9E080E}",
+    "from": 4,
+    "to": 6,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2098,
+    "guid": "{C061798A-9F5C-4696-8572-B33861564949}",
+    "from": 66,
+    "to": 68,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2099,
+    "guid": "{641D9926-DA04-4c9c-8670-355D544275B7}",
+    "from": 66,
+    "to": 68,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2100,
+    "guid": "{9C62449A-EE6E-406e-9CFE-271C32F620B0}",
+    "from": 66,
+    "to": 68,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2101,
+    "guid": "{0B7132AC-BA88-463a-A23A-BE3BC955AB7F}",
+    "from": 66,
+    "to": 68,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2102,
+    "guid": "{8E7DDD01-1BAD-4ea6-9F3A-18C9C324D82F}",
+    "from": 66,
+    "to": 67,
+    "layer": "Presentación"
+  },
+  {
+    "id": 2103,
+    "guid": "{54D8E022-18C5-48f9-A2E1-3C965FB084F4}",
+    "from": 66,
+    "to": 67,
+    "layer": "Presentación"
+  },
+  {
+    "id": 2104,
+    "guid": "{A35189BB-3A21-4ddb-B463-8F2BE8DCB483}",
+    "from": 66,
+    "to": 67,
+    "layer": "Presentación"
+  },
+  {
+    "id": 2105,
+    "guid": "{9E850A76-4771-4082-8505-126077EC8BFD}",
+    "from": 66,
+    "to": 67,
+    "layer": "Presentación"
+  },
+  {
+    "id": 2106,
+    "guid": "{9DBFAD27-C446-4e84-B15F-746AA7D53BD7}",
+    "from": 66,
+    "to": 68,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2107,
+    "guid": "{B0FE7ED0-0EF3-4aaf-8713-3DADC502A6E1}",
+    "from": 66,
+    "to": 68,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2108,
+    "guid": "{90D3131A-53AF-42eb-AC80-73A710580261}",
+    "from": 66,
+    "to": 69,
+    "layer": "Datos"
+  },
+  {
+    "id": 2109,
+    "guid": "{6B28522B-26A5-43f0-A4B3-2AB4BCC25AC1}",
+    "from": 66,
+    "to": 67,
+    "layer": "Presentación"
+  },
+  {
+    "id": 2110,
+    "guid": "{E09103C8-F94E-42ab-9B81-0815B0CFF991}",
+    "from": 66,
+    "to": 67,
+    "layer": "Presentación"
+  },
+  {
+    "id": 2111,
+    "guid": "{8EFD385C-5ACA-43b6-AB6E-327C84DD2E5B}",
+    "from": 66,
+    "to": 67,
+    "layer": "Presentación"
+  },
+  {
+    "id": 2112,
+    "guid": "{2CE6CB8E-344F-4581-B0FA-761581409C69}",
+    "from": 66,
+    "to": 67,
+    "layer": "Presentación"
+  },
+  {
+    "id": 2113,
+    "guid": "{949539E0-329A-4419-AC63-C8CFEE01D549}",
+    "from": 28,
+    "to": 30,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2114,
+    "guid": "{3412205F-355F-484b-A5F5-CD3D254C829F}",
+    "from": 28,
+    "to": 30,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2115,
+    "guid": "{54DEA744-68F1-4a1c-B132-20DCA278529B}",
+    "from": 28,
+    "to": 30,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2116,
+    "guid": "{A3EB5BC3-247E-46bb-A946-D8B617B1A355}",
+    "from": 28,
+    "to": 30,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2117,
+    "guid": "{A577B714-01FB-412a-9842-5A808F457FC4}",
+    "from": 32,
+    "to": 34,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2118,
+    "guid": "{778A3F9E-7FED-4864-9ED5-5BA34E9B0B41}",
+    "from": 32,
+    "to": 34,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2349,
+    "guid": "{BCB94E40-2C3F-4db7-8C10-B6EB7E390A2E}",
+    "from": 66,
+    "to": 68,
+    "layer": "Negocio"
+  },
+  {
+    "id": 2350,
+    "guid": "{AFABB953-AAB8-4542-BAF5-A5E407C422FB}",
+    "from": 66,
+    "to": 68,
+    "layer": "Negocio"
+  }
+]

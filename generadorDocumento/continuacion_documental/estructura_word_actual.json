@@ -1,0 +1,1964 @@
+[
+  {
+    "i": 77,
+    "style": "TDC1",
+    "text": "Capítulo VI: Análisis de Arquitectura34",
+    "images": []
+  },
+  {
+    "i": 78,
+    "style": "TDC2",
+    "text": "5. Análisis de la Arquitectura34",
+    "images": []
+  },
+  {
+    "i": 79,
+    "style": "TDC3",
+    "text": "5.1. Modelo de Dominio34",
+    "images": []
+  },
+  {
+    "i": 80,
+    "style": "TDC4",
+    "text": "5.1.1. Identificar Paquetes34",
+    "images": []
+  },
+  {
+    "i": 81,
+    "style": "TDC3",
+    "text": "5.2. Relacionar Paquetes con casos de uso35",
+    "images": []
+  },
+  {
+    "i": 82,
+    "style": "TDC3",
+    "text": "5.3. Análisis de Caso de Uso37",
+    "images": []
+  },
+  {
+    "i": 83,
+    "style": "TDC4",
+    "text": "5.3.1. Diagramas de Colaboración37",
+    "images": []
+  },
+  {
+    "i": 84,
+    "style": "TDC4",
+    "text": "5.3.2. Análisis de clases40",
+    "images": []
+  },
+  {
+    "i": 108,
+    "style": "TDC1",
+    "text": "Capítulo VIII: Implementación97",
+    "images": []
+  },
+  {
+    "i": 109,
+    "style": "TDC2",
+    "text": "8. Implementación del Sistema97",
+    "images": []
+  },
+  {
+    "i": 110,
+    "style": "TDC3",
+    "text": "8.1. Herramientas para Desarrollo97",
+    "images": []
+  },
+  {
+    "i": 111,
+    "style": "TDC4",
+    "text": "Herramientas de Programación y Desarrollo97",
+    "images": []
+  },
+  {
+    "i": 112,
+    "style": "TDC4",
+    "text": "Herramientas de Gestión de Bases de Datos98",
+    "images": []
+  },
+  {
+    "i": 113,
+    "style": "TDC4",
+    "text": "Herramientas de Diseño y Modelado98",
+    "images": []
+  },
+  {
+    "i": 114,
+    "style": "TDC4",
+    "text": "Herramientas de Control de Versiones y Colaboración98",
+    "images": []
+  },
+  {
+    "i": 115,
+    "style": "TDC1",
+    "text": "Capítulo IX: Resultados99",
+    "images": []
+  },
+  {
+    "i": 116,
+    "style": "TDC2",
+    "text": "9. Resultado Esperado99",
+    "images": []
+  },
+  {
+    "i": 117,
+    "style": "TDC1",
+    "text": "Capítulo X: Pruebas100",
+    "images": []
+  },
+  {
+    "i": 118,
+    "style": "TDC2",
+    "text": "10. Plan de Pruebas100",
+    "images": []
+  },
+  {
+    "i": 119,
+    "style": "TDC3",
+    "text": "10.1. Prueba de Caja Blanca100",
+    "images": []
+  },
+  {
+    "i": 120,
+    "style": "TDC3",
+    "text": "10.2. Prueba de Caja Negra101",
+    "images": []
+  },
+  {
+    "i": 121,
+    "style": "TDC1",
+    "text": "11. Conclusión104",
+    "images": []
+  },
+  {
+    "i": 122,
+    "style": "TDC1",
+    "text": "12. Bibliografía105",
+    "images": []
+  },
+  {
+    "i": 123,
+    "style": "TDC1",
+    "text": "13. Anexo108",
+    "images": []
+  },
+  {
+    "i": 124,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 300,
+    "style": "Ttulo1",
+    "text": "Capítulo VI: Análisis de Arquitectura",
+    "images": []
+  },
+  {
+    "i": 301,
+    "style": "Ttulo2",
+    "text": "5. Análisis de la Arquitectura",
+    "images": []
+  },
+  {
+    "i": 302,
+    "style": "Ttulo3",
+    "text": "5.1. Modelo de Dominio",
+    "images": []
+  },
+  {
+    "i": 303,
+    "style": "Ttulo4",
+    "text": "5.1.1. Identificar Paquetes",
+    "images": []
+  },
+  {
+    "i": 304,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 305,
+    "style": "",
+    "text": "Seguridad y Acceso",
+    "images": []
+  },
+  {
+    "i": 306,
+    "style": "",
+    "text": "Gestiona los usuarios, sus roles y vigencia, los tokens de sesión, la matriz de acceso (recursos y permisos) y la bitácora de accesos.",
+    "images": []
+  },
+  {
+    "i": 307,
+    "style": "",
+    "text": "Oferta Académica",
+    "images": []
+  },
+  {
+    "i": 308,
+    "style": "",
+    "text": "Gestiona el catálogo de programas y módulos que se ofrece al público.",
+    "images": []
+  },
+  {
+    "i": 309,
+    "style": "",
+    "text": "Gestión de Prospectos",
+    "images": []
+  },
+  {
+    "i": 310,
+    "style": "",
+    "text": "Gestiona los prospectos, sus intereses como tarjetas del embudo, sus movimientos y los motivos de pérdida.",
+    "images": []
+  },
+  {
+    "i": 311,
+    "style": "",
+    "text": "Pagos y Matrícula",
+    "images": []
+  },
+  {
+    "i": 312,
+    "style": "",
+    "text": "Gestiona los métodos de pago, las órdenes y sus cuotas, los comprobantes manuales y las transacciones y webhooks de Stripe Sandbox; también la inscripción y la exportación de la matrícula al SIS.",
+    "images": []
+  },
+  {
+    "i": 313,
+    "style": "",
+    "text": "Seguimiento Comercial",
+    "images": []
+  },
+  {
+    "i": 314,
+    "style": "",
+    "text": "Gestiona las interacciones, los recordatorios de contacto y las notificaciones.",
+    "images": []
+  },
+  {
+    "i": 315,
+    "style": "",
+    "text": "Ventas y Reportes",
+    "images": []
+  },
+  {
+    "i": 316,
+    "style": "",
+    "text": "Gestiona las comisiones de los vendedores, su configuración y los reportes y estadísticas del sistema.",
+    "images": []
+  },
+  {
+    "i": 317,
+    "style": "Ttulo3",
+    "text": "5.2. Relacionar Paquetes con casos de uso",
+    "images": []
+  },
+  {
+    "i": 318,
+    "style": "",
+    "text": "Módulo de Seguridad y Acceso",
+    "images": []
+  },
+  {
+    "i": 319,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 320,
+    "style": "",
+    "text": "Ilustración 3 Relacionar Paquetes con casos de uso. Módulo de Seguridad y Acceso",
+    "images": []
+  },
+  {
+    "i": 321,
+    "style": "",
+    "text": "Módulo de Oferta Académica",
+    "images": []
+  },
+  {
+    "i": 322,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 323,
+    "style": "",
+    "text": "Módulo de Gestión de Prospectos",
+    "images": []
+  },
+  {
+    "i": 324,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 325,
+    "style": "",
+    "text": "Módulo de Pagos y Matrícula",
+    "images": []
+  },
+  {
+    "i": 326,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 327,
+    "style": "",
+    "text": "Módulo de Seguimiento Comercial",
+    "images": []
+  },
+  {
+    "i": 328,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 329,
+    "style": "",
+    "text": "Módulo de Ventas y Reportes",
+    "images": []
+  },
+  {
+    "i": 330,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 331,
+    "style": "Ttulo3",
+    "text": "5.3. Análisis de Caso de Uso",
+    "images": []
+  },
+  {
+    "i": 332,
+    "style": "Ttulo4",
+    "text": "5.3.1. Diagramas de Colaboración",
+    "images": []
+  },
+  {
+    "i": 333,
+    "style": "",
+    "text": "CU1. Gestión de Usuarios (Propietario, Clientes)",
+    "images": []
+  },
+  {
+    "i": 334,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 335,
+    "style": "",
+    "text": "CU2. Gestión de Captar, Consumir Oferta",
+    "images": []
+  },
+  {
+    "i": 336,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 337,
+    "style": "",
+    "text": "CU3. Gestión de Asignar Prospectos (Leads)",
+    "images": []
+  },
+  {
+    "i": 338,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 339,
+    "style": "",
+    "text": "CU4. Gestión de Embudo de Ventas en Tablero Kanban",
+    "images": []
+  },
+  {
+    "i": 340,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 341,
+    "style": "",
+    "text": "CU5. Gestión de Pérdida de Prospectos y Clasificación de Motivos",
+    "images": []
+  },
+  {
+    "i": 342,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 343,
+    "style": "",
+    "text": "CU6. Gestión de Validar Datos y Procesar Conversión a Matrícula",
+    "images": []
+  },
+  {
+    "i": 344,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 345,
+    "style": "",
+    "text": "CU7. Gestión de Bitácora, Interacciones y Recordatorios",
+    "images": []
+  },
+  {
+    "i": 346,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 347,
+    "style": "",
+    "text": "CU8. Reportes y Estadísticas",
+    "images": []
+  },
+  {
+    "i": 348,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 349,
+    "style": "Ttulo4",
+    "text": "5.3.2. Análisis de clases",
+    "images": []
+  },
+  {
+    "i": 350,
+    "style": "",
+    "text": "CU1. Gestión de Usuarios (Propietario, Clientes)",
+    "images": []
+  },
+  {
+    "i": 351,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 352,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 353,
+    "style": "",
+    "text": "CU2. Gestión de Captar, Consumir Oferta",
+    "images": []
+  },
+  {
+    "i": 354,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 355,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 356,
+    "style": "",
+    "text": "CU3. Gestión de Asignar Prospectos (Leads)",
+    "images": []
+  },
+  {
+    "i": 357,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 358,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 359,
+    "style": "",
+    "text": "CU4. Gestión de Embudo de Ventas en Tablero Kanban",
+    "images": []
+  },
+  {
+    "i": 360,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 361,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 362,
+    "style": "",
+    "text": "CU5. Gestión de Pérdida de Prospectos y Clasificación de Motivos",
+    "images": []
+  },
+  {
+    "i": 363,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 364,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 365,
+    "style": "",
+    "text": "CU6. Gestión de Validar Datos y Procesar Conversión a Matrícula",
+    "images": []
+  },
+  {
+    "i": 366,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 367,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 368,
+    "style": "",
+    "text": "CU7. Gestión de Bitácora, Interacciones y Recordatorios",
+    "images": []
+  },
+  {
+    "i": 369,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 370,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 371,
+    "style": "",
+    "text": "CU8. Reportes y Estadísticas",
+    "images": []
+  },
+  {
+    "i": 372,
+    "style": "",
+    "text": "",
+    "images": []
+  },
+  {
+    "i": 382,
+    "style": "Heading2",
+    "text": "7.2. Diseño Lógico",
+    "images": []
+  },
+  {
+    "i": 383,
+    "style": "Heading3",
+    "text": "7.2.1. Mapeo",
+    "images": []
+  },
+  {
+    "i": 385,
+    "style": "Heading4",
+    "text": "api_tokens",
+    "images": []
+  },
+  {
+    "i": 388,
+    "style": "Heading4",
+    "text": "bitacora",
+    "images": []
+  },
+  {
+    "i": 391,
+    "style": "Heading4",
+    "text": "catalogo_cache",
+    "images": []
+  },
+  {
+    "i": 394,
+    "style": "Heading4",
+    "text": "comisiones",
+    "images": []
+  },
+  {
+    "i": 397,
+    "style": "Heading4",
+    "text": "comprobantes_pago",
+    "images": []
+  },
+  {
+    "i": 400,
+    "style": "Heading4",
+    "text": "configuraciones",
+    "images": []
+  },
+  {
+    "i": 403,
+    "style": "Heading4",
+    "text": "cuotas",
+    "images": []
+  },
+  {
+    "i": 406,
+    "style": "Heading4",
+    "text": "descuentos",
+    "images": []
+  },
+  {
+    "i": 409,
+    "style": "Heading4",
+    "text": "exportaciones",
+    "images": []
+  },
+  {
+    "i": 412,
+    "style": "Heading4",
+    "text": "inscripciones_comerciales",
+    "images": []
+  },
+  {
+    "i": 415,
+    "style": "Heading4",
+    "text": "interacciones",
+    "images": []
+  },
+  {
+    "i": 418,
+    "style": "Heading4",
+    "text": "intereses",
+    "images": []
+  },
+  {
+    "i": 421,
+    "style": "Heading4",
+    "text": "log_comandos",
+    "images": []
+  },
+  {
+    "i": 424,
+    "style": "Heading4",
+    "text": "metodos_pago",
+    "images": []
+  },
+  {
+    "i": 427,
+    "style": "Heading4",
+    "text": "motivos_perdida",
+    "images": []
+  },
+  {
+    "i": 430,
+    "style": "Heading4",
+    "text": "movimientos_interes",
+    "images": []
+  },
+  {
+    "i": 433,
+    "style": "Heading4",
+    "text": "notificaciones",
+    "images": []
+  },
+  {
+    "i": 436,
+    "style": "Heading4",
+    "text": "orden_pago_descuentos",
+    "images": []
+  },
+  {
+    "i": 439,
+    "style": "Heading4",
+    "text": "ordenes_pago",
+    "images": []
+  },
+  {
+    "i": 442,
+    "style": "Heading4",
+    "text": "pagos",
+    "images": []
+  },
+  {
+    "i": 445,
+    "style": "Heading4",
+    "text": "permisos",
+    "images": []
+  },
+  {
+    "i": 448,
+    "style": "Heading4",
+    "text": "programas",
+    "images": []
+  },
+  {
+    "i": 451,
+    "style": "Heading4",
+    "text": "programas_responsables",
+    "images": []
+  },
+  {
+    "i": 454,
+    "style": "Heading4",
+    "text": "prospectos",
+    "images": []
+  },
+  {
+    "i": 457,
+    "style": "Heading4",
+    "text": "recordatorios",
+    "images": []
+  },
+  {
+    "i": 460,
+    "style": "Heading4",
+    "text": "recursos",
+    "images": []
+  },
+  {
+    "i": 463,
+    "style": "Heading4",
+    "text": "roles",
+    "images": []
+  },
+  {
+    "i": 466,
+    "style": "Heading4",
+    "text": "solicitudes_compra",
+    "images": []
+  },
+  {
+    "i": 469,
+    "style": "Heading4",
+    "text": "transacciones_stripe",
+    "images": []
+  },
+  {
+    "i": 472,
+    "style": "Heading4",
+    "text": "usuarios",
+    "images": []
+  },
+  {
+    "i": 475,
+    "style": "Heading4",
+    "text": "webhook_eventos_stripe",
+    "images": []
+  },
+  {
+    "i": 479,
+    "style": "Heading2",
+    "text": "7.3. Diseño Físico",
+    "images": []
+  },
+  {
+    "i": 481,
+    "style": "Heading4",
+    "text": "api_tokens",
+    "images": []
+  },
+  {
+    "i": 490,
+    "style": "Heading4",
+    "text": "bitacora",
+    "images": []
+  },
+  {
+    "i": 502,
+    "style": "Heading4",
+    "text": "catalogo_cache",
+    "images": []
+  },
+  {
+    "i": 513,
+    "style": "Heading4",
+    "text": "comisiones",
+    "images": []
+  },
+  {
+    "i": 525,
+    "style": "Heading4",
+    "text": "comprobantes_pago",
+    "images": []
+  },
+  {
+    "i": 542,
+    "style": "Heading4",
+    "text": "configuraciones",
+    "images": []
+  },
+  {
+    "i": 550,
+    "style": "Heading4",
+    "text": "cuotas",
+    "images": []
+  },
+  {
+    "i": 574,
+    "style": "Heading4",
+    "text": "descuentos",
+    "images": []
+  },
+  {
+    "i": 584,
+    "style": "Heading4",
+    "text": "exportaciones",
+    "images": []
+  },
+  {
+    "i": 596,
+    "style": "Heading4",
+    "text": "inscripciones_comerciales",
+    "images": []
+  },
+  {
+    "i": 603,
+    "style": "Heading4",
+    "text": "interacciones",
+    "images": []
+  },
+  {
+    "i": 616,
+    "style": "Heading4",
+    "text": "intereses",
+    "images": []
+  },
+  {
+    "i": 638,
+    "style": "Heading4",
+    "text": "log_comandos",
+    "images": []
+  },
+  {
+    "i": 649,
+    "style": "Heading4",
+    "text": "metodos_pago",
+    "images": []
+  },
+  {
+    "i": 670,
+    "style": "Heading4",
+    "text": "motivos_perdida",
+    "images": []
+  },
+  {
+    "i": 676,
+    "style": "Heading4",
+    "text": "movimientos_interes",
+    "images": []
+  },
+  {
+    "i": 686,
+    "style": "Heading4",
+    "text": "notificaciones",
+    "images": []
+  },
+  {
+    "i": 699,
+    "style": "Heading4",
+    "text": "orden_pago_descuentos",
+    "images": []
+  },
+  {
+    "i": 708,
+    "style": "Heading4",
+    "text": "ordenes_pago",
+    "images": []
+  },
+  {
+    "i": 725,
+    "style": "Heading4",
+    "text": "pagos",
+    "images": []
+  },
+  {
+    "i": 736,
+    "style": "Heading4",
+    "text": "permisos",
+    "images": []
+  },
+  {
+    "i": 745,
+    "style": "Heading4",
+    "text": "programas",
+    "images": []
+  },
+  {
+    "i": 750,
+    "style": "Heading4",
+    "text": "programas_responsables",
+    "images": []
+  },
+  {
+    "i": 757,
+    "style": "Heading4",
+    "text": "prospectos",
+    "images": []
+  },
+  {
+    "i": 774,
+    "style": "Heading4",
+    "text": "recordatorios",
+    "images": []
+  },
+  {
+    "i": 788,
+    "style": "Heading4",
+    "text": "recursos",
+    "images": []
+  },
+  {
+    "i": 800,
+    "style": "Heading4",
+    "text": "roles",
+    "images": []
+  },
+  {
+    "i": 807,
+    "style": "Heading4",
+    "text": "solicitudes_compra",
+    "images": []
+  },
+  {
+    "i": 822,
+    "style": "Heading4",
+    "text": "transacciones_stripe",
+    "images": []
+  },
+  {
+    "i": 857,
+    "style": "Heading4",
+    "text": "usuarios",
+    "images": []
+  },
+  {
+    "i": 874,
+    "style": "Heading4",
+    "text": "webhook_eventos_stripe",
+    "images": []
+  },
+  {
+    "i": 889,
+    "style": "Heading3",
+    "text": "7.3.1. Diccionario de datos y finalidad de las columnas",
+    "images": []
+  },
+  {
+    "i": 890,
+    "style": "Heading4",
+    "text": "api_tokens",
+    "images": []
+  },
+  {
+    "i": 892,
+    "style": "Heading4",
+    "text": "bitacora",
+    "images": []
+  },
+  {
+    "i": 894,
+    "style": "Heading4",
+    "text": "catalogo_cache",
+    "images": []
+  },
+  {
+    "i": 896,
+    "style": "Heading4",
+    "text": "comisiones",
+    "images": []
+  },
+  {
+    "i": 898,
+    "style": "Heading4",
+    "text": "comprobantes_pago",
+    "images": []
+  },
+  {
+    "i": 900,
+    "style": "Heading4",
+    "text": "configuraciones",
+    "images": []
+  },
+  {
+    "i": 902,
+    "style": "Heading4",
+    "text": "cuotas",
+    "images": []
+  },
+  {
+    "i": 904,
+    "style": "Heading4",
+    "text": "descuentos",
+    "images": []
+  },
+  {
+    "i": 906,
+    "style": "Heading4",
+    "text": "exportaciones",
+    "images": []
+  },
+  {
+    "i": 908,
+    "style": "Heading4",
+    "text": "inscripciones_comerciales",
+    "images": []
+  },
+  {
+    "i": 910,
+    "style": "Heading4",
+    "text": "interacciones",
+    "images": []
+  },
+  {
+    "i": 912,
+    "style": "Heading4",
+    "text": "intereses",
+    "images": []
+  },
+  {
+    "i": 914,
+    "style": "Heading4",
+    "text": "log_comandos",
+    "images": []
+  },
+  {
+    "i": 916,
+    "style": "Heading4",
+    "text": "metodos_pago",
+    "images": []
+  },
+  {
+    "i": 918,
+    "style": "Heading4",
+    "text": "motivos_perdida",
+    "images": []
+  },
+  {
+    "i": 920,
+    "style": "Heading4",
+    "text": "movimientos_interes",
+    "images": []
+  },
+  {
+    "i": 922,
+    "style": "Heading4",
+    "text": "notificaciones",
+    "images": []
+  },
+  {
+    "i": 924,
+    "style": "Heading4",
+    "text": "orden_pago_descuentos",
+    "images": []
+  },
+  {
+    "i": 926,
+    "style": "Heading4",
+    "text": "ordenes_pago",
+    "images": []
+  },
+  {
+    "i": 928,
+    "style": "Heading4",
+    "text": "pagos",
+    "images": []
+  },
+  {
+    "i": 930,
+    "style": "Heading4",
+    "text": "permisos",
+    "images": []
+  },
+  {
+    "i": 932,
+    "style": "Heading4",
+    "text": "programas",
+    "images": []
+  },
+  {
+    "i": 934,
+    "style": "Heading4",
+    "text": "programas_responsables",
+    "images": []
+  },
+  {
+    "i": 936,
+    "style": "Heading4",
+    "text": "prospectos",
+    "images": []
+  },
+  {
+    "i": 938,
+    "style": "Heading4",
+    "text": "recordatorios",
+    "images": []
+  },
+  {
+    "i": 940,
+    "style": "Heading4",
+    "text": "recursos",
+    "images": []
+  },
+  {
+    "i": 942,
+    "style": "Heading4",
+    "text": "roles",
+    "images": []
+  },
+  {
+    "i": 944,
+    "style": "Heading4",
+    "text": "solicitudes_compra",
+    "images": []
+  },
+  {
+    "i": 946,
+    "style": "Heading4",
+    "text": "transacciones_stripe",
+    "images": []
+  },
+  {
+    "i": 948,
+    "style": "Heading4",
+    "text": "usuarios",
+    "images": []
+  },
+  {
+    "i": 950,
+    "style": "Heading4",
+    "text": "webhook_eventos_stripe",
+    "images": []
+  },
+  {
+    "i": 952,
+    "style": "Heading3",
+    "text": "7.3.2. Claves, restricciones y cardinalidades verificadas",
+    "images": []
+  },
+  {
+    "i": 1068,
+    "style": "Heading3",
+    "text": "7.3.3. Índices reales",
+    "images": []
+  },
+  {
+    "i": 1125,
+    "style": "Heading3",
+    "text": "7.3.4. Triggers y funciones reales",
+    "images": []
+  },
+  {
+    "i": 1126,
+    "style": "Heading4",
+    "text": "bitacora_contar_visita",
+    "images": []
+  },
+  {
+    "i": 1136,
+    "style": "Heading4",
+    "text": "intereses_clasificar",
+    "images": []
+  },
+  {
+    "i": 1148,
+    "style": "Heading4",
+    "text": "intereses_historial",
+    "images": []
+  },
+  {
+    "i": 1169,
+    "style": "Heading4",
+    "text": "pagos_copiar_estado",
+    "images": []
+  },
+  {
+    "i": 1182,
+    "style": "Heading4",
+    "text": "pagos_crear_cuota",
+    "images": []
+  },
+  {
+    "i": 1247,
+    "style": "Ttulo1",
+    "text": "Capítulo VIII: Implementación",
+    "images": []
+  },
+  {
+    "i": 1248,
+    "style": "Ttulo2",
+    "text": "8. Implementación del Sistema",
+    "images": []
+  },
+  {
+    "i": 1249,
+    "style": "Ttulo3",
+    "text": "8.1. Herramientas para Desarrollo",
+    "images": []
+  },
+  {
+    "i": 1250,
+    "style": "Ttulo4",
+    "text": "Herramientas de Programación y Desarrollo",
+    "images": []
+  },
+  {
+    "i": 1251,
+    "style": "",
+    "text": "PHP 8.4: Lenguaje de la capa de negocio y de la capa de datos; el servidor de la facultad ejecuta PHP 8.4.",
+    "images": []
+  },
+  {
+    "i": 1252,
+    "style": "",
+    "text": "Laravel 13.42.0: Framework de la capa de negocio: expone la API RESTful (negocio/routes/api.php) con controladores, requests de validación, servicios y los middleware de token y de matriz de acceso; sus migraciones crean la base de datos.",
+    "images": []
+  },
+  {
+    "i": 1253,
+    "style": "",
+    "text": "React 18.3.1: Biblioteca de la capa de presentación: cada página del sistema es un componente (presentacion/src/paginas).",
+    "images": []
+  },
+  {
+    "i": 1254,
+    "style": "",
+    "text": "React Router 6.30.6: Enrutamiento de la aplicación de una sola página: una ruta por página del diagrama de navegación (presentacion/src/rutas.jsx).",
+    "images": []
+  },
+  {
+    "i": 1255,
+    "style": "",
+    "text": "Tailwind CSS 4.3.5: Estilos de la interfaz: tokens de los tres temas, día/noche y alto contraste en presentacion/src/estilos, y utilidades en cada componente.",
+    "images": []
+  },
+  {
+    "i": 1256,
+    "style": "",
+    "text": "Axios 1.21.1: Cliente HTTP único (presentacion/src/api/cliente.js) que envía el token Bearer y consume la API RESTful.",
+    "images": []
+  },
+  {
+    "i": 1257,
+    "style": "",
+    "text": "Vite 8.3.8: Servidor de desarrollo y empaquetador de la capa de presentación; genera el build que se publica.",
+    "images": []
+  },
+  {
+    "i": 1258,
+    "style": "",
+    "text": "Chart.js 4.6.1: Gráficos del Dashboard y de Reportes y Estadísticas.",
+    "images": []
+  },
+  {
+    "i": 1259,
+    "style": "",
+    "text": "Lucide React 1.77.0: Íconos de la interfaz.",
+    "images": []
+  },
+  {
+    "i": 1260,
+    "style": "",
+    "text": "Playwright 1.64.1: Pruebas de caja negra en los navegadores Chromium, Firefox y WebKit (scripts/verificar_navegadores.mjs).",
+    "images": []
+  },
+  {
+    "i": 1261,
+    "style": "Ttulo4",
+    "text": "Herramientas de Gestión de Bases de Datos",
+    "images": []
+  },
+  {
+    "i": 1262,
+    "style": "",
+    "text": "PostgreSQL 18: Gestor de la base de datos db_grupo05sa (esquema public), compartida con el Proyecto 1.",
+    "images": []
+  },
+  {
+    "i": 1263,
+    "style": "Ttulo4",
+    "text": "Herramientas de Diseño y Modelado",
+    "images": []
+  },
+  {
+    "i": 1264,
+    "style": "",
+    "text": "Enterprise Architect 15 Trial: Modelado UML del sistema (casos de uso, paquetes, clases, base de datos y navegación), automatizado por COM desde generadorDocumento/ea.",
+    "images": []
+  },
+  {
+    "i": 1265,
+    "style": "Ttulo4",
+    "text": "Herramientas de Control de Versiones y Colaboración",
+    "images": []
+  },
+  {
+    "i": 1266,
+    "style": "",
+    "text": "Git: Control de versiones del código fuente.",
+    "images": []
+  },
+  {
+    "i": 1267,
+    "style": "",
+    "text": "GitHub: Repositorio remoto del grupo (ver 13. Anexo).",
+    "images": []
+  },
+  {
+    "i": 1268,
+    "style": "Ttulo1",
+    "text": "Capítulo IX: Resultados",
+    "images": []
+  },
+  {
+    "i": 1269,
+    "style": "Ttulo2",
+    "text": "9. Resultado Esperado",
+    "images": []
+  },
+  {
+    "i": 1270,
+    "style": "",
+    "text": "Se espera un sistema web de 3 capas publicado en el servidor de la facultad en el que cada usuario vea solo el menú que le da su rol en la matriz de acceso y en el que cada acción quede validada en el servidor.",
+    "images": []
+  },
+  {
+    "i": 1271,
+    "style": "",
+    "text": "El Visitante podrá consultar el catálogo de programas y módulos, buscar en él y registrar su interés sin iniciar sesión.",
+    "images": []
+  },
+  {
+    "i": 1272,
+    "style": "",
+    "text": "El Administrador podrá usar Dashboard, Embudo de ventas, Prospectos, Asignación de prospectos, Seguimiento y agenda, Motivos de pérdida, Validación de pagos, Matrículas y SIS, Oferta académica, Ventas y comisiones, Reportes y estadísticas, Notificaciones, Usuarios, Matriz de acceso y Bitácora de accesos, con permiso de eliminación sobre cada uno.",
+    "images": []
+  },
+  {
+    "i": 1273,
+    "style": "",
+    "text": "El Coordinador podrá usar Dashboard, Embudo de ventas, Prospectos, Asignación de prospectos, Seguimiento y agenda, Motivos de pérdida, Validación de pagos, Matrículas y SIS, Oferta académica, Ventas y comisiones, Reportes y estadísticas y Notificaciones, sobre los programas a su cargo.",
+    "images": []
+  },
+  {
+    "i": 1274,
+    "style": "",
+    "text": "El Vendedor podrá usar Mi día, Embudo de ventas, Prospectos, Seguimiento y agenda, Ventas y comisiones, Reportes y estadísticas y Notificaciones, sobre los prospectos de su cartera.",
+    "images": []
+  },
+  {
+    "i": 1275,
+    "style": "",
+    "text": "Así, ningún prospecto queda sin seguimiento y la coordinación sabe en todo momento en qué etapa está cada uno y por qué se pierde.",
+    "images": []
+  },
+  {
+    "i": 1276,
+    "style": "Ttulo1",
+    "text": "Capítulo X: Pruebas",
+    "images": []
+  },
+  {
+    "i": 1277,
+    "style": "Ttulo2",
+    "text": "10. Plan de Pruebas",
+    "images": []
+  },
+  {
+    "i": 1278,
+    "style": "Ttulo3",
+    "text": "10.1. Prueba de Caja Blanca",
+    "images": []
+  },
+  {
+    "i": 1279,
+    "style": "",
+    "text": "1. Bitácora de accesos",
+    "images": []
+  },
+  {
+    "i": 1280,
+    "style": "Listaconvietas2",
+    "text": "Objetivo: Comprobar que el login fallido y el acceso denegado quedan registrados en la bitácora.",
+    "images": []
+  },
+  {
+    "i": 1281,
+    "style": "Listaconvietas2",
+    "text": "Criterio de éxito: La bitácora contiene el login fallido con su IP y el acceso denegado.",
+    "images": []
+  },
+  {
+    "i": 1282,
+    "style": "",
+    "text": "2. Menú dinámico por rol",
+    "images": []
+  },
+  {
+    "i": 1283,
+    "style": "Listaconvietas2",
+    "text": "Objetivo: Comprobar que el menú de cada rol se arma desde la matriz de acceso de la base de datos.",
+    "images": []
+  },
+  {
+    "i": 1284,
+    "style": "Listaconvietas2",
+    "text": "Criterio de éxito: El menú del vendedor no incluye usuarios ni validación de pagos e incluye el embudo.",
+    "images": []
+  },
+  {
+    "i": 1285,
+    "style": "",
+    "text": "3. Matriz aplicada en el servidor",
+    "images": []
+  },
+  {
+    "i": 1286,
+    "style": "Listaconvietas2",
+    "text": "Objetivo: Comprobar que la API rechaza una acción sin permiso aunque se llame directamente.",
+    "images": []
+  },
+  {
+    "i": 1287,
+    "style": "Listaconvietas2",
+    "text": "Criterio de éxito: El vendedor recibe 403 al listar usuarios.",
+    "images": []
+  },
+  {
+    "i": 1288,
+    "style": "",
+    "text": "4. Cambio de permiso sin tocar código",
+    "images": []
+  },
+  {
+    "i": 1289,
+    "style": "Listaconvietas2",
+    "text": "Objetivo: Comprobar que asignar un permiso en la matriz cambia el menú del rol.",
+    "images": []
+  },
+  {
+    "i": 1290,
+    "style": "Listaconvietas2",
+    "text": "Criterio de éxito: El recurso aparece en el menú del rol tras asignarlo.",
+    "images": []
+  },
+  {
+    "i": 1291,
+    "style": "",
+    "text": "5. Cartera del vendedor (RF1.2)",
+    "images": []
+  },
+  {
+    "i": 1292,
+    "style": "Listaconvietas2",
+    "text": "Objetivo: Comprobar que el vendedor ve solo las tarjetas de su cartera.",
+    "images": []
+  },
+  {
+    "i": 1293,
+    "style": "Listaconvietas2",
+    "text": "Criterio de éxito: Todas las tarjetas devueltas tienen como vendedor al usuario que consulta.",
+    "images": []
+  },
+  {
+    "i": 1294,
+    "style": "",
+    "text": "6. Pérdida con motivo (RF3.3)",
+    "images": []
+  },
+  {
+    "i": 1295,
+    "style": "Listaconvietas2",
+    "text": "Objetivo: Comprobar que pasar una tarjeta a Perdido exige un motivo.",
+    "images": []
+  },
+  {
+    "i": 1296,
+    "style": "Listaconvietas2",
+    "text": "Criterio de éxito: La API responde 422 con un mensaje sobre el motivo.",
+    "images": []
+  },
+  {
+    "i": 1297,
+    "style": "",
+    "text": "7. Conversión validada (RF3.4)",
+    "images": []
+  },
+  {
+    "i": 1298,
+    "style": "Listaconvietas2",
+    "text": "Objetivo: Comprobar que una tarjeta no se convierte sin la primera cuota aprobada.",
+    "images": []
+  },
+  {
+    "i": 1299,
+    "style": "Listaconvietas2",
+    "text": "Criterio de éxito: La API responde 422 con la lista de lo que falta.",
+    "images": []
+  },
+  {
+    "i": 1300,
+    "style": "",
+    "text": "8. Plan de cuotas",
+    "images": []
+  },
+  {
+    "i": 1301,
+    "style": "Listaconvietas2",
+    "text": "Objetivo: Comprobar que una orden en tres cuotas reparte el total.",
+    "images": []
+  },
+  {
+    "i": 1302,
+    "style": "Listaconvietas2",
+    "text": "Criterio de éxito: La orden tiene tres cuotas cuya suma es el total.",
+    "images": []
+  },
+  {
+    "i": 1303,
+    "style": "",
+    "text": "9. Conversión al aprobar la primera cuota",
+    "images": []
+  },
+  {
+    "i": 1304,
+    "style": "Listaconvietas2",
+    "text": "Objetivo: Comprobar que con datos completos y la primera cuota aprobada la tarjeta pasa a Convertido.",
+    "images": []
+  },
+  {
+    "i": 1305,
+    "style": "Listaconvietas2",
+    "text": "Criterio de éxito: La tarjeta queda en Convertido.",
+    "images": []
+  },
+  {
+    "i": 1306,
+    "style": "",
+    "text": "10. Contador de visitas",
+    "images": []
+  },
+  {
+    "i": 1307,
+    "style": "Listaconvietas2",
+    "text": "Objetivo: Comprobar que el contador persistente (trigger) suma cada visita.",
+    "images": []
+  },
+  {
+    "i": 1308,
+    "style": "Listaconvietas2",
+    "text": "Criterio de éxito: Las visitas de la página suben en 1.",
+    "images": []
+  },
+  {
+    "i": 1309,
+    "style": "",
+    "text": "11. Importación CSV (RF2.1)",
+    "images": []
+  },
+  {
+    "i": 1310,
+    "style": "Listaconvietas2",
+    "text": "Objetivo: Comprobar el rechazo de un CSV con prospectos ya registrados.",
+    "images": []
+  },
+  {
+    "i": 1311,
+    "style": "Listaconvietas2",
+    "text": "Criterio de éxito: El CSV duplicado se rechaza sin cargar ningún prospecto.",
+    "images": []
+  },
+  {
+    "i": 1312,
+    "style": "",
+    "text": "12. Estadísticas porcentuales",
+    "images": []
+  },
+  {
+    "i": 1313,
+    "style": "Listaconvietas2",
+    "text": "Objetivo: Comprobar que las estadísticas del embudo son porcentajes que suman 100 %.",
+    "images": []
+  },
+  {
+    "i": 1314,
+    "style": "Listaconvietas2",
+    "text": "Criterio de éxito: La suma de los porcentajes del embudo es 100 % (± 1).",
+    "images": []
+  },
+  {
+    "i": 1315,
+    "style": "Ttulo3",
+    "text": "10.2. Prueba de Caja Negra",
+    "images": []
+  },
+  {
+    "i": 1316,
+    "style": "",
+    "text": "1. Catálogo y registro público en el celular",
+    "images": []
+  },
+  {
+    "i": 1317,
+    "style": "Listaconvietas2",
+    "text": "Objetivo: Comprobar que el visitante registra su interés desde un celular (390 × 844).",
+    "images": []
+  },
+  {
+    "i": 1318,
+    "style": "Listaconvietas2",
+    "text": "Criterio de éxito: Aparece \"Interés registrado correctamente.\" y el botón de envío no queda recortado.",
+    "images": []
+  },
+  {
+    "i": 1319,
+    "style": "",
+    "text": "2. Inicio de sesión sin recordar",
+    "images": []
+  },
+  {
+    "i": 1320,
+    "style": "Listaconvietas2",
+    "text": "Objetivo: Comprobar que sin \"Recordarme\" la sesión dura solo mientras la pestaña está abierta.",
+    "images": []
+  },
+  {
+    "i": 1321,
+    "style": "Listaconvietas2",
+    "text": "Criterio de éxito: El token queda en sessionStorage y no en localStorage, y al recargar sigue en su página de inicio.",
+    "images": []
+  },
+  {
+    "i": 1322,
+    "style": "",
+    "text": "3. Páginas del menú en cuatro anchos y dos temas",
+    "images": []
+  },
+  {
+    "i": 1323,
+    "style": "Listaconvietas2",
+    "text": "Objetivo: Comprobar cada página del menú de cada rol en 320, 390, 768 y 1280 px, en modo claro y oscuro.",
+    "images": []
+  },
+  {
+    "i": 1324,
+    "style": "Listaconvietas2",
+    "text": "Criterio de éxito: Ninguna página desborda horizontalmente, no hay imágenes rotas ni mensajes de error visibles.",
+    "images": []
+  },
+  {
+    "i": 1325,
+    "style": "",
+    "text": "4. Errores de ejecución y del servidor",
+    "images": []
+  },
+  {
+    "i": 1326,
+    "style": "Listaconvietas2",
+    "text": "Objetivo: Comprobar que recorrer el sistema no produce errores.",
+    "images": []
+  },
+  {
+    "i": 1327,
+    "style": "Listaconvietas2",
+    "text": "Criterio de éxito: No hay errores de JavaScript ni respuestas 500 del servidor.",
+    "images": []
+  },
+  {
+    "i": 1328,
+    "style": "",
+    "text": "5. Protección del último administrador",
+    "images": []
+  },
+  {
+    "i": 1329,
+    "style": "Listaconvietas2",
+    "text": "Objetivo: Comprobar que la interfaz no deja desactivar al único administrador.",
+    "images": []
+  },
+  {
+    "i": 1330,
+    "style": "Listaconvietas2",
+    "text": "Criterio de éxito: Aparece \"Debe conservar al menos un administrador activo.\" y la cuenta sigue activa.",
+    "images": []
+  },
+  {
+    "i": 1331,
+    "style": "",
+    "text": "6. Vendedor sin acceso a páginas ajenas",
+    "images": []
+  },
+  {
+    "i": 1332,
+    "style": "Listaconvietas2",
+    "text": "Objetivo: Comprobar que el vendedor no abre Usuarios, Validación de pagos, Asignación ni Matrículas.",
+    "images": []
+  },
+  {
+    "i": 1333,
+    "style": "Listaconvietas2",
+    "text": "Criterio de éxito: Cada intento lo devuelve a su página de inicio.",
+    "images": []
+  },
+  {
+    "i": 1334,
+    "style": "",
+    "text": "7. Cierre de sesión",
+    "images": []
+  },
+  {
+    "i": 1335,
+    "style": "Listaconvietas2",
+    "text": "Objetivo: Comprobar que cerrar sesión elimina el token.",
+    "images": []
+  },
+  {
+    "i": 1336,
+    "style": "Listaconvietas2",
+    "text": "Criterio de éxito: Vuelve al login y no queda token guardado en el navegador.",
+    "images": []
+  },
+  {
+    "i": 1337,
+    "style": "Ttulo1",
+    "text": "11. Conclusión",
+    "images": []
+  },
+  {
+    "i": 1338,
+    "style": "Listaconvietas",
+    "text": "Se identificaron los actores del proceso comercial, sus permisos y los ocho casos de uso que abarcan desde la consulta pública de la oferta hasta los reportes de gestión. Esta definición permite relacionar cada función con una necesidad y un responsable.",
+    "images": []
+  },
+  {
+    "i": 1339,
+    "style": "Listaconvietas",
+    "text": "El análisis distribuyó las responsabilidades en paquetes y documentó las colaboraciones y clases de los casos de uso. Los diagramas permiten comprobar cómo se conectan las acciones de los usuarios con la lógica del sistema.",
+    "images": []
+  },
+  {
+    "i": 1340,
+    "style": "Listaconvietas",
+    "text": "El diseño dejó definidos el modelo conceptual, el mapeo y el esquema físico de la base de datos, además del despliegue, las secuencias y la navegación por actor. Los modelos se contrastaron con las tablas, rutas y pantallas de la implementación.",
+    "images": []
+  },
+  {
+    "i": 1341,
+    "style": "Listaconvietas",
+    "text": "La implementación separa la presentación React, la API RESTful y las reglas de negocio Laravel, y la persistencia PostgreSQL. La autorización por rol y la bitácora se resuelven en el servidor y se reflejan en el menú y las operaciones disponibles para cada usuario.",
+    "images": []
+  },
+  {
+    "i": 1342,
+    "style": "Listaconvietas",
+    "text": "Se prepararon verificaciones de caja blanca y caja negra para los flujos principales y las restricciones de acceso. La publicación en el servidor de la facultad sigue siendo una actividad de transición; este documento no la presenta como realizada sin evidencia de despliegue.",
+    "images": []
+  },
+  {
+    "i": 1343,
+    "style": "Ttulo1",
+    "text": "12. Bibliografía",
+    "images": []
+  },
+  {
+    "i": 1344,
+    "style": "",
+    "text": "Axios. (s. f.). First steps. https://axios.rest/pages/getting-started/first-steps (consulta: 25 de noviembre de 2026).",
+    "images": []
+  },
+  {
+    "i": 1345,
+    "style": "",
+    "text": "Ferraiolo, D. F., Cugini, J. A. y Kuhn, D. R. (1995). Role-Based Access Control (RBAC): Features and Motivations. NIST. https://www.nist.gov/publications/role-based-access-control-rbac-features-and-motivations (consulta: 25 de noviembre de 2026).",
+    "images": []
+  },
+  {
+    "i": 1346,
+    "style": "",
+    "text": "Fielding, R. T. (2000). Architectural Styles and the Design of Network-based Software Architectures, cap. 5: Representational State Transfer. University of California, Irvine. https://ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm (consulta: 25 de noviembre de 2026).",
+    "images": []
+  },
+  {
+    "i": 1347,
+    "style": "",
+    "text": "Grupo 05 SA. (2026). P2_WEB: requisitos y decisiones de implementación del Proyecto 2. Documento del repositorio, P2_WEB.md.",
+    "images": []
+  },
+  {
+    "i": 1348,
+    "style": "",
+    "text": "Grupo 05 SA. (2026). Product: alcance y contexto operativo del CRM web. Documento del repositorio, PRODUCT.md.",
+    "images": []
+  },
+  {
+    "i": 1349,
+    "style": "",
+    "text": "Grupo 05 SA. (2026). Sistema CRM de captación de prospectos vía e-mail: Proyecto 1 de INF513. Documento interno del proyecto.",
+    "images": []
+  },
+  {
+    "i": 1350,
+    "style": "",
+    "text": "Jones, M. y Hardt, D. (2012). RFC 6750: The OAuth 2.0 Authorization Framework: Bearer Token Usage. IETF. https://www.rfc-editor.org/rfc/rfc6750 (consulta: 25 de noviembre de 2026).",
+    "images": []
+  },
+  {
+    "i": 1351,
+    "style": "",
+    "text": "Laravel. (s. f.). Middleware. Documentación de Laravel 13.x. https://laravel.com/framework/docs/13.x/middleware (consulta: 25 de noviembre de 2026).",
+    "images": []
+  },
+  {
+    "i": 1352,
+    "style": "",
+    "text": "Laravel. (s. f.). Routing. Documentación de Laravel 13.x. https://laravel.com/framework/docs/13.x/routing (consulta: 25 de noviembre de 2026).",
+    "images": []
+  },
+  {
+    "i": 1353,
+    "style": "",
+    "text": "Laravel. (s. f.). Validation. Documentación de Laravel 13.x. https://laravel.com/framework/docs/13.x/validation (consulta: 25 de noviembre de 2026).",
+    "images": []
+  },
+  {
+    "i": 1354,
+    "style": "",
+    "text": "MDN Web Docs. (s. f.). CSS: Cascading Style Sheets. https://developer.mozilla.org/en-US/docs/Web/CSS (consulta: 25 de noviembre de 2026).",
+    "images": []
+  },
+  {
+    "i": 1355,
+    "style": "",
+    "text": "MDN Web Docs. (s. f.). HTML: HyperText Markup Language. https://developer.mozilla.org/en-US/docs/Web/HTML (consulta: 25 de noviembre de 2026).",
+    "images": []
+  },
+  {
+    "i": 1356,
+    "style": "",
+    "text": "MDN Web Docs. (s. f.). Introduction to the server side. https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Server-side/First_steps/Introduction (consulta: 25 de noviembre de 2026).",
+    "images": []
+  },
+  {
+    "i": 1357,
+    "style": "",
+    "text": "MDN Web Docs. (s. f.). JavaScript. https://developer.mozilla.org/en-US/docs/Web/JavaScript (consulta: 25 de noviembre de 2026).",
+    "images": []
+  },
+  {
+    "i": 1358,
+    "style": "",
+    "text": "MDN Web Docs. (s. f.). Overview of HTTP. https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview (consulta: 25 de noviembre de 2026).",
+    "images": []
+  },
+  {
+    "i": 1359,
+    "style": "",
+    "text": "Microsoft. (s. f.). Using a Three-Tier Architecture Model. Microsoft Learn. https://learn.microsoft.com/en-us/windows/win32/cossdk/using-a-three-tier-architecture-model (consulta: 25 de noviembre de 2026).",
+    "images": []
+  },
+  {
+    "i": 1360,
+    "style": "",
+    "text": "PHP Documentation Group. (s. f.). Introduction. PHP Manual. https://www.php.net/intro (consulta: 25 de noviembre de 2026).",
+    "images": []
+  },
+  {
+    "i": 1361,
+    "style": "",
+    "text": "PostgreSQL Global Development Group. (s. f.). Foreign Keys. Documentación de PostgreSQL 17. https://www.postgresql.org/docs/17/tutorial-fk.html (consulta: 25 de noviembre de 2026).",
+    "images": []
+  },
+  {
+    "i": 1362,
+    "style": "",
+    "text": "PostgreSQL Global Development Group. (s. f.). Tutorial. Documentación de PostgreSQL 17. https://www.postgresql.org/docs/17/tutorial.html (consulta: 25 de noviembre de 2026).",
+    "images": []
+  },
+  {
+    "i": 1363,
+    "style": "",
+    "text": "React Router. (s. f.). createBrowserRouter. https://reactrouter.com/api/data-routers/createBrowserRouter (consulta: 25 de noviembre de 2026).",
+    "images": []
+  },
+  {
+    "i": 1364,
+    "style": "",
+    "text": "React. (s. f.). Quick Start. https://react.dev/learn (consulta: 25 de noviembre de 2026).",
+    "images": []
+  },
+  {
+    "i": 1365,
+    "style": "",
+    "text": "Tailwind Labs. (s. f.). Styling with utility classes. https://tailwindcss.com/docs/styling-with-utility-classes (consulta: 25 de noviembre de 2026).",
+    "images": []
+  },
+  {
+    "i": 1366,
+    "style": "",
+    "text": "UAGRM. (s. f.). Facultad de Ingeniería en Ciencias de la Computación y Telecomunicaciones: contacto y ubicación. https://www.uagrm.edu.bo/facultades/ficct (consulta: 25 de noviembre de 2026).",
+    "images": []
+  },
+  {
+    "i": 1367,
+    "style": "",
+    "text": "UNEXO. (s. f.). Campus virtual. FICCT-UAGRM. https://unexo.ficct.uagrm.edu.bo/academia/ (consulta: 25 de noviembre de 2026).",
+    "images": []
+  },
+  {
+    "i": 1368,
+    "style": "Ttulo1",
+    "text": "13. Anexo",
+    "images": []
+  },
+  {
+    "i": 1369,
+    "style": "",
+    "text": "URL Proyecto GitHub: https://github.com/b-shadow/Tecno",
+    "images": []
+  },
+  {
+    "i": 1370,
+    "style": "",
+    "text": "",
+    "images": []
+  }
+]
