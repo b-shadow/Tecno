@@ -8,7 +8,9 @@
 > integradas», sin eliminar los 47 diagramas originales ni las vistas de trabajo.
 > El modelo tiene ahora 1.679 diagramas. El mapeo del DOCX coincide con las
 > 31 tablas y 287 columnas del esquema; las 79 tablas del Word se conservaron.
-> Se exportaron el DOC y el PDF integrados (217 páginas, sin marcadores rotos).
+> Se exportaron el DOC y el PDF integrados (204 páginas, sin marcadores rotos).
+> El diseño físico y el diccionario de datos usan ahora márgenes laterales de
+> 1 cm y tablas de ancho fijo; las 67 tablas de 7.2 y 7.3 caben en la página.
 > Las tareas descritas más abajo como pendientes reflejan el corte anterior y
 > deben reevaluarse sobre este resultado. En particular, las vistas auxiliares
 > de relaciones y comunicación todavía requieren revisión editorial, además

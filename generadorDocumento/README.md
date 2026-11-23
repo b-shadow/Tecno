@@ -15,6 +15,13 @@ revisar `actualizar_documento.py bd` y conservar una copia del DOCX antes de
 aplicarlo. El mapeo integrado se comprobó columna por columna contra
 `fuentes/esquema.sql`.
 
+Las tablas detalladas de 7.2 y 7.3 tienen ancho fijo para que Word no las
+expanda fuera de la página. La sección 7.3 utiliza 1 cm de margen lateral.
+Después de editar el DOCX, `python actualizar_documento.py margenes` restaura
+solo esos anchos y márgenes; luego `exportar.ps1` actualiza el DOC y el PDF.
+La opción `actualizar_documento.py bd` aplica el mismo ajuste al regenerar
+estas tablas.
+
 La actualización documental de noviembre de 2026 se realiza sobre
 `documento/P2-INF513-GRUPO05SA.docx` y el proyecto original `ea/crm-p2.eapx`.
 El maestro contiene ediciones manuales: **no ejecutar `documento_p2.py` ni los

@@ -1,6 +1,6 @@
 """Ediciones puntuales sobre el DOCX maestro; nunca regenera capítulos no autorizados."""
 from pathlib import Path
-import copy,json,re,sys,zipfile,hashlib
+import copy,json,re,sys,zipfile,hashlib,shutil,tempfile,uuid
 from lxml import etree as E
 ROOT=Path(__file__).resolve().parent.parent; DOC=ROOT/'generadorDocumento';OUT=ROOT/'tmp/actualizacion_documental'
 sys.path.insert(0,str(DOC))
@@ -104,6 +104,7 @@ def phase7():
 def data_table(headers,rows,widths):
     table=E.Element(q('tbl'));pr=E.SubElement(table,q('tblPr'))
     E.SubElement(pr,q('tblW'),{q('w'):str(sum(widths)),q('type'):'dxa'})
+    E.SubElement(pr,q('tblLayout'),{q('type'):'fixed'})
     borders=E.SubElement(pr,q('tblBorders'))
     for side in ('top','left','bottom','right','insideH','insideV'):E.SubElement(borders,q(side),{q('val'):'single',q('sz'):'4',q('color'):'B7C9D8'})
     grid=E.SubElement(table,q('tblGrid'))
@@ -131,6 +132,60 @@ def replace_range(body,start,end,nodes):
     for p in old:body.remove(p)
     for i,p in enumerate(nodes+section_paras):body.insert(start+i,p)
 
+def fijar_ancho_tabla(table,widths):
+    """Impide que Word expanda la tabla más allá de los márgenes al abrirla."""
+    pr=table.find('w:tblPr',NS);grid=table.find('w:tblGrid',NS)
+    assert pr is not None and grid is not None
+    cols=grid.findall('w:gridCol',NS)
+    assert len(cols)==len(widths),(len(cols),len(widths))
+    width=pr.find('w:tblW',NS)
+    if width is None:width=E.SubElement(pr,q('tblW'))
+    width.set(q('w'),str(sum(widths)));width.set(q('type'),'dxa')
+    layout=pr.find('w:tblLayout',NS)
+    if layout is None:layout=E.SubElement(pr,q('tblLayout'))
+    layout.set(q('type'),'fixed')
+    for col,value in zip(cols,widths):col.set(q('w'),str(value))
+    for row in table.findall('w:tr',NS):
+        cells=row.findall('w:tc',NS)
+        assert len(cells)==len(widths),(len(cells),len(widths))
+        for cell,value in zip(cells,widths):
+            cp=cell.find('w:tcPr',NS)
+            if cp is None:cp=E.SubElement(cell,q('tcPr'))
+            cw=cp.find('w:tcW',NS)
+            if cw is None:cw=E.SubElement(cp,q('tcW'))
+            cw.set(q('w'),str(value));cw.set(q('type'),'dxa')
+
+def ajustar_tablas_datos(body):
+    """Acomoda solo el mapeo y el físico; conserva sus textos y el resto del DOCX."""
+    items=list(body)
+    i72=next(i for i,x in enumerate(items) if txt(x).startswith('7.2.1. Mapeo') and i>len(items)//4)
+    i73=next(i for i in range(i72+1,len(items)) if txt(items[i]).startswith('7.3. Diseño Físico'))
+    i74=next(i for i in range(i73+1,len(items)) if txt(items[i]).startswith('7.4.'))
+    mapping=[x for x in items[i72:i73] if x.tag==q('tbl')]
+    physical=[x for x in items[i73:i74] if x.tag==q('tbl')]
+    assert len(mapping)==len(TABLAS) and len(physical)==len(TABLAS)+len(TRIGGERS),(len(mapping),len(physical))
+    for table in mapping:fijar_ancho_tabla(table,[2600,2700,1000,1500,2900])
+    for table in physical:
+        columns=len(table.find('w:tblGrid',NS))
+        if columns==4:fijar_ancho_tabla(table,[2100,2200,3100,3300])
+        elif columns==2:fijar_ancho_tabla(table,[2500,8200])
+        else:raise RuntimeError(f'Tabla física con {columns} columnas inesperadas')
+    breaks=[x.find('.//w:sectPr',NS) for x in items[i73:i74]]
+    breaks=[x for x in breaks if x is not None]
+    assert len(breaks)==1,'No se encontró el salto de sección entre 7.3 y 7.4'
+    margins=breaks[0].find('w:pgMar',NS)
+    assert margins is not None
+    margins.set(q('left'),'567');margins.set(q('right'),'567')
+    return len(mapping),len(physical)
+
+def ajustar_margenes_actual():
+    path,root,body=doc_read()
+    counts=ajustar_tablas_datos(body)
+    backup=Path(tempfile.gettempdir())/f'p2-antes-margenes-{uuid.uuid4().hex}.docx'
+    shutil.copy2(path,backup)
+    replace_zip(path,{'word/document.xml':E.tostring(root,xml_declaration=True,encoding='UTF-8',standalone=True)})
+    print(f'Anchos y márgenes corregidos: {counts[0]} tablas de mapeo y {counts[1]} del físico. Respaldo: {backup}')
+
 def phase1_word():
     path,root,body=doc_read();guard=protected(body)
     data=json.loads((OUT/'postgres_actual.json').read_text(encoding='utf-8'));types={(x['tabla'],x['columna']):x['tipo'] for x in data['tipos'] if x['esquema']=='public'}
@@ -156,7 +211,7 @@ def phase1_word():
             purpose=descripcion(table,name,'; '.join(related) if related else None)
             drows.append([name,types[table,name],purpose,nullable+'; '+default+('; '+', '.join(restr) if restr else '')+('; referencia '+ '; '.join(related) if related else '')])
         mapping.append(data_table(['Columna','Tipo exacto','Clave','Nulabilidad','Predeterminado'],mrows,[2600,2700,1000,1500,2900]))
-        dictionary.append(heading(table,4));dictionary.append(data_table(['Columna','Tipo','Descripción y finalidad en UNEXO','Restricciones / relación'],drows,[2200,2500,3600,2400]))
+        dictionary.append(heading(table,4));dictionary.append(data_table(['Columna','Tipo','Descripción y finalidad en UNEXO','Restricciones / relación'],drows,[2100,2200,3100,3300]))
     physical=[heading('7.3. Diseño Físico',2),paragraph('El esquema SQL documental es un volcado de solo estructura de public, verificado contra la conexión efectiva de Laravel en PostgreSQL 17.4. No incluye datos comerciales, propietarios ni credenciales. El archivo conserva su protección original para impedir aplicarlo sobre un esquema existente; no se ejecutó durante esta actualización.')]
     sql=(DOC/'fuentes/esquema.sql').read_text(encoding='utf-8')
     for table,definition in re.findall(r'CREATE TABLE public\.(\w+) \((.*?)^\);',sql,re.M|re.S):
@@ -181,6 +236,7 @@ def phase1_word():
     a,b=section_range(body,'7.2. Diseño Lógico','7.3. Diseño Físico');replace_range(body,a,b,mapping)
     a,b=section_range(body,'7.3. Diseño Físico','7.4.');replace_range(body,a,b,physical)
     assert protected(body)==guard,'El capítulo IV cambió'
+    ajustar_tablas_datos(body)
     replace_zip(path,{'word/document.xml':E.tostring(root,xml_declaration=True,encoding='UTF-8',standalone=True)})
     dump={'tablas':len(columns),'columnas':sum(map(len,columns.values())),'restricciones':len(data['restricciones']),'triggers':len(data['triggers']),'capitulo_IV_intacto':True}
     (OUT/'fase1_word.json').write_text(json.dumps(dump,indent=2),encoding='utf-8');print(dump)
@@ -188,4 +244,5 @@ if __name__=='__main__':
     if sys.argv[1]=='cu':phase2()
     elif sys.argv[1]=='bd':phase1_word()
     elif sys.argv[1]=='arquitectura':phase7()
+    elif sys.argv[1]=='margenes':ajustar_margenes_actual()
     else:raise ValueError(sys.argv[1])
