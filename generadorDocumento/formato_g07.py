@@ -19,6 +19,17 @@ MARGEN = dict(left_margin=Cm(3), right_margin=Cm(3), top_margin=Cm(2.5), bottom_
 # empieza a 4,9 cm con el título 7.4 y a 3,6 cm con solo «CUn. …», que abre página con salto antes; el texto acaba en
 # 25,9 cm). Con ancho de 19,5 cm, cada diagrama de secuencia entra entero en su hoja.
 ALTO_SD = (20.6, 21.5)   # con holgura por el espacio después del párrafo de la imagen (medido: la figura empieza a 3,8 cm)
+# 5.3.1: lo mismo en la hoja apaisada (17,6 cm de alto útil): la primera página lleva además los títulos 5.3 y 5.3.1.
+ALTO_COM = (13.4, 15.1)
+
+
+def hoja_53(ruta, primera):
+    """(apaisada, ancho, alto máximo) de una figura de 5.3 en su hoja carta: la orientación que la deja más grande.
+    primera: la hoja lleva además los títulos de la sección."""
+    w, h = Image.open(ruta).size
+    apaisada = min(25.9 / w, ALTO_COM[1] / h) > min(19.5 / w, ALTO_SD[1] / h)
+    return apaisada, 25.9 if apaisada else 19.5, (ALTO_COM if apaisada else ALTO_SD)[0 if primera else 1]
+
 MARGEN_NAV = dict(left_margin=Cm(1), right_margin=Cm(1), top_margin=Cm(2), bottom_margin=Cm(2))   # franjas casi a todo el ancho
 GRIS, AZUL, AZUL_CLARO, AZUL_MAPEO, AZUL_MAPEO_CLARO = 'C9C9C9', '4F94D9', 'D6E8F5', '5C9CD4', 'DEEBF5'
 PENDIENTES = []

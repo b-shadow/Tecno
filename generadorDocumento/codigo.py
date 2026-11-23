@@ -218,6 +218,19 @@ def llamadas_en_orden(clase, metodo, pila=()):
     return res
 
 
+def modelos(clase, metodo, seguir=True, pila=()):
+    """Modelos Eloquent (tablas) que usa clase::metodo de D: X::op(), new X, parámetros tipados X $x. seguir: también
+    los de sus auxiliares propios ($this->m())."""
+    C = clases_php()
+    if metodo in pila or metodo not in C[clase]['metodos']: return []
+    m = C[clase]['metodos'][metodo]
+    res = [x for x in re.findall(r'(?:new |\b)([A-Z]\w+)(?=::|\s+\$|\(\))', m['cuerpo'] + ' ' + m['params'])
+           if x in C and C[x]['estereotipo'] == 'model']
+    if seguir:
+        for propio in re.findall(r'\$this->(\w+)\(', m['cuerpo']): res += modelos(clase, propio, True, pila + (metodo,))
+    return list(dict.fromkeys(res))
+
+
 # ------------------------------------------------------------------ cadena por CU (5.3.2)
 def cadena(cu):
     """Clases y dependencias del CU leídas del código. Devuelve (clases, dependencias, errores):
@@ -250,13 +263,12 @@ def cadena(cu):
             if destino != nombre_clase: dep(nombre_clase, destino, f'{mm}()')
             metodo(destino, mm, visitados)
         if c['estereotipo'] == 'datos':   # modelos (tablas) que usa la clase D, con la operación de Eloquent si la hay
-            cuerpo = c['metodos'][m]['cuerpo'] + ' ' + c['metodos'][m]['params']
-            for mod in dict.fromkeys(re.findall(r'(?:new |\b)([A-Z]\w+)(?=::|\s+\$|\(\))', cuerpo)):
-                if mod in C and C[mod]['estereotipo'] == 'model':
-                    clase(mod, 'Datos', 'model', atributos_modelo(C[mod]['tabla']))
-                    ops = re.findall(rf'\b{mod}::(\w+)\(', cuerpo)
-                    dep(nombre_clase, mod)
-                    for op in ops: dep(nombre_clase, mod, f'{op}()')
+            cuerpo = c['metodos'][m]['cuerpo']
+            for mod in modelos(nombre_clase, m, seguir=False):
+                clase(mod, 'Datos', 'model', atributos_modelo(C[mod]['tabla']))
+                ops = re.findall(rf'\b{mod}::(\w+)\(', cuerpo)
+                dep(nombre_clase, mod)
+                for op in ops: dep(nombre_clase, mod, f'{op}()')
 
     visitados = set()
     for r in rutas_api():

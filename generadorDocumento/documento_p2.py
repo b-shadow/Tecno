@@ -11,7 +11,7 @@ import contenido as C  # noqa: E402
 import codigo  # noqa: E402
 import esquema  # noqa: E402
 import navegacion  # noqa: E402
-from formato_g07 import G07, PENDIENTES, MARGEN_NAV, ALTO_SD  # noqa: E402
+from formato_g07 import G07, PENDIENTES, MARGEN_NAV, ALTO_SD, hoja_53  # noqa: E402
 from docx.enum.text import WD_ALIGN_PARAGRAPH  # noqa: E402
 from docx.shared import Cm  # noqa: E402
 IZQ = WD_ALIGN_PARAGRAPH.LEFT   # 11.–13. sin línea de capítulo: B16 a la izquierda
@@ -107,16 +107,16 @@ if not C.PAQUETES: d.pendiente('Paquetes y su descripción')
 d.h('5.2. Relacionar Paquetes con casos de uso', 3)
 for i, paq in enumerate(C.PAQUETES):
     d.imagen(DIAG / f'paquete-{i + 1}.png', f'Módulo de {paq}', pie=f'Relacionar Paquetes con casos de uso. Módulo de {paq}' if i == 0 else None)
-d.h('5.3. Análisis de Caso de Uso', 3)
-d.h('5.3.1. Diagramas de Colaboración', 4)
-for cu, nombre in C.CU.items():
-    d.imagen(DIAG / f'com-{cu.lower()}.png', f'{cu}. {nombre}', alto_max=10)
-d.h('5.3.2. Análisis de clases', 4)   # 3 capas reales por CU (codigo.py → ea_p2.clases_cu), una página cada uno
-for i, (cu, nombre) in enumerate(C.CU.items()):   # una figura por área del CU (cls-cuN.png o cls-cuN-k.png)
-    figs = sorted(DIAG.glob(f'cls-{cu.lower()}-*.png'), key=lambda f: int(f.stem.rsplit('-', 1)[1])) or [DIAG / f'cls-{cu.lower()}.png']
-    for k, fig in enumerate(figs, 1):
-        if i or k > 1: d.salto()
-        d.imagen(fig, f'{cu}. {nombre}' + (f' ({k}/{len(figs)})' if len(figs) > 1 else ''), alto_max=20)
+# 5.3.1 y 5.3.2 (ea_faltantes.py --analisis): cada CU entero en su hoja carta, con 1 cm de margen lateral, en la
+# orientación que lo deja más grande; los títulos de la sección van en la hoja del primero
+for prefijo, titulos in (('com', [('5.3. Análisis de Caso de Uso', 3), ('5.3.1. Diagramas de Colaboración', 4)]),
+                         ('cls', [('5.3.2. Análisis de clases', 4)])):
+    for i, (cu, nombre) in enumerate(C.CU.items()):
+        fig = DIAG / f'{prefijo}-{cu.lower()}.png'
+        apaisada, ancho, alto = hoja_53(fig, i == 0)
+        d.seccion(apaisada, MARGEN_NAV)
+        for titulo, nivel in titulos if i == 0 else []: d.h(titulo, nivel)
+        d.imagen(fig, f'{cu}. {nombre}', ancho=ancho, alto_max=alto)
 
 # ------------------------------------------------------------------ Capítulo VII
 d.seccion(True)   # 6.1 apaisada para imprimir el despliegue legible: títulos y diagrama en la misma página

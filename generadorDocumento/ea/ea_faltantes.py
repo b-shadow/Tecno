@@ -17,33 +17,8 @@ sys.path[:0] = [str(DOC), str(HERE)]
 import codigo
 import contenido as C
 import ea_base
+from formato_g07 import ALTO_COM, ALTO_SD
 from rutas import CRM_WEB
-
-PREFERIDAS = {
-    'CU1': ['POST /login', 'POST /usuarios', 'PUT /matriz'],
-    'CU2': ['GET /catalogo', 'POST /registro-interes'],
-    'CU3': ['POST /prospectos', 'PATCH /intereses/{interes}/asignar'],
-    'CU4': ['PATCH /intereses/{interes}/estado'],
-    'CU5': ['PATCH /intereses/{interes}/estado', 'POST /motivos'],
-    'CU6': ['POST /intereses/{interes}/ordenes-pago', 'POST /ordenes-pago/{orden}/cuotas/{cuota}/checkout',
-            'GET /pagos/stripe/sesiones/{sessionId}', 'POST /exportaciones'],
-    'CU7': ['POST /intereses/{interes}/interacciones', 'POST /intereses/{interes}/recordatorios', 'GET /notificaciones'],
-    'CU8': ['GET /reportes/estadisticas', 'GET /comisiones/resumen'],
-}
-
-# Métodos D realmente invocados por cada método N. Se comprueban contra
-# codigo._llamadas al generar; si el código cambia, la generación falla.
-PREFERIDAS_D = {
-    'CU1': [['usuarioPorCorreo', 'crearToken'], ['crear'], ['guardarPermiso']],
-    'CU2': [['programasAbiertos'], ['crear']],
-    'CU3': [['crear'], ['transaccion', 'refrescarDetalle']],
-    'CU4': [['guardar', 'actualizarEstadoProspecto']],
-    'CU5': [['guardar', 'actualizarEstadoProspecto'], ['crear']],
-    'CU6': [['crearOrden', 'insertarCuotas'], ['ordenConDetalle', 'crearTransaccion'],
-            ['transaccionPorSesion'], ['exportarPendientes']],
-    'CU7': [['registrarInteraccion'], ['crearRecordatorio'], ['listar']],
-    'CU8': [['estadisticas'], ['resumenComisiones']],
-}
 
 ea_base.EAPX = HERE / 'crm-p2.eapx'
 ea_base.SALIDA = DOC / 'diagramas'
@@ -129,72 +104,390 @@ def paquetes(ea, modelo, actores, casos):
         ea.exportar(d, f'paquete-{i}.png')
 
 
-def interacciones(cu):
-    """Recorrido representativo P→N→D por área; cada método se extrae del código."""
-    clases, deps, errores = codigo.cadena(cu)
-    if errores: raise ValueError('; '.join(errores))
-    if cu == 'CU6':
-        clases['StripeClient'] = {'estereotipo': 'external', 'capa': 'Externa'}
-    if cu == 'CU5':
-        # Marcar Perdido se realiza en el embudo (ruta clasificada como CU4),
-        # pero su formulario y NInteres implementan la pérdida con motivo.
-        extra, _, errores = codigo.cadena('CU4')
-        if errores: raise ValueError('; '.join(errores))
-        clases.update(extra)
-    rutas = [r for r in codigo.rutas_api() if
-             (r['cu'] == cu or (cu == 'CU5' and r['ruta'] == '/intereses/{interes}/estado'))
-             and f'{r["verbo"]} {r["ruta"]}' in PREFERIDAS[cu]]
-    rutas.sort(key=lambda r: PREFERIDAS[cu].index(f'{r["verbo"]} {r["ruta"]}'))
+# ------------------------------------------------------------------------------------------------ 5.3 Análisis
+# 5.3.1 (colaboración) y 5.3.2 (clases) dibujan los recorridos de 7.4 (RECORRIDOS, comprobados contra el código): las
+# tres vistas de un CU muestran las mismas clases y los mismos métodos. Cada diagrama va entero en su hoja carta, con 1 cm
+# de margen lateral, vertical o apaisada según cuál lo deja más grande (formato_g07.apaisada). Todas las medidas son
+# múltiplos de la letra PT_ANALISIS para que impresa quede legible.
+PT_ANALISIS = 12
+CAPAS = {'Presentacion': 'Presentación', 'Negocio': 'Negocio', 'Datos': 'Datos'}
+CM_EA = 96 / 2.54   # unidades de EA (1/96 de pulgada) por centímetro
+HOJAS = [(25.9 * CM_EA, ALTO_COM[1] * CM_EA), (19.5 * CM_EA, ALTO_SD[1] * CM_EA)]   # apaisada y vertical, bajo «CUn. …»
+
+
+def impresa(ancho, alto, pt=PT_ANALISIS):
+    """Letra impresa (pt) de un diagrama de ancho × alto unidades en la hoja que lo deja más grande."""
+    return pt * max(min(w / ancho, h / alto) for w, h in HOJAS)
+COLORES_COM = [0x000000, 0x0000C0, 0x008000, 0xC00000]   # COLORREF 0xBBGGRR: negro, rojo, verde, azul (uno por recorrido)
+
+
+def ancho_texto(texto, pt, negrita=False):
+    """Ancho aproximado en unidades de EA de un texto en Calibri a pt puntos (medido en las exportaciones)."""
+    return len(texto) * pt * (0.6 if negrita else 0.53)
+
+
+def con_letra(ea, d, e, pt):
+    ea.r.Execute(f"UPDATE t_diagramobjects SET ObjectStyle='font=Calibri;fontsz={pt * 10};' "
+                 f"WHERE Diagram_ID={d.DiagramID} AND Object_ID={e.ElementID}")
+
+
+def piezas(cu):
+    """Objetos y llamadas de los recorridos del CU: ({nombre: tipo}, [[(origen, destino, método)] por recorrido]) con
+    tipo actor | pagina | api | negocio | datos | externa (la pasarela Stripe) | model. El actor llama a su página con
+    la acción de api/*.js que dispara el recorrido."""
     php = codigo.clases_php()
-    funciones = codigo.funciones_api()
-    usos = codigo.usos_api()
-    pasos = []
-    if len(rutas) != len(PREFERIDAS[cu]):
-        raise ValueError(f'{cu}: faltan rutas verificadas para la secuencia: {PREFERIDAS[cu]}')
-    for indice, r in enumerate(rutas):
-        n = r['controlador']
-        fn = next((k for k, f in funciones.items() if f['verbo'] == r['verbo'] and
-                   f['ruta'] == codigo.norm(r['ruta'])), None)
-        if not fn: continue
-        api = f'api/{fn.split(".")[0]}.js'
-        paginas = [a.rsplit('/', 1)[-1] for a, fns in usos.items()
-                   if fn in fns and a.rsplit('/', 1)[-1] in clases]
-        pagina = next((p for p in paginas if p == {'CU2': 'PCatalogo.jsx', 'CU4': 'PEmbudo.jsx',
-                                                  'CU5': 'PEmbudo.jsx'}.get(cu)),
-                      paginas[0] if paginas else ('PLogin.jsx' if r['ruta'] == '/login' else api))
-        actor = ('Coordinador' if cu == 'CU6' and
-                 ('/aprobar' in r['ruta'] or r['ruta'] == '/exportaciones') else
-                 'Administrador' if cu == 'CU5' and r['ruta'] == '/motivos' else
-                 C.DETALLE[cu]['iniciador'])
-        pasos.append((f'@{actor}', pagina, f'abrir {pagina}' if pagina != api else 'iniciar'))
-        if pagina != api: pasos.append((pagina, api, f'{funciones[fn]["nombre"]}()'))
-        etiqueta = f'{r["verbo"]} {r["ruta"]}'
-        if cu == 'CU5' and r['ruta'] == '/intereses/{interes}/estado': etiqueta += ' (Perdido + motivo)'
-        pasos.append((api, n, etiqueta))
-        origen_datos = n
-        if cu == 'CU6' and r['metodo'] in ('crearCheckout', 'confirmarCheckout'):
-            llamada_stripe = next(((dato, metodo) for dato, metodo in codigo._llamadas(n, r['metodo'], php)
-                                   if dato == 'NStripe'), None)
-            if llamada_stripe is None:
-                raise ValueError(f'{cu}: {n}::{r["metodo"]} ya no delega en NStripe')
-            pasos.append((n, 'NStripe', f'{llamada_stripe[1]}()'))
-            origen_datos = 'NStripe'
-        # llamadas en orden real, entrando a los auxiliares (NStripe crea la transacción dentro de uno de ellos)
-        disponibles = [(dato, metodo) for _, dato, metodo in codigo.llamadas_en_orden(
-                           origen_datos, llamada_stripe[1] if origen_datos == 'NStripe' else r['metodo'])
-                       if dato in clases and clases[dato]['estereotipo'] == 'datos']
-        for nombre_metodo in PREFERIDAS_D[cu][indice]:
-            real = next(((dato, metodo) for dato, metodo in disponibles if metodo == nombre_metodo), None)
-            if real is None:
-                raise ValueError(f'{cu}: {n}::{r["metodo"]} ya no llama a {nombre_metodo}() en la capa D')
-            dato, metodo = real
-            pasos.append((origen_datos, dato, f'{metodo}()'))
-            if cu == 'CU6' and r['metodo'] == 'crearCheckout' and metodo == 'ordenConDetalle':
-                pasos.append(('NStripe', 'StripeClient', 'checkout.sessions.create()'))
-            if cu == 'CU6' and r['metodo'] == 'confirmarCheckout' and metodo == 'transaccionPorSesion':
-                pasos.append(('NStripe', 'StripeClient', 'checkout.sessions.retrieve()'))
-    if not pasos: raise ValueError(f'{cu} no tiene rutas de secuencia verificadas')
-    return clases, pasos
+    tipo, escenas = {}, []
+    for r in recorridos(cu):
+        api = f'api/{r["api"]}'
+        llamadas = [('@' + r['actor'], r['pagina'], r['fn']), (r['pagina'], api, r['fn']), (api, r['n'], r['met'])]
+        llamadas += r['pasos']
+        for o, d, _ in llamadas:
+            for x in (o, d):
+                tipo.setdefault(x, 'actor' if x.startswith('@') else 'pagina' if x.endswith('.jsx') else
+                                'api' if x.startswith('api/') else php[x]['estereotipo'] if x in php else 'externa')
+        escenas.append(llamadas)
+    return tipo, escenas
+
+
+def borrar_paquete(modelo, nombre):
+    for i in range(modelo.Packages.Count):
+        if modelo.Packages.GetAt(i).Name == nombre:
+            modelo.Packages.DeleteAt(i, False); modelo.Packages.Refresh(); return
+
+
+def colaboracion(ea, raiz, cu, archivo, pt=PT_ANALISIS):
+    """5.3.1 como G07: actor → página «boundary» → módulo api/ «boundary» → clase N «control» → clase D «entity» (y la
+    pasarela Stripe), cada objeto una sola vez y los mensajes numerados de cada recorrido (k, k.1, k.2…) apilados sobre
+    su enlace, con el método real. Una columna por capa; el renglón de cada objeto lo elige acomodo_colaboracion."""
+    tipo, escenas = piezas(cu)
+    columna = {'actor': 0, 'pagina': 1, 'api': 2, 'negocio': 3, 'datos': 5, 'externa': 5}
+    entradas = {llamadas[2][1] for llamadas in escenas}   # la clase N de cada ruta
+    col = {x: 4 if t == 'negocio' and x not in entradas else columna[t] for x, t in tipo.items()}
+    usadas = sorted(set(col.values()))
+    col = {x: usadas.index(c) for x, c in col.items()}   # sin columnas vacías (la 4 solo existe si una N llama a otra)
+    # mensajes: k = número de recorrido; en cada uno, k, k.1, k.2… en el orden del código
+    mensajes = []
+    for k, llamadas in enumerate(escenas, 1):
+        for i, (o, d, m) in enumerate(llamadas):
+            mensajes.append((k, o, d, f'{m}()', f'{k}' if i == 0 else f'{k}.{i}'))
+    paso = round(1.9 * pt)                     # separación de los rótulos apilados
+    icono, nombre_alto = 5 * pt, round(1.8 * pt)
+    fila = icono + nombre_alto + 2 * pt
+    # x: ancho de cada columna (ícono o nombre) y hueco a la siguiente según el rótulo más largo que pasa entre ellas
+    ncol = len(usadas)
+    ancho_col = [max([icono] + [ancho_texto(x.lstrip('@'), pt) for x in tipo if col[x] == c]) for c in range(ncol)]
+    hueco = [3 * pt] * (ncol - 1)
+    rotulo = lambda texto, numero: ancho_texto(f'{numero}: {texto}', pt) + 3.5 * pt   # texto + flecha
+    for _, o, d, texto, numero in sorted(mensajes, key=lambda m: abs(col[m[1]] - col[m[2]])):
+        a, b = sorted((col[o], col[d]))
+        if a == b: continue
+        falta = rotulo(texto, numero) + 2 * pt - (sum(hueco[a:b]) + sum(ancho_col[a + 1:b]))
+        if falta > 0:
+            for j in range(a, b): hueco[j] += falta / (b - a)
+    xs, x = [], 0
+    for c in range(ncol):
+        xs.append(x + ancho_col[c] / 2)
+        if c < ncol - 1: x += ancho_col[c] + hueco[c]
+    centro, rects = acomodo_colaboracion(cu, tipo, col, xs, mensajes, pt, fila, paso, icono, nombre_alto, rotulo)
+    izquierda, arriba = min(r[0] for r in rects), min(r[1] for r in rects)
+    centro = {x_: (cx - izquierda + 2 * pt, cy - arriba + 2 * pt) for x_, (cx, cy) in centro.items()}
+    ancho = max(r[2] for r in rects) - izquierda + 4 * pt
+    alto = max(r[3] for r in rects) - arriba + 4 * pt
+
+    nombre = f'{cu}. {C.CU[cu]}'
+    d = ea.diagrama(raiz, nombre, 'Collaboration')
+    d.StyleEx = 'SuppressBrackets=1;'; d.Update()
+    objetos = {}
+    for x_, t in tipo.items():
+        if t == 'actor': e = ea.elemento(raiz, x_[1:], 'Actor')
+        else: e = ea.elemento(raiz, x_, 'Object', {'negocio': 'control', 'datos': 'entity'}.get(t, 'boundary'))
+        objetos[x_] = e
+        cx, cy = centro[x_]
+        w, h = (round(0.75 * icono), round(1.3 * icono)) if t == 'actor' else (icono, icono)
+        ea.poner(d, e, round(cx - w / 2), round(cy - h / 2), w, h)
+        con_letra(ea, d, e, pt)
+    enlaces, apilado = {}, {}
+    for n, (k, o, d_, texto, numero) in enumerate(mensajes, 1):
+        par = frozenset((o, d_))
+        if par not in enlaces: enlaces[par] = ea.conector(objetos[o], objetos[d_], 'Association')
+        c = apilado.get(par, 0); apilado[par] = c + 1
+        mensaje_com(ea, d, enlaces[par], objetos[o], objetos[d_], texto, numero, n, c, paso, COLORES_COM[(k - 1) % 4])
+    # EA recorta la imagen a los objetos y no cuenta los rótulos: dos marcas invisibles en las esquinas los mantienen dentro
+    for x_, y_ in ((pt, pt), (ancho - 2 * pt, alto - 2 * pt)):
+        marca = ea.elemento(raiz, '', 'Boundary')
+        ea.poner(d, marca, round(x_), round(y_), 10, 10)
+        ea.r.Execute(f"UPDATE t_diagramobjects SET ObjectStyle='BCol=16777215;LCol=16777215;LWth=0;' "
+                     f"WHERE Diagram_ID={d.DiagramID} AND Object_ID={marca.ElementID}")
+    ea.exportar(d, archivo)
+    return ancho, alto
+
+
+def _choca(a, b):
+    return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
+
+
+def _corta(p, q, r):
+    """¿El segmento p-q pasa por el rectángulo r (x0, y0, x1, y1)? (Liang-Barsky)"""
+    t0, t1, dx, dy = 0.0, 1.0, q[0] - p[0], q[1] - p[1]
+    for a, b in ((-dx, p[0] - r[0]), (dx, r[2] - p[0]), (-dy, p[1] - r[1]), (dy, r[3] - p[1])):
+        if a == 0:
+            if b < 0: return False
+        else:
+            s = b / a
+            if a < 0: t0 = max(t0, s)
+            else: t1 = min(t1, s)
+            if t0 > t1: return False
+    return True
+
+
+def _cruzan(a, b, c, d):
+    giro = lambda p, q, r: (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])
+    return giro(a, b, c) * giro(a, b, d) < 0 and giro(c, d, a) * giro(c, d, b) < 0
+
+
+def acomodo_colaboracion(cu, tipo, col, xs, mensajes, pt, fila, paso, icono, nombre_alto, rotulo):
+    """Renglón de cada objeto (la columna es la de su capa). Búsqueda local desde una banda por recorrido y desde 15
+    arranques al azar (semilla fija): sin rótulos encimados, sin rótulos sobre objetos ni líneas, sin enlaces que pasen
+    por un objeto, con pocos cruces, con los enlaces de varios mensajes horizontales y lo más bajo posible. EA pone cada
+    rótulo centrado en el punto medio de su enlace, apilados hacia arriba desde 18 unidades.
+    Devuelve ({objeto: centro}, [rectángulos de objetos y rótulos])."""
+    import random
+    objetos = list(tipo)
+    ancho = {x: max(icono, ancho_texto(x.lstrip('@'), pt)) for x in objetos}
+    extremos, rotulos, pila = {}, [], {}
+    for _, o, d, texto, numero in mensajes:
+        par = frozenset((o, d)); extremos.setdefault(par, (o, d))
+        rotulos.append((par, pila.get(par, 0), rotulo(texto, numero))); pila[par] = pila.get(par, 0) + 1
+    alto_rotulo = 1.7 * pt
+    renglon = {}   # punto de partida: cada recorrido en su banda, debajo de los anteriores
+    for k in sorted({m[0] for m in mensajes}):
+        base = max(renglon.values()) + 1 if renglon else 0
+        for _, o, d, _, _ in (m for m in mensajes if m[0] == k):
+            for x in (o, d):
+                if x in renglon: continue
+                r = base
+                while any(col[y] == col[x] and renglon[y] == r for y in renglon): r += 1
+                renglon[x] = r
+    medio = {x: (0.65 if tipo[x] == 'actor' else 0.5) * icono for x in objetos}   # medio alto de la figura
+
+    def geometria(ren):
+        c = {x: (xs[col[x]], ren[x] * fila) for x in objetos}
+        cajas = {x: (cx - ancho[x] / 2, cy - medio[x], cx + ancho[x] / 2, cy + medio[x] + nombre_alto) for x, (cx, cy) in c.items()}
+        rots = []
+        for par, s, w in rotulos:
+            a, b = extremos[par]
+            mx, my = (c[a][0] + c[b][0]) / 2, (c[a][1] + c[b][1]) / 2 - 18 - paso * s
+            rots.append((par, (mx - w / 2, my - alto_rotulo / 2, mx + w / 2, my + alto_rotulo / 2)))
+        return c, cajas, rots
+
+    def costo(ren):
+        c, cajas, rots = geometria(ren)
+        k = 0
+        segs = {par: (c[a], c[b]) for par, (a, b) in extremos.items()}
+        for i, (par, r) in enumerate(rots):
+            k += 100 * sum(1 for q, s in rots[i + 1:] if q != par and _choca(r, s))
+            k += 100 * sum(1 for x, caja in cajas.items() if _choca(r, caja))
+            k += 20 * sum(1 for q, (p1, p2) in segs.items() if q != par and _corta(p1, p2, r))
+        pares = list(segs.items())
+        for i, (par, (p1, p2)) in enumerate(pares):
+            k += 100 * sum(1 for x, (x0, y0, x1, y1) in cajas.items() if x not in par and _corta(p1, p2, (x0 + 2, y0 + 2, x1 - 2, y1 - 2)))
+            k += 10 * sum(1 for q, (p3, p4) in pares[i + 1:] if not (q & par) and _cruzan(p1, p2, p3, p4))
+        # en un enlace diagonal EA monta la flecha de cada mensaje sobre su texto: cuantos más mensajes, más horizontal
+        diagonal = sum((10 * (pila[par] - 1) + 2) * abs(ren[a] - ren[b]) for par, (a, b) in extremos.items())
+        return k * 1000 + diagonal + 3 * (max(ren.values()) - min(ren.values()))   # sin choques, recto y bajo
+
+    def mover(ren, x, r):
+        """ren con x en el renglón r (si estaba ocupado en su columna, el otro pasa al renglón de x)."""
+        ren = dict(ren)
+        otro = next((y for y in objetos if y != x and col[y] == col[x] and ren[y] == r), None)
+        if otro: ren[otro] = ren[x]
+        ren[x] = r
+        return ren
+
+    def escalar(ren):
+        """Búsqueda local: aplica el mejor cambio de renglón de un objeto mientras alguno mejore."""
+        actual = costo(ren)
+        while True:
+            c, x, r = min((costo(mover(ren, x, r)), x, r) for x in objetos for r in range(alto_max) if r != ren[x])
+            if c >= actual: return actual, ren
+            actual, ren = c, mover(ren, x, r)
+
+    rng = random.Random(cu)
+    alto_max = max(renglon.values()) + 3
+    inicios = [renglon]
+    for _ in range(15):   # arranques al azar (semilla fija: el acomodo no cambia entre corridas)
+        ren = {}
+        for c in set(col.values()):
+            xs_ = [x for x in objetos if col[x] == c]
+            ren.update(zip(xs_, rng.sample(range(alto_max), len(xs_))))
+        inicios.append(ren)
+    mejor = min((escalar(ren) for ren in inicios), key=lambda a: a[0])
+    c, cajas, rots = geometria(mejor[1])
+    if mejor[0] >= 20000: print(f'     aviso {cu}: el acomodo de colaboración conserva choques (costo {mejor[0] // 1000})')
+    return c, list(cajas.values()) + [r for _, r in rots]
+
+
+def mensaje_com(ea, d, enlace, a, b, texto, numero, n, apilado, paso, color):
+    """ea_base.mensaje_com con la separación de la pila proporcional a la letra."""
+    c = ea.mensaje_com(d, enlace, a, b, texto, numero, n, 0, color)
+    sy = 18 + paso * apilado
+    ea.r.Execute(f"UPDATE t_connector SET PDATA5='SX=-15;SY={sy};EX=15;EY={sy};EDGE=2;' WHERE Connector_ID={c.ConnectorID}")
+
+
+def clases_analisis(ea, raiz, cu, archivo, pt=PT_ANALISIS):
+    """5.3.2: clases del CU en sus 3 capas con los métodos que usan sus recorridos, como G07: dependencias sin rótulo,
+    parámetros solo con su nombre y sin tipo de retorno. Las páginas y las tablas («model») van solo con su nombre: las
+    columnas de cada tabla están en 7.1–7.3. Toda clase se une a otra; la generación falla si alguna queda suelta."""
+    php, funciones = codigo.clases_php(), codigo.funciones_api()
+    tipo, escenas = piezas(cu)
+    metodos, deps = {}, []
+    for llamadas in escenas:
+        for o, d, m in llamadas:
+            if tipo[d] in ('actor', 'externa'): continue   # el actor y el SDK de Stripe no son clases del sistema
+            ms = metodos.setdefault(d, [])
+            if tipo[d] != 'pagina' and m not in ms: ms.append(m)
+            if tipo[o] != 'actor' and (o, d) not in deps: deps.append((o, d))
+            if tipo[d] == 'datos':
+                for mod in codigo.modelos(d, m):
+                    tipo[mod] = 'model'; metodos.setdefault(mod, [])
+                    if (d, mod) not in deps: deps.append((d, mod))
+    sueltas = [x for x in metodos if not any(x in par for par in deps)]
+    assert not sueltas, f'{cu}: clases sin relación en 5.3.2: {sueltas}'
+    llega = {x for x in metodos if tipo[x] in ('datos', 'model')}
+    for _ in metodos: llega |= {a for a, b in deps if b in llega}
+    assert all(x in llega for x in metodos), f'{cu}: clases que no llegan a la capa de datos: {set(metodos) - llega}'
+
+    def firma(x, m):
+        """(visibilidad, [(parámetro, tipo)], retorno) del método real."""
+        if tipo[x] == 'api':
+            f = next(f for f in funciones.values() if f'api/{f["modulo"]}.js' == x and f['nombre'] == m)
+            return 'Public', [(p, '') for p in f['params']], ''
+        info = php[x]['metodos'][m]
+        ps = [codigo._param(p).partition(': ') for p in info['params'].split(',') if p.strip()]
+        vis = {'+': 'Public', '-': 'Private', '#': 'Protected'}[info['vis']]
+        return vis, [(n, t) for n, _, t in ps], retorno(x, m)
+
+    capa = {'pagina': 'Presentacion', 'api': 'Presentacion', 'negocio': 'Negocio', 'datos': 'Datos', 'model': 'Datos'}
+    estereotipo = {'pagina': 'client page', 'api': 'module', 'negocio': 'negocio', 'datos': 'datos', 'model': 'model'}
+    pkg = ea.paquete(raiz, f'{cu} Clases')
+    paquetes = {c: ea.paquete(pkg, n) for c, n in CAPAS.items()}
+    el, medida = {}, {}
+    for x, ms in metodos.items():
+        e = ea.elemento(paquetes[capa[tipo[x]]], x, 'Class', estereotipo[tipo[x]])
+        textos = []
+        for i, m in enumerate(ms):
+            vis, ps, ret = firma(x, m)
+            op = e.Methods.AddNew(m, ret); op.Visibility = vis; op.Pos = i; op.Update()
+            for j, (pn, pt_) in enumerate(ps):
+                p = op.Parameters.AddNew(pn, pt_); p.Position = j; p.Update()
+            textos.append(f'{m}({", ".join(pn for pn, _ in ps)})')
+        e.Update(); el[x] = e
+        w = max([ancho_texto(x, pt, True) + (2.5 * pt if tipo[x] == 'pagina' else 0),   # el ícono de client page
+                 ancho_texto(f'«{estereotipo[tipo[x]]}»', pt) + 2 * pt]
+                + [ancho_texto(t, pt) + 3 * pt for t in textos]) + 2 * pt
+        medida[x] = (round(w), round(4 * pt + (1.65 * pt * len(textos) + 1.2 * pt if textos else 0)))
+    for a, b in deps: ea.conector(el[a], el[b], 'Dependency')   # sin rótulo, como G07
+    # filas de arriba abajo; en cada una, las cajas cerca del promedio de las que se unen con ellas
+    entradas = {llamadas[2][1] for llamadas in escenas}
+    capa_fila = ['Presentacion', 'Presentacion', 'Negocio', 'Negocio', 'Datos', 'Datos']
+    vecinos = {x: [b if a == x else a for a, b in deps if x in (a, b)] for x in metodos}
+    margen, sep = 2 * pt, 2.5 * pt
+
+    def acomodar(ancho_max, juntas, zigzag):
+        """Filas de hasta ancho_max (una fila más ancha se parte en dos de la misma capa); en cada fila, las cajas cerca
+        del promedio de las que se unen con ellas. juntas: las N auxiliares en la fila de las N de las rutas. zigzag:
+        la fila partida se reparte alternando cajas, así las de abajo quedan entre las de arriba.
+        (x, y, marcos de capa, ancho, alto, líneas que pasan por encima de una caja)."""
+        filas = [[x for x in metodos if tipo[x] == 'pagina'], [x for x in metodos if tipo[x] == 'api'],
+                 [x for x in metodos if x in entradas or (juntas and tipo[x] == 'negocio')],
+                 [x for x in metodos if tipo[x] == 'negocio' and x not in entradas and not juntas],
+                 [x for x in metodos if tipo[x] == 'datos'], [x for x in metodos if tipo[x] == 'model']]
+        xi = {}
+        centro = lambda x: xi[x] + medida[x][0] / 2
+
+        def baricentro(partidas):
+            for _, f in partidas:
+                p = 0
+                for x in f: xi[x] = p; p += medida[x][0] + sep
+            for vuelta in range(8):
+                for _, f in (partidas if vuelta % 2 == 0 else partidas[::-1]):
+                    quiere = {x: sum(map(centro, vecinos[x])) / len(vecinos[x]) for x in f}
+                    f.sort(key=lambda x: quiere[x])
+                    p = -1e9
+                    for x in f: xi[x] = max(quiere[x] - medida[x][0] / 2, p); p = xi[x] + medida[x][0] + sep
+                    corrida = sum(centro(x) - quiere[x] for x in f) / len(f)
+                    for x in f: xi[x] -= corrida
+
+        enteras = [(c, f) for c, f in zip(capa_fila, filas) if f]
+        baricentro(enteras)   # el orden de cada fila entera decide dónde se parte
+        partidas = []
+        for c, f in enteras:
+            trozos, actual, usado = [], [], 0
+            for x in f:
+                if actual and usado + medida[x][0] > ancho_max: trozos.append(actual); actual, usado = [], 0
+                actual.append(x); usado += medida[x][0] + sep
+            trozos.append(actual)
+            if zigzag: trozos = [f[i::len(trozos)] for i in range(len(trozos))]
+            partidas += [(c, trozo) for trozo in trozos]
+        baricentro(partidas)
+        izquierda = min(xi.values())
+        for x in xi: xi[x] += 2 * margen - izquierda
+        derecha = max(xi[x] + medida[x][0] for x in xi) + margen
+        ys, y, marcos, anterior = {}, 3 * pt, {}, None   # marcos de capa detrás de las clases
+        for c, f in partidas:
+            if c != anterior:
+                if anterior: y += 3 * pt
+                marcos[c] = [y, 0]; y += 2.5 * pt; anterior = c
+            alto = max(medida[x][1] for x in f)
+            for x in f: ys[x] = y + (alto - medida[x][1]) / 2
+            y += alto + 3.5 * pt
+            marcos[c][1] = y - 1.5 * pt
+        caja = {x: (xi[x] + 2, ys[x] + 2, xi[x] + medida[x][0] - 2, ys[x] + medida[x][1] - 2) for x in xi}
+        centro = {x: ((r[0] + r[2]) / 2, (r[1] + r[3]) / 2) for x, r in caja.items()}
+        encima = sum(1 for a, b in deps for x, r in caja.items() if x not in (a, b) and _corta(centro[a], centro[b], r))
+        return xi, ys, marcos, derecha + margen, y, encima
+
+    # sin líneas sobre cajas y, entre esos acomodos, el que deja más grande la letra impresa
+    minimo = max(w for w, _ in medida.values())
+    xi, ys, marcos, ancho, alto, encima = min(
+        (acomodar(minimo + i * 50, juntas, zigzag) for i in range(40) for juntas in (False, True) for zigzag in (False, True)),
+        key=lambda a: (a[5], -impresa(a[3], a[4])))
+    if encima: print(f'     aviso {cu}: {encima} dependencias pasan sobre otra clase')
+    derecha = ancho - margen
+    nombre = f'{cu}. {C.CU[cu]}'
+    d = ea.diagrama(pkg, nombre, 'Logical')
+    d.ExtendedStyle = (d.ExtendedStyle or '').rstrip(';') + ';OpParams=3;'   # parámetros solo con su nombre (G07)
+    d.StyleEx = 'ShowOpRetType=0;'   # sin tipo de retorno (G07)
+    d.HighlightImports = False   # sin «Presentación::» delante del nombre
+    d.Update()
+    for c, (y0, y1) in marcos.items():
+        e = ea.elemento(paquetes[c], f'Capa {CAPAS[c]}', 'Boundary')
+        ea.poner(d, e, round(margen), round(y0), round(derecha - margen), round(y1 - y0))
+        con_letra(ea, d, e, pt)
+    for x, e in el.items():
+        ea.poner(d, e, round(xi[x]), round(ys[x]), *medida[x])
+        con_letra(ea, d, e, pt)
+    ea.exportar(d, archivo)
+    return ancho, alto
+
+
+def solo_analisis():
+    """Rehace 5.3.1 y 5.3.2 desde los recorridos del código, en un subpaquete propio de cada paquete de análisis: el
+    subpaquete se rehace entero y las vistas del respaldo de Leonardo (en el paquete padre) no se tocan. Los rótulos de
+    los mensajes se dibujan a PT_ANALISIS."""
+    SUB = 'Un diagrama por CU (5.3)'
+    def tarea():
+        ea = ea_base.EA.abrir_existente()
+        try:
+            col, cls = paquete(ea, ea.modelo, 'Análisis de Colaboración'), paquete(ea, ea.modelo, 'Análisis de clases')
+            borrar_paquete(col, SUB); borrar_paquete(cls, SUB)
+            col, cls = ea.paquete(col, SUB), ea.paquete(cls, SUB)
+            for cu in C.CU:
+                for archivo, dibujar, p in ((f'com-{cu.lower()}.png', colaboracion, col), (f'cls-{cu.lower()}.png', clases_analisis, cls)):
+                    w, h = dibujar(ea, p, cu, archivo)
+                    print(f'     {archivo}: {w:.0f} × {h:.0f}, impresa a {impresa(w, h):.1f} pt')
+        finally: ea.cerrar()
+    con_letra_rotulos(PT_ANALISIS, tarea)
 
 
 # ------------------------------------------------------------------------------------------------ 7.4 Secuencia
@@ -249,51 +542,63 @@ PRIMERO_SEQ = 133       # altura del primer mensaje con las líneas de vida arri
 IZQUIERDA_SEQ = 120     # centro del primer actor (a 12 pt): a su izquierda va la pestaña opt
 
 
-def mensajes_secuencia(cu):
-    """[(guarda, [(origen, destino, rótulo, 'call'|'return'|'self')])] por recorrido; la guarda del marco opt es la
-    función de api/*.js que lo dispara. Los extremos son
-    nombres de línea de vida: '@Actor', 'Pantalla', 'HTTP', 'Negocio', 'Datos', 'Stripe'."""
-    php, rutas, funciones, usos = codigo.clases_php(), codigo.rutas_api(), codigo.funciones_api(), codigo.usos_api()
+def recorridos(cu):
+    """RECORRIDOS[cu] comprobados contra el código, con sus extremos resueltos: [dict(ruta, actor, pagina, api ('pagos.js'),
+    fn (función de api/*.js), n y met (clase N y método de la ruta), pasos [(origen, destino, método)])]. Es la fuente
+    común de 5.3.1 (colaboración), 5.3.2 (clases) y 7.4 (secuencia): las tres vistas muestran lo mismo."""
+    rutas, funciones, usos = codigo.rutas_api(), codigo.funciones_api(), codigo.usos_api()
     clases, _, errores = codigo.cadena(cu)
     if errores: raise ValueError('; '.join(errores))
     if cu == 'CU5': clases.update(codigo.cadena('CU4')[0])   # «Perdido + motivo» se marca en PEmbudo.jsx (pantalla de CU4)
-    capa = lambda c: 'Stripe' if c == 'StripeClient' else 'Negocio' if php[c]['estereotipo'] == 'negocio' else 'Datos'
-
-    def retorno(c, m):
-        firma = php[c]['metodos'][m]['firma']
-        t = re.search(r'\):\s*([?\w\\|]+)$', firma)
-        return t.group(1).rsplit('\\', 1)[-1] if t else 'resultado'
-
-    escenas = []
+    res = []
     for ruta, pasos in RECORRIDOS[cu]:
         r = next((r for r in rutas if f'{r["verbo"]} {r["ruta"]}' == ruta), None)
         if not r: raise ValueError(f'{cu}: la ruta {ruta} ya no existe en api.php')
         n, met = r['controlador'], r['metodo']
         reales = codigo.llamadas_en_orden(n, met)
+        pasos = [(n if o == 'N' else o, d, m) for o, d, m in pasos]
         i = 0
-        for o, d, m in pasos:   # subsecuencia: cada mensaje existe y después del anterior
-            o = n if o == 'N' else o
-            while i < len(reales) and reales[i] != (o, d, m): i += 1
-            if i == len(reales): raise ValueError(f'{cu} {ruta}: {o} ya no llama a {d}::{m}() en ese orden')
+        for paso in pasos:   # subsecuencia: cada mensaje existe y después del anterior
+            while i < len(reales) and reales[i] != paso: i += 1
+            if i == len(reales): raise ValueError(f'{cu} {ruta}: {paso[0]} ya no llama a {paso[1]}::{paso[2]}() en ese orden')
             i += 1
         fn = next((k for k, f in funciones.items() if f['verbo'] == r['verbo'] and f['ruta'] == codigo.norm(r['ruta'])), None)
         if not fn: raise ValueError(f'{cu}: ninguna función de api/*.js llama a {ruta}')
-        api = f'{fn.split(".")[0]}.js'
         paginas = [a.rsplit('/', 1)[-1] for a, fns in usos.items() if fn in fns and a.rsplit('/', 1)[-1] in clases]
         if r['ruta'] == '/login': paginas = ['PLogin.jsx']
         if not paginas: raise ValueError(f'{cu}: ninguna página del CU llama a {fn}')
-        pagina = PAGINA_PREFERIDA.get(cu) if PAGINA_PREFERIDA.get(cu) in paginas else paginas[0]
-        actor = '@' + ACTOR_RUTA.get((cu, ruta), C.DETALLE[cu]['iniciador'])
-        msj = [(actor, 'Pantalla', f'usar {pagina}', 'call'),
-               ('Pantalla', 'HTTP', f'{api}::{funciones[fn]["nombre"]}()', 'call'),
-               ('HTTP', 'Negocio', f'{n}::{met}()', 'call')]
-        for o, d, m in pasos:
+        res.append(dict(ruta=ruta, actor=ACTOR_RUTA.get((cu, ruta), C.DETALLE[cu]['iniciador']),
+                        pagina=PAGINA_PREFERIDA.get(cu) if PAGINA_PREFERIDA.get(cu) in paginas else paginas[0],
+                        api=f'{fn.split(".")[0]}.js', fn=funciones[fn]['nombre'], params=funciones[fn]['params'],
+                        n=n, met=met, pasos=pasos))
+    return res
+
+
+def retorno(c, m):
+    """Tipo de retorno declarado en PHP (sin espacio de nombres) o 'resultado'."""
+    t = re.search(r'\):\s*([?\w\\|]+)$', codigo.clases_php()[c]['metodos'][m]['firma'])
+    return t.group(1).rsplit('\\', 1)[-1] if t else 'resultado'
+
+
+def mensajes_secuencia(cu):
+    """[(guarda, [(origen, destino, rótulo, 'call'|'return'|'self')])] por recorrido; la guarda del marco opt es la
+    función de api/*.js que lo dispara. Los extremos son
+    nombres de línea de vida: '@Actor', 'Pantalla', 'HTTP', 'Negocio', 'Datos', 'Stripe'."""
+    php = codigo.clases_php()
+    capa = lambda c: 'Stripe' if c == 'StripeClient' else 'Negocio' if php[c]['estereotipo'] == 'negocio' else 'Datos'
+    escenas = []
+    for r in recorridos(cu):
+        actor = '@' + r['actor']
+        msj = [(actor, 'Pantalla', f'usar {r["pagina"]}', 'call'),
+               ('Pantalla', 'HTTP', f'{r["api"]}::{r["fn"]}()', 'call'),
+               ('HTTP', 'Negocio', f'{r["n"]}::{r["met"]}()', 'call')]
+        for o, d, m in r['pasos']:
             if capa(d) == 'Negocio': msj.append(('Negocio', 'Negocio', f'{d}::{m}()', 'self'))
             elif capa(d) == 'Stripe': msj += [('Negocio', 'Stripe', f'{m}()', 'call'), ('Stripe', 'Negocio', 'Session', 'return')]
             else: msj += [('Negocio', 'Datos', f'{d}::{m}()', 'call'), ('Datos', 'Negocio', retorno(d, m), 'return')]
-        msj += [('Negocio', 'HTTP', retorno(n, met), 'return'), ('HTTP', 'Pantalla', 'respuesta JSON', 'return'),
+        msj += [('Negocio', 'HTTP', retorno(r['n'], r['met']), 'return'), ('HTTP', 'Pantalla', 'respuesta JSON', 'return'),
                 ('Pantalla', actor, 'resultado mostrado', 'return')]
-        escenas.append((funciones[fn]['nombre'], msj))   # guarda del opt: la acción que dispara el recorrido
+        escenas.append((r['fn'], msj))   # guarda del opt: la acción que dispara el recorrido
     return escenas
 
 
@@ -393,7 +698,6 @@ def con_letra_rotulos(pt, tarea):
 
 
 # Alto útil de la hoja para cada sd (cm), el mismo que usan documento_p2.py y actualizar_secuencias.py.
-from formato_g07 import ALTO_SD  # noqa: E402
 ALTO_SEQ = {cu: ALTO_SD[0] if i == 0 else ALTO_SD[1] for i, cu in enumerate(C.CU)}
 
 
@@ -417,129 +721,6 @@ def solo_secuencias(cus=None):
             finally: ea.cerrar()
         print(f'  letra {pt} pt: {", ".join(lista)}')
         con_letra_rotulos(pt, tarea)
-
-
-def diagrama_interaccion(ea, raiz, cu, tipo, archivo):
-    clases, pasos = interacciones(cu)
-    nombre = f'{cu}. {C.CU[cu]}: {tipo} (recorridos principales)'
-    d = diagrama(ea, raiz, nombre, 'Sequence' if tipo == 'Secuencia' else 'Collaboration', archivo,
-                 refrescar=(cu == 'CU6'))
-    if not d: return
-    d.StyleEx = 'SuppressBrackets=1;'; d.Update()
-    if tipo == 'Secuencia':
-        php = codigo.clases_php()
-        nombres_actores = list(dict.fromkeys(a[1:] for a, _, _ in pasos if a.startswith('@')))
-        actores = {n: ea.elemento(raiz, n, 'Actor') for n in nombres_actores}
-        # Una línea de vida por responsabilidad mantiene legibles las ocho
-        # secuencias en la hoja vertical. Cada flecha conserva el nombre de la
-        # clase y método concretos del código, aunque el CU use varias clases N/D.
-        vidas = [('Pantalla React', 'boundary'), ('Cliente HTTP', 'boundary'),
-                 ('Negocio Laravel', 'control'), ('Datos PostgreSQL', 'entity')]
-        if cu == 'CU6': vidas.append(('Pasarela Stripe', 'boundary'))
-        objetos = {n: ea.elemento(raiz, n, 'Object', st) for n, st in vidas}
-        def grupo(n):
-            if n.startswith('@'): return actores[n[1:]]
-            x = clases[n]
-            if x['estereotipo'] == 'external': return objetos['Pasarela Stripe']
-            if x['estereotipo'] == 'client page': return objetos['Pantalla React']
-            if x['capa'] == 'Presentacion': return objetos['Cliente HTTP']
-            if x['capa'] == 'Negocio': return objetos['Negocio Laravel']
-            return objetos['Datos PostgreSQL']
-        escenas = []
-        for paso in pasos:
-            if paso[0].startswith('@'): escenas.append([])
-            escenas[-1].append(paso)
-
-        def retorno_php(nombre, metodo):
-            firma = php.get(nombre, {}).get('metodos', {}).get(metodo, {}).get('firma', '')
-            m = re.search(r'\):\s*([?\w\\|]+)$', firma)
-            return m.group(1) if m else 'resultado'
-
-        mensajes, marcos = [], []
-        for j, escena in enumerate(escenas):
-            inicio = len(mensajes) + 1
-            ruta = PREFERIDAS[cu][j]
-            for a, b, txt in escena:
-                if not a.startswith('@') and a.startswith('api/'):
-                    met = next((r['metodo'] for r in codigo.rutas_api() if
-                                r['controlador'] == b and f'{r["verbo"]} {r["ruta"]}' == ruta), None)
-                    etiqueta = f'{b}::{met}()' if met else txt
-                elif not a.startswith('@') and a in php and b in php:
-                    etiqueta = f'{b}::{txt}'
-                elif not a.startswith('@') and a in clases and clases[a]['estereotipo'] == 'client page':
-                    etiqueta = f'{b.rsplit("/", 1)[-1]}::{txt}'
-                else: etiqueta = txt
-                mensajes.append((a, b, etiqueta, 'call'))
-                if not a.startswith('@') and b in clases and clases[b]['estereotipo'] == 'external':
-                    mensajes.append((b, a, 'Checkout Session', 'return'))
-                elif not a.startswith('@') and a in php and b in php and clases[b]['estereotipo'] == 'datos':
-                    metodo = txt.partition('(')[0]
-                    mensajes.append((b, a, retorno_php(b, metodo), 'return'))
-            for a, b, txt in reversed(escena):
-                if not a.startswith('@') and b in clases and clases[b]['estereotipo'] == 'external':
-                    continue
-                if not a.startswith('@') and a in php and b in php and clases[b]['estereotipo'] == 'datos':
-                    continue  # la clase D ya respondió justo después de su llamada
-                if a.startswith('@'): etiqueta = 'resultado mostrado'
-                elif a in php and b in php:
-                    etiqueta = retorno_php(b, txt.partition('(')[0])
-                elif a.startswith('api/'):
-                    controlador = b
-                    metodo = next((r['metodo'] for r in codigo.rutas_api() if
-                                   r['controlador'] == controlador and
-                                   f'{r["verbo"]} {r["ruta"]}' == ruta), None)
-                    etiqueta = retorno_php(controlador, metodo) if metodo else 'respuesta JSON'
-                else: etiqueta = 'respuesta JSON'
-                mensajes.append((b, a, etiqueta, 'return'))
-            metodo_guardia = next((r['metodo'] for r in codigo.rutas_api() if
-                                   f'{r["verbo"]} {r["ruta"]}' == ruta), ruta)
-            marcos.append((f'{metodo_guardia}()', inicio, len(mensajes)))
-
-        # En EA 15 los mensajes usan una separación vertical fija de 35.
-        alto = 190 + len(mensajes) * 35
-        for i, a in enumerate(actores.values()): ea.poner(d, a, 35 + i * 85, 35, 65, alto)
-        for i, (n, _) in enumerate(vidas):
-            ea.poner(d, objetos[n], 240 + i * 230, 35, 140, alto)
-        for i, (a, b, mensaje, clase_mensaje) in enumerate(mensajes, 1):
-            ea.mensaje_seq(d, grupo(a), grupo(b), mensaje.replace("'", '´'), i, clase_mensaje)
-        for guarda, inicio, fin in marcos:
-            fr = ea.elemento(raiz, '', 'InteractionFragment')
-            fr.Subtype = 1  # opt, igual que el generador del P1
-            fr.Update()
-            parte = fr.Partitions.AddNew('x', ''); parte.Size = 100; fr.Update()
-            y = 133 + (inicio - 1) * 35 - 26
-            h = (fin - inicio + 1) * 35 + 34
-            guid = '{' + str(uuid.uuid4()).upper() + '}'
-            descripcion = f'@PAR;Name={guarda};Size={h};GUID={guid};@ENDPAR;'
-            ea.r.Execute(f"UPDATE t_xref SET Description='{descripcion}' "
-                         f"WHERE Client='{fr.ElementGUID}' AND Name='Partitions'")
-            ea.poner(d, fr, 15, y, 1100 + (230 if cu == 'CU6' else 0), h, seq=60)
-    else:
-        # Una fila por recorrido evita cruces entre pantallas o actores cuando
-        # el CU abarca varias acciones. Los objetos y enlaces son los del P1.
-        escenas = []
-        for paso in pasos:
-            if paso[0].startswith('@'): escenas.append([])
-            escenas[-1].append(paso)
-        numero = 0
-        for fila, escena in enumerate(escenas):
-            y = 65 + fila * 210
-            nombres = list(dict.fromkeys([x for a, b, _ in escena for x in (a, b)]))
-            objetos = {}
-            for col, n in enumerate(nombres):
-                tipo_obj = 'Actor' if n.startswith('@') else 'Object'
-                st = '' if tipo_obj == 'Actor' else {
-                    'client page': 'boundary', 'module': 'boundary', 'negocio': 'control',
-                     'datos': 'entity', 'model': 'entity', 'external': 'boundary'}.get(clases[n]['estereotipo'], 'control')
-                e = ea.elemento(raiz, n.lstrip('@'), tipo_obj, st)
-                objetos[n] = e
-                ea.poner(d, e, 35 + col * 220, y, 65, 65)
-            for a, b, txt in escena:
-                numero += 1
-                enlace = ea.conector(objetos[a], objetos[b], 'Association')
-                corto = txt if len(txt) <= 36 else txt[:33] + '...'
-                ea.mensaje_com(d, enlace, objetos[a], objetos[b], corto.replace("'", '´'), str(numero), numero, 0)
-    ea.exportar(d, archivo)
 
 
 def despliegue(ea, modelo):
@@ -661,17 +842,16 @@ def main():
         return solo_despliegue()
     if sys.argv[1:2] == ['--secuencias']:  # solo 7.4 (opcional: CU1 CU6 ...)
         return solo_secuencias(sys.argv[2:])
+    if sys.argv[1:] == ['--analisis']:     # solo 5.3.1 y 5.3.2
+        return solo_analisis()
     ea = ea_base.EA.abrir_existente()
     try:
         _, actores, casos = requisitos(ea, ea.modelo)
         paquetes(ea, ea.modelo, actores, casos)
-        col = paquete(ea, ea.modelo, 'Análisis de Colaboración')
-        seq = paquete(ea, ea.modelo, 'Diseño de Secuencia')
-        for cu in C.CU:
-            diagrama_interaccion(ea, col, cu, 'Comunicación', f'com-{cu.lower()}.png')
     finally:
         ea.cerrar()
     print(f'Exportados {len(ea.exportados)} diagramas PNG y EMF en {ea_base.SALIDA}')
+    solo_analisis()     # aparte: los rótulos de colaboración necesitan abrir EA con su letra
     solo_secuencias()   # aparte: cada letra de rótulos necesita su propia sesión de EA
     solo_despliegue()   # aparte: necesita abrir EA con la letra de rótulos a 11 pt
 
