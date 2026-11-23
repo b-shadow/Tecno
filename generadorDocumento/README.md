@@ -47,6 +47,9 @@ El mantenimiento incremental utiliza:
   exportaciones de EA 15; conserva idénticos todos los registros gráficos.
 - `insertar_figuras_actuales.py`: sustituye las secciones gráficas autorizadas
   usando exportaciones nativas y páginas grandes, sin reducir la tipografía.
+- `insertar_53.py`: 5.3.1 y 5.3.2 con un diagrama por CU, cada uno en su
+  hoja (los de `ea/ea_faltantes.py --analisis`, subpaquete EA «Un diagrama
+  por CU (5.3)»); reemplaza solo esas dos secciones del maestro.
 - `exportar.ps1`: actualiza campos con Microsoft Word y produce DOC y PDF.
 
 Respaldar el maestro y el EAPX antes de editar. No ejecutar dos escritores COM
