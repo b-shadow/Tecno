@@ -3,7 +3,7 @@ import { Download, FileUp, UserPlus, UsersRound } from 'lucide-react'
 import { descargarCsv } from '../servicios/archivos'
 import { go } from '../servicios/navigation'
 import { puede, useAuth } from '../servicios/auth'
-import { Aviso, CabeceraPagina, Campo, Cargando, Etiqueta, Modal, Vacio, erroresDe, fecha, nombre, useAviso, useDatos } from '../componentes/ui'
+import { Aviso, CabeceraPagina, Campo, Cargando, Etiqueta, Modal, Persona, Vacio, erroresDe, fecha, nombre, useAviso, useDatos } from '../componentes/ui'
 import { apiErrorMessage } from '../servicios/errors'
 import * as catalogoApi from '../api/catalogo'
 import * as prospectosApi from '../api/prospectos'
@@ -37,16 +37,16 @@ export default function Prospectos() {
             <tbody>
               {datos.prospectos.map((p) => (
                 <tr key={p.documento}>
-                  <td><div className="persona"><div><strong>{nombre(p)}</strong><small>{p.correo}</small></div></div></td>
-                  <td className="cifra">{p.documento}</td>
-                  <td className="cifra">{p.telefono}</td>
+                  <td><Persona usuario={p} detalle={p.correo} /></td>
+                  <td className="tabular-nums">{p.documento}</td>
+                  <td className="tabular-nums">{p.telefono}</td>
                   <td>{p.origen}</td>
                   <td>{p.intereses.length ? p.intereses.map((i) => (
-                    <div key={i.nro_tarjeta} className="interes-linea">
+                    <div key={i.nro_tarjeta} className="my-0.5 flex items-center gap-2">
                       <a href="#" onClick={(e) => { e.preventDefault(); go(`/agenda?interes=${i.nro_tarjeta}`) }}>{i.modulo_nombre}</a><Etiqueta estado={i.estado} />
                     </div>
-                  )) : <small className="nota">Sin interés registrado</small>}</td>
-                  <td className="cifra">{fecha(p.fecha_registro)}</td>
+                  )) : <small className="text-tinta-suave">Sin interés registrado</small>}</td>
+                  <td className="tabular-nums">{fecha(p.fecha_registro)}</td>
                 </tr>
               ))}
             </tbody>
@@ -77,7 +77,7 @@ function NuevoProspecto({ origenes, onCerrar, onListo }) {
   }
   return (
     <Modal ancho titulo="Registrar prospecto" descripcion="Datos básicos (RF2.1). Si elige un interés, se crea su tarjeta en el embudo." onCerrar={onCerrar}>
-      <form className="formulario dos" onSubmit={guardar}>
+      <form className="grid gap-4 grid-cols-2 max-movil:grid-cols-1" onSubmit={guardar}>
         <Campo etiqueta="Carnet de identidad" requerido error={errores.documento}><input required maxLength={20} pattern="[0-9A-Za-z\-]+" title="Números, letras y guion." value={form.documento} onChange={set('documento')} /></Campo>
         <Campo etiqueta="Origen del contacto" requerido error={errores.origen}><select value={form.origen} onChange={set('origen')}>{origenes.map((o) => <option key={o}>{o}</option>)}</select></Campo>
         <Campo etiqueta="Nombre" requerido error={errores.nombre}><input required maxLength={120} value={form.nombre} onChange={set('nombre')} /></Campo>
@@ -86,7 +86,7 @@ function NuevoProspecto({ origenes, onCerrar, onListo }) {
         <Campo etiqueta="Correo" requerido error={errores.correo}><input type="email" required maxLength={160} value={form.correo} onChange={set('correo')} /></Campo>
         <Campo etiqueta="Profesión" error={errores.profesion}><input maxLength={120} value={form.profesion} onChange={set('profesion')} /></Campo>
         <Campo etiqueta="Ciudad" error={errores.ubicacion}><input maxLength={160} value={form.ubicacion} onChange={set('ubicacion')} /></Campo>
-        <div className="ancho">
+        <div className="col-span-full">
           <Campo etiqueta="Interés (RF2.2)" ayuda="Programa completo o un módulo independiente." error={errores.modulo_codigo}>
             <select value={form.interes} onChange={set('interes')}>
               <option value="">Sin interés por ahora</option>
@@ -99,8 +99,8 @@ function NuevoProspecto({ origenes, onCerrar, onListo }) {
             </select>
           </Campo>
         </div>
-        {errores.general && <div className="ancho"><Aviso tipo="error">{errores.general}</Aviso></div>}
-        <div className="acciones ancho"><button type="button" className="btn btn-secundario" onClick={onCerrar}>Cancelar</button><button type="submit" className="btn btn-primario">Registrar</button></div>
+        {errores.general && <div className="col-span-full"><Aviso tipo="error">{errores.general}</Aviso></div>}
+        <div className="acciones col-span-full"><button type="button" className="btn btn-secundario" onClick={onCerrar}>Cancelar</button><button type="submit" className="btn btn-primario">Registrar</button></div>
       </form>
     </Modal>
   )

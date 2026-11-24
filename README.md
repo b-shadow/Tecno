@@ -61,8 +61,11 @@ y `php artisan migrate --force`. Sin Docker: `cd negocio && composer install && 
 - `plantilla/AppShell.jsx`: plantilla base (pública e interna) con el menú leído de la BD.
 - `api/`: un módulo por controlador de la API (`pagos.js` ↔ `PagoController`, mismos nombres de método).
 - `servicios/`: sesión, permisos, tema/accesibilidad, validación en español del navegador.
-- `estilos/`: CSS propio en archivos aparte (`tokens.css`, `base.css`, `layout.css`, `components.css`, `catalogo.css`,
-  `panel.css`); ningún estilo en línea. Fuentes alojadas en el sitio (sin CDN).
+- Estilos con **Tailwind CSS v4**: `estilos/tokens.css` (variables de cada tema: día/noche, público, letra, contraste)
+  y `estilos/app.css` (único CSS global: `@theme` que expone los tokens a Tailwind, variantes `dark:`/`contraste:`/`bajo:`,
+  base de los elementos y los componentes que se repiten: botones, campos, hojas, tablas, filtros). Lo propio de cada
+  pantalla va con utilidades en su JSX; los colores que dependen de un dato, en `componentes/tonos.js`. Ningún estilo
+  en línea. Fuentes alojadas en el sitio (sin CDN).
 
 **Negocio (`negocio/`)**
 - `routes/api.php`: las ~70 rutas; cada ruta de negocio lleva `auth.token` y `acceso:<recurso>,<nivel>` (matriz).
@@ -101,7 +104,7 @@ Comprobación de capas (todas deben dar 0 líneas):
 grep -rn "DB::" negocio/app
 grep -rlnE "Illuminate.Http|response\(|abort|::query\(" negocio/app/Services
 grep -rlnE "axios|api/cliente" presentacion/src/paginas presentacion/src/componentes
-grep -rn "style={{" presentacion/src
+grep -rn "style={{" presentacion/src                       # sin estilos en línea
 ```
 
 ## Despliegue

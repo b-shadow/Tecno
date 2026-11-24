@@ -45,13 +45,13 @@ export default function Matriculas() {
                 const exp = i.exportaciones?.[i.exportaciones.length - 1]
                 return (
                   <tr key={i.nro_solicitud}>
-                    <td><strong>{nombre(s.orden_pago.interes.prospecto)}</strong><br /><small className="cifra">CI {s.orden_pago.interes.prospecto.documento}</small></td>
-                    <td>{s.modulo_nombre}<br /><small className="nota">{s.programa_nombre}</small></td>
+                    <td><strong>{nombre(s.orden_pago.interes.prospecto)}</strong><br /><small className="tabular-nums">CI {s.orden_pago.interes.prospecto.documento}</small></td>
+                    <td>{s.modulo_nombre}<br /><small className="text-tinta-suave">{s.programa_nombre}</small></td>
                     <td className="num">{bs(s.precio_acordado)}</td>
                     <td>{nombre(s.orden_pago.vendedor)}</td>
-                    <td className="cifra">{fecha(i.fecha_confirmacion)}</td>
+                    <td className="tabular-nums">{fecha(i.fecha_confirmacion)}</td>
                     <td>
-                      {exp ? <div className="acciones al-inicio">
+                      {exp ? <div className="acciones justify-start">
                         <Etiqueta estado={exp.estado} />
                         {editable && exp.estado === 'exportada' && <>
                           <button type="button" className="btn btn-texto" onClick={() => resultado(exp, 'recibida')}>Marcar recibida</button>

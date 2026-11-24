@@ -50,7 +50,7 @@ primera cuota aprobada. La matrícula sale del CRM ya validada hacia el sistema 
   tamaño de letra (deslizador o botones) y alto contraste (WCAG); **búsqueda global en el encabezado** de la página
   principal; **contador de visitas en el pie de cada página**; dashboard con estadísticas del negocio y de accesos;
   validación en español en cliente y servidor.
-- Estilo único en CSS propio, en archivos aparte (regla del docente). React (SPA con react-router-dom), Vite, Chart.js,
+- Estilo único con Tailwind CSS v4: tokens del tema y componentes repetidos en `estilos/`, utilidades en cada JSX; sin estilos en línea (regla del docente). React (SPA con react-router-dom), Vite, Chart.js,
   `lucide-react`.
 - Pagos simulados: tarjeta (solo marca, últimos 4 y vencimiento), QR y transferencia; pasarela simulada.
 

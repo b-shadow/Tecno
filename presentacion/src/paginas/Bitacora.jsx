@@ -19,16 +19,16 @@ export default function Bitacora() {
       <CabeceraPagina titulo="Bitácora de accesos">Registro persistente de cada inicio de sesión, intento fallido, acceso denegado y visita, con su IP.</CabeceraPagina>
       {r && (
         <>
-          <dl className="cifras tramo">
+          <dl className="cifras mb-6">
             {Object.entries(EVENTOS).map(([k, v]) => <div key={k}><dt>{v} (30 días)</dt><dd>{r.eventos[k] || 0}</dd></div>)}
           </dl>
-          <div className="rejilla-2 tramo">
+          <div className="grid grid-cols-2 gap-6 max-movil:grid-cols-1 mb-6">
             <section className="hoja"><header className="hoja-titulo"><h3>Recursos más accedidos</h3></header>
               <div className="hoja-cuerpo"><Barras porcentaje={false} datos={r.recursos_mas_accedidos.map((x) => ({ etiqueta: x.nombre, total: x.visitas }))} tono="seguimiento" formato={(v) => v.toLocaleString('es-BO')} /></div></section>
             <section className="hoja"><header className="hoja-titulo"><h3>IPs con más intentos fallidos</h3></header>
               {!r.ips_con_fallos.length ? <Vacio titulo="Sin intentos fallidos" /> : (
-                <div className="tabla-marco interna"><table className="tabla"><thead><tr><th>IP</th><th className="num">Intentos</th><th>Último</th></tr></thead>
-                  <tbody>{r.ips_con_fallos.map((x) => <tr key={x.ip}><td className="cifra">{x.ip}</td><td className="num">{x.total}</td><td className="cifra">{fecha(x.ultimo, true)}</td></tr>)}</tbody></table></div>
+                <div className="tabla-marco rounded-none border-0"><table className="tabla"><thead><tr><th>IP</th><th className="num">Intentos</th><th>Último</th></tr></thead>
+                  <tbody>{r.ips_con_fallos.map((x) => <tr key={x.ip}><td className="tabular-nums">{x.ip}</td><td className="num">{x.total}</td><td className="tabular-nums">{fecha(x.ultimo, true)}</td></tr>)}</tbody></table></div>
               )}
             </section>
           </div>
@@ -49,18 +49,18 @@ export default function Bitacora() {
               <thead><tr><th>Fecha</th><th>Evento</th><th>Usuario</th><th>Página</th><th>IP</th><th>Navegador</th></tr></thead>
               <tbody>{registros.datos.data.map((x) => (
                 <tr key={x.nro_registro}>
-                  <td className="cifra">{fecha(x.fecha, true)}</td>
+                  <td className="tabular-nums">{fecha(x.fecha, true)}</td>
                   <td><Etiqueta estado={x.evento}>{EVENTOS[x.evento]}</Etiqueta></td>
-                  <td>{x.usuario || x.correo_intentado || <span className="nota">Visitante</span>}</td>
+                  <td>{x.usuario || x.correo_intentado || <span className="text-tinta-suave">Visitante</span>}</td>
                   <td>{x.recurso || '—'}</td>
-                  <td className="cifra">{x.ip}</td>
-                  <td><small className="nota">{(x.navegador || '').slice(0, 48)}</small></td>
+                  <td className="tabular-nums">{x.ip}</td>
+                  <td><small className="text-tinta-suave">{(x.navegador || '').slice(0, 48)}</small></td>
                 </tr>
               ))}</tbody>
             </table>
           </div>
-          <div className="acciones desde-arriba-s">
-            <span className="nota-s">Página {registros.datos.current_page} de {registros.datos.last_page} · {registros.datos.total} registros</span>
+          <div className="acciones mt-3">
+            <span className="text-sm text-tinta-suave">Página {registros.datos.current_page} de {registros.datos.last_page} · {registros.datos.total} registros</span>
             <button type="button" className="btn btn-secundario" disabled={f.page <= 1} onClick={() => setF({ ...f, page: f.page - 1 })}>Anterior</button>
             <button type="button" className="btn btn-secundario" disabled={registros.datos.current_page>= registros.datos.last_page} onClick={() => setF({ ...f, page: f.page + 1 })}>Siguiente</button>
           </div>

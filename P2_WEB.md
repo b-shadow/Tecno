@@ -63,7 +63,7 @@ Publicados por el grupo el 14/09/2026. Ajustes acordados el 20/11/2026 en **negr
 | 2 | RBAC + menú dinámico | Coordinador y Vendedor (+ Administrador). El menú se lee de la BD (`recursos` + `permisos` rol × recurso con tipo de acceso); cambiar un permiso cambia el menú sin tocar código |
 | 3 | Laravel API REST + React | 3 carpetas: `presentacion/` (React SPA, react-router, axios por `src/api/`), `negocio/` (Laravel solo API) y `datos/` (repositorios, modelos, migraciones). Laravel no sirve páginas |
 | 4 | Matriz + bitácora | Middleware por recurso y acción en cada ruta; tabla de bitácora con login exitoso, fallido, IP, recurso y fecha; pantalla con recursos más accedidos |
-| 5 | Estilo único, 3 temas, día/noche, accesibilidad | CSS propio en archivos aparte; selector Niños/Jóvenes/Adultos; día/noche automático por la hora del cliente y manual; letra con deslizador o A−/A+; alto contraste (WCAG AA mínimo) |
+| 5 | Estilo único, 3 temas, día/noche, accesibilidad | Tailwind CSS v4 (tokens del tema en `@theme`, componentes repetidos en `app.css`, utilidades en cada JSX), sin estilos en línea; selector Niños/Jóvenes/Adultos; día/noche automático por la hora del cliente y manual; letra con deslizador o A−/A+; alto contraste (WCAG AA mínimo) |
 | 6 | Validación en español | Cada formulario valida en cliente y servidor; todos los mensajes en español con tildes |
 | 7 | Contador de visitas | Footer de **cada** vista muestra las visitas de esa página; persistente en BD (trigger) |
 | 8 | Estadísticas de negocio y acceso | Dashboard con gráficos de ventas/embudo y de accesos (logins, fallos, páginas) |
@@ -184,13 +184,16 @@ servidor; `programas_responsables` sin campo propio; líneas de más de 150 cara
 ## 7c. Estado (24/11/2026): 3 capas estrictas (rama `p2-final`, base = rama `b-shadow` de Brandon)
 
 Pedido del usuario: "3 capas estricto" para que el diseño procedimental salga limpio. Decisiones: carpetas separadas,
-CSS propio (no Tailwind), partir de la rama de Brandon (Services + Repositories).
+partir de la rama de Brandon (Services + Repositories). Después (24/11), a pedido del usuario: **estilos migrados a
+Tailwind CSS v4** (ver abajo).
 - **Estructura:** `presentacion/` (React + Vite + react-router-dom, sin Inertia), `negocio/` (Laravel solo API: sin
   Blade ni `web.php`), `datos/` (paquete Composer `grupo05sa/datos`: `Datos\Repositorios`, `Datos\Modelos`,
   migraciones y semillas; `negocio` lo carga como repositorio `path`).
 - **Capa 1:** `src/api/<area>.js` = un módulo por controlador, mismos nombres de método; las páginas no usan axios.
   Página 404 con contador (recurso `error`, migración `000007`). Un 403 relee el menú. **Sin estilos en línea** (71 →
-  0: clases en `estilos/`; barras con `<progress>` y tono por clase).
+  0; barras con `<progress>` y tono por clase). **Tailwind v4:** `estilos/tokens.css` (temas) + `estilos/app.css`
+  (`@theme inline`, variantes `dark:`/`contraste:`/`claro:`/`bajo:`, base y componentes repetidos); cada pantalla con
+  utilidades en su JSX; colores por dato en `componentes/tonos.js`. Comparado contra capturas previas (día y noche).
 - **Capa 2:** cada acción = FormRequest (`app/Http/Requests/<Area>`) → Controller → Service; ningún Service usa
   `Request`/`response()`/`abort`/`DB::` (errores con `ReglaNegocioException`); middleware sin acceso a la BD.
 - **Capa 3:** solo `datos/` toca la BD; bitácora por `BitacoraRepository` (el modelo ya no recibe el Request).

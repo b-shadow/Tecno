@@ -5,8 +5,8 @@ import { puede, useAuth } from '../servicios/auth'
 import { Aviso, CabeceraPagina, Campo, Cargando, Modal, Vacio, bs, fecha, nombre, useAviso, useDatos } from '../componentes/ui'
 import * as interesesApi from '../api/intereses'
 import * as usuariosApi from '../api/usuarios'
+import { ETAPA, TONO } from '../componentes/tonos'
 
-const COLOR = { 'Nuevo': 'nuevo', 'En Contacto': 'contacto', 'Seguimiento': 'seguimiento', 'Promesa de Pago': 'promesa', 'Convertido': 'convertido', 'Perdido': 'perdido' }
 
 /**
  * CU4: embudo de ventas en tablero Kanban (RF3.1, RF3.2). Las tarjetas se arrastran entre columnas o se mueven con
@@ -67,27 +67,30 @@ export default function Embudo() {
       {cargando && !datos ? <Cargando filas={5} /> : (
         datos?.intereses?.length === 0 && !filtros.buscar ? <Vacio titulo="Todavía no hay tarjetas" icono={KanbanSquare}>{esVendedor ? 'Cuando coordinación le asigne prospectos aparecerán aquí.' : 'Registre prospectos o espere los registros del catálogo.'}</Vacio> : (
           <>
-          <nav className="etapas" aria-label="Ir a una etapa">
+          <nav className="mb-3 flex flex-wrap gap-1.5" aria-label="Ir a una etapa">
             {(datos?.estados || []).map((estado) => (
-              <button key={estado} type="button" className={`tono-${COLOR[estado]}`}
-                onClick={() => document.getElementById(`etapa-${COLOR[estado]}`)?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' })}>
-                {estado} <b>{porEstado[estado]?.length || 0}</b>
+              <button key={estado} type="button" className={`inline-flex items-center gap-2 rounded-full border border-filete bg-papel px-3 py-1.5 text-sm font-[650] before:size-2 before:rounded-full before:bg-c before:content-[''] ${TONO[ETAPA[estado]]}`}
+                onClick={() => document.getElementById(`etapa-${ETAPA[estado]}`)?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' })}>
+                {estado} <b className="text-tinta-suave tabular-nums">{porEstado[estado]?.length || 0}</b>
               </button>
             ))}
           </nav>
-          <div className="kanban" aria-label="Tablero del embudo">
+          <div aria-label="Tablero del embudo" className="grid snap-x snap-proximity auto-cols-[minmax(272px,1fr)] grid-flow-col items-start gap-3 overflow-x-auto pr-7 pb-3 [mask-image:linear-gradient(90deg,#000_calc(100%-20px),transparent)] max-movil:auto-cols-[86vw]">
             {(datos?.estados || []).map((estado) => (
-              <section key={estado} id={`etapa-${COLOR[estado]}`} className={`columna tono-${COLOR[estado]} ${encima === estado ? 'encima' : ''}`} aria-label={estado}
+              <section key={estado} id={`etapa-${ETAPA[estado]}`} className={`flex max-h-[calc(100dvh-310px)] min-h-60 snap-start flex-col rounded-hoja shadow-[inset_0_4px_0_var(--c)] outline-2 -outline-offset-2 outline-dashed transition-[background-color,outline-color] duration-150 ease-curva max-movil:max-h-none ${TONO[ETAPA[estado]]} ${encima === estado ? 'bg-acento-suave outline-c' : 'bg-niebla outline-transparent'}`} aria-label={estado}
                 onDragOver={(e) => { if (editable && arrastrada) { e.preventDefault(); setEncima(estado) } }}
                 onDragLeave={() => setEncima(null)}
                 onDrop={(e) => { e.preventDefault(); setEncima(null); mover(arrastrada, estado); setArrastrada(null) }}>
-                <header className="columna-cabecera"><h3>{estado}</h3><span>{porEstado[estado]?.length || 0}</span></header>
-                <div className="columna-lista">
+                <header className="flex items-center justify-between gap-2 px-3.5 pt-3.5 pb-2.5">
+                  <h3 className="font-ui text-sm font-[750] text-c claro:text-[color-mix(in_srgb,var(--c)_85%,#000)]">{estado}</h3>
+                  <span className="rounded-full bg-papel px-2 py-px text-xs font-bold text-tinta-suave tabular-nums">{porEstado[estado]?.length || 0}</span>
+                </header>
+                <div className="grid gap-2 overflow-y-auto px-2.5 pb-3">
                   {porEstado[estado]?.map((t) => (
                     <Tarjeta key={t.nro_tarjeta} t={t} estados={datos.estados} editable={editable && t.estado !== 'Convertido'} mostrarVendedor={!esVendedor}
                       onArrastrar={setArrastrada} onMover={(e) => mover(t, e)} />
                   ))}
-                  {!porEstado[estado]?.length && <div className="columna-vacia">Sin tarjetas</div>}
+                  {!porEstado[estado]?.length && <div className="rounded-ui border border-dashed border-filete-fuerte px-3 py-[18px] text-center text-xs text-tinta-suave">Sin tarjetas</div>}
                 </div>
               </section>
             ))}
@@ -122,26 +125,29 @@ export default function Embudo() {
   )
 }
 
+const DETALLE = 'text-xs leading-[1.4] text-tinta-suave'
+
 function Tarjeta({ t, estados, editable, mostrarVendedor, onArrastrar, onMover }) {
   const [arrastrando, setArrastrando] = useState(false)
   const pendiente = t.ordenes_pago?.flatMap((o) => o.cuotas || []).find((c) => c.estado !== 'Pago aprobado')
   const vencido = t.proximo_contacto && new Date(t.proximo_contacto) < new Date() && !['Convertido', 'Perdido'].includes(t.estado)
   return (
-    <article className="tarjeta" draggable={editable} aria-grabbed={arrastrando}
+    <article draggable={editable} aria-grabbed={arrastrando}
+      className="grid cursor-grab gap-1.5 rounded-ui border border-filete bg-papel p-3 shadow-hoja transition-[transform,box-shadow] duration-150 ease-curva hover:border-filete-fuerte aria-[grabbed=true]:rotate-[1.5deg] aria-[grabbed=true]:opacity-55"
       onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; setArrastrando(true); onArrastrar(t) }}
       onDragEnd={() => { setArrastrando(false) }}>
-      <div className="tarjeta-cabeza">
-        <strong><a href="#" onClick={(e) => { e.preventDefault(); go(`/agenda?interes=${t.nro_tarjeta}`) }}>{nombre(t.prospecto)}</a></strong>
-        <span className="cifra">#{t.nro_tarjeta}</span>
+      <div className="flex items-baseline justify-between gap-2">
+        <strong className="leading-tight font-bold"><a className="text-inherit no-underline hover:underline focus-visible:underline" href="#" onClick={(e) => { e.preventDefault(); go(`/agenda?interes=${t.nro_tarjeta}`) }}>{nombre(t.prospecto)}</a></strong>
+        <span className="text-xs text-tinta-suave tabular-nums">#{t.nro_tarjeta}</span>
       </div>
-      <p>{t.modulo_nombre} · {t.programa_nombre}</p>
-      {t.motivo_perdida && <p><b>Motivo:</b> {t.motivo_perdida}</p>}
-      {pendiente && <p>Cuota {pendiente.nro_cuota}: {bs(pendiente.monto)} · {pendiente.estado}</p>}
-      {vencido && <span className="alerta"><CalendarClock size={13} /> Contacto vencido ({fecha(t.proximo_contacto, true)})</span>}
-      <div className="tarjeta-pie">
-        {mostrarVendedor && <span className="tarjeta-vendedor"><UserRound size={13} />{t.vendedor ? nombre(t.vendedor) : 'Sin asignar'}</span>}
+      <p className={DETALLE}>{t.modulo_nombre} · {t.programa_nombre}</p>
+      {t.motivo_perdida && <p className={DETALLE}><b>Motivo:</b> {t.motivo_perdida}</p>}
+      {pendiente && <p className={DETALLE}>Cuota {pendiente.nro_cuota}: {bs(pendiente.monto)} · {pendiente.estado}</p>}
+      {vencido && <span className="inline-flex items-center gap-1 text-xs font-[650] text-aviso"><CalendarClock size={13} /> Contacto vencido ({fecha(t.proximo_contacto, true)})</span>}
+      <div className="flex flex-wrap items-center justify-between gap-1.5">
+        {mostrarVendedor && <span className="inline-flex items-center gap-1 text-xs text-tinta-suave"><UserRound size={13} />{t.vendedor ? nombre(t.vendedor) : 'Sin asignar'}</span>}
         {editable && (
-          <select className="control" aria-label={`Mover la tarjeta ${t.nro_tarjeta} a otra etapa`} value="" onChange={(e) => onMover(e.target.value)}>
+          <select className="control min-h-8 max-w-[160px] px-2 py-1 text-xs" aria-label={`Mover la tarjeta ${t.nro_tarjeta} a otra etapa`} value="" onChange={(e) => onMover(e.target.value)}>
             <option value="">Mover a…</option>
             {estados.filter((e) => e !== t.estado).map((e) => <option key={e} value={e}>{e}</option>)}
           </select>

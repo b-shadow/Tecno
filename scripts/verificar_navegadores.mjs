@@ -21,6 +21,9 @@ async function settle(page) {
   await page.waitForLoadState('networkidle')
   await page.locator('main').waitFor()
 }
+// Botón de la cuenta: el último botón desplegable del encabezado (después de Apariencia).
+const perfil=(page)=>page.locator('header').getByRole('button',{expanded:false}).last()
+
 async function login(page, role, remember=true) {
   await page.goto(base+'/login')
   await page.getByLabel('Correo',{exact:true}).fill(role.correo)
@@ -65,7 +68,7 @@ async function audit(engine) {
     await test('catalogo y registro publico movil',async()=>{
       await page.goto(base+'/anuncios'); await settle(page)
       await layout(page)
-      await page.locator('.programa-celda').first().click()
+      await page.locator('tbody th button').first().click()
       await page.getByRole('button',{name:'Me interesa el programa',exact:true}).click()
       const unique=engine+'-'+Date.now()
       const ci=String(Date.now()).slice(-9)
@@ -127,9 +130,9 @@ async function audit(engine) {
       }
       await test(role.id+' perfil adaptable y agenda movil',async()=>{
         await page.setViewportSize({width:390,height:844})
-        await page.locator('.profile-chip').click()
+        await perfil(page).click()
         await page.getByRole('button',{name:'Mi perfil',exact:true}).click()
-        const card=page.locator('.profile-card')
+        const card=page.getByRole('dialog',{name:'Mi perfil'})
         await card.waitFor()
         for(const width of [320,390,1280]) {
           await page.setViewportSize({width,height:844})
@@ -166,7 +169,7 @@ async function audit(engine) {
           const row=page.locator('tr').filter({hasText:'admin@crm-educativo.local'})
           await row.getByRole('button',{name:'Desactivar',exact:true}).click()
           await page.getByText('Debe conservar al menos un administrador activo.',{exact:true}).waitFor()
-          assert.equal(await row.locator('.status-pill').innerText(),'activo')
+          await row.getByText('activo',{exact:true}).waitFor()
         })
       }
       if(role.id==='vendedor') {
@@ -177,9 +180,9 @@ async function audit(engine) {
         })
       }
       await test(role.id+' cierre de sesion',async()=>{
-        await page.locator('.profile-chip').click()
+        await perfil(page).click()
         await page.getByRole('button',{name:'Cerrar sesión',exact:true}).click()
-        await page.locator('.logout-card').getByRole('button',{name:'Cerrar sesión',exact:true}).click()
+        await page.getByRole('dialog',{name:'¿Cerrar sesión?'}).getByRole('button',{name:'Cerrar sesión',exact:true}).click()
         await page.waitForURL(base+'/login'); await settle(page)
         assert.equal(await page.evaluate(()=>!!(localStorage.getItem('crm_token')||sessionStorage.getItem('crm_token'))),false)
       })

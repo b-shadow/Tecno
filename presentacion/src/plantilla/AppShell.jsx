@@ -14,6 +14,12 @@ import { Apariencia, BotonTema, Buscador, Perfil, Pie } from '../componentes/She
 const ICONOS = { BadgeDollarSign, BarChart3, CalendarDays, CircleSlash, CreditCard, GraduationCap, KanbanSquare, LayoutDashboard, Mail, Megaphone, NotebookTabs, School, ScrollText, ShieldCheck, Shuffle, UserRound, Users }
 const GRUPOS = { 1: 'Inicio', 2: 'Gestión comercial', 3: 'Pagos y matrícula', 4: 'Análisis y comunicación', 5: 'Administración' }
 
+// Piezas comunes a la plantilla pública y la interna.
+const ENCABEZADO = 'sticky top-0 z-30 flex min-h-[68px] items-center gap-4 border-b border-filete bg-papel px-[clamp(16px,3vw,40px)] max-tableta:min-h-[60px] max-tableta:gap-2 max-movil:flex-wrap max-movil:py-2'
+const ACCIONES = 'flex shrink-0 items-center gap-2'
+const BUSCADOR = 'mx-auto min-w-0 max-w-[560px] flex-1 max-movil:order-3 max-movil:max-w-none max-movil:basis-full'
+const SALTAR = 'absolute top-0 left-3 z-100 -translate-y-[120%] rounded-ui bg-navy px-3.5 py-2.5 text-white focus:translate-y-3'
+
 /** Layout persistente: elige público o interno y aplica el acceso según el menú del rol (leído de la BD). */
 export default function AppShell() {
   const ruta = useAppRoute()
@@ -44,9 +50,13 @@ export default function AppShell() {
 
 function Marca({ href = '/anuncios' }) {
   return (
-    <Link to={href} className="marca" aria-label="UNEXO, ir al inicio">
-      <img src={logo} alt="" width="34" height="34" />
-      <span className="marca-texto"><strong>U<span>NEXO</span></strong><small>CRM Comercial Educativo</small></span>
+    <Link to={href} className="inline-flex shrink-0 items-center gap-2.5 text-navy no-underline dark:text-white" aria-label="UNEXO, ir al inicio">
+      <img src={logo} alt="" width="34" height="34" className="size-[34px] object-contain" />
+      {/* A 320 px el encabezado público cabe en dos filas: solo el ícono de la marca. */}
+      <span className="flex flex-col leading-none max-mini:hidden">
+        <strong className="font-ui text-[1.2rem] font-extrabold tracking-[0.02em]">U<span className="text-acento-texto">NEXO</span></strong>
+        <small className="mt-[3px] text-xs text-tinta-suave max-tableta:hidden">CRM Comercial Educativo</small>
+      </span>
     </Link>
   )
 }
@@ -55,13 +65,13 @@ function Publico({ children }) {
   const { path } = useAppRoute()
   const { usuario, menu } = useAuth()
   return (
-    <div className="publico">
-      <a className="saltar" href="#contenido">Saltar al contenido</a>
-      <header className="encabezado">
+    <div data-zona="oferta" className="flex min-h-dvh flex-col bg-niebla-2">
+      <a className={SALTAR} href="#contenido">Saltar al contenido</a>
+      <header className={ENCABEZADO}>
         <Marca />
         {/* El login es solo el formulario: la búsqueda va en el encabezado del catálogo y del panel. */}
-        {path !== '/login' && <Buscador placeholder="Buscar programa o módulo…" />}
-        <div className="encabezado-acciones">
+        {path !== '/login' && <Buscador className={BUSCADOR} placeholder="Buscar programa o módulo…" />}
+        <div className={ACCIONES}>
           <BotonTema />
           <Apariencia />
           {usuario
@@ -69,7 +79,7 @@ function Publico({ children }) {
             : path !== '/login' && <Link className="btn btn-primario" to="/login">Iniciar sesión</Link>}
         </div>
       </header>
-      <main id="contenido">{children}</main>
+      <main id="contenido" className="flex flex-1 flex-col *:shrink-0">{children}</main>
       <Pie />
     </div>
   )
@@ -91,12 +101,19 @@ function Interno({ children, actual }) {
   }
 
   let grupoPrevio = null
+  // Riel cerrado (solo en escritorio): quedan los íconos; en celular el riel es un cajón que se abre encima.
+  const oculto = cerrado ? 'tableta:hidden' : ''
   return (
-    <div className={`shell ${cerrado ? 'riel-cerrado' : ''}`}>
-      <a className="saltar" href="#contenido">Saltar al contenido</a>
-      <aside className={`riel ${movil ? 'abierto' : ''}`} aria-label="Menú principal">
-        <Link to={menu?.[0]?.ruta || '/anuncios'} className="riel-marca"><img src={logo} alt="" width="34" height="34" /><strong>U<span>NEXO</span></strong></Link>
-        <nav aria-label="Módulos">
+    <div className={`grid min-h-dvh grid-cols-[minmax(0,1fr)] ${cerrado ? 'tableta:grid-cols-[76px_minmax(0,1fr)]' : 'tableta:grid-cols-[264px_minmax(0,1fr)]'}`}>
+      <a className={SALTAR} href="#contenido">Saltar al contenido</a>
+      <aside aria-label="Menú principal" className={`flex h-dvh flex-col overflow-y-auto bg-riel text-riel-tinta contraste:bg-black
+        tableta:sticky tableta:top-0 max-tableta:fixed max-tableta:inset-y-0 max-tableta:left-0 max-tableta:z-60 max-tableta:w-[min(300px,86vw)]
+        max-tableta:transition-transform max-tableta:duration-[260ms] max-tableta:ease-curva ${movil ? 'max-tableta:shadow-capa' : 'max-tableta:-translate-x-[102%]'}`}>
+        <Link to={menu?.[0]?.ruta || '/anuncios'} className="flex min-h-[68px] items-center gap-2.5 border-b border-white/10 px-[18px] text-white no-underline">
+          <img src={logo} alt="" width="34" height="34" className="size-[34px] rounded-ui bg-white p-[3px]" />
+          <strong className={`text-[1.15rem] font-extrabold tracking-[0.02em] ${oculto}`}>U<span className="text-turquesa">NEXO</span></strong>
+        </Link>
+        <nav aria-label="Módulos" className="flex flex-col gap-0.5 px-2 py-3">
           {menu.map((item) => {
             const grupo = GRUPOS[Math.floor(item.orden / 10)] || null
             const titulo = grupo !== grupoPrevio ? grupo : null
@@ -104,25 +121,27 @@ function Interno({ children, actual }) {
             const Icono = ICONOS[item.icono] || Circle
             return (
               <Fragment key={item.codigo}>
-                {titulo && <div className="riel-grupo">{titulo}</div>}
-                <Link to={item.ruta} className={item.ruta === path ? 'router-link-active' : ''} aria-current={item.ruta === path ? 'page' : undefined} title={cerrado ? item.nombre : undefined}>
-                  <Icono size={19} aria-hidden="true" /><span>{item.nombre}</span>
+                {titulo && <div className={`mx-3 mt-4 mb-1 text-xs font-bold text-riel-suave ${oculto}`}>{titulo}</div>}
+                <Link to={item.ruta} aria-current={item.ruta === path ? 'page' : undefined} title={cerrado ? item.nombre : undefined}
+                  className={`flex items-center gap-3 rounded-ui px-3 py-2.5 font-[550] text-riel-tinta no-underline transition-colors duration-150 ease-curva
+                    hover:bg-white/7 hover:text-white aria-[current=page]:bg-turquesa aria-[current=page]:text-navy-950 ${cerrado ? 'tableta:justify-center' : ''}`}>
+                  <Icono size={19} aria-hidden="true" className={`shrink-0 ${item.ruta === path ? '' : 'opacity-85'}`} /><span className={oculto}>{item.nombre}</span>
                 </Link>
               </Fragment>
             )
           })}
         </nav>
-        <div className="riel-pie">Menú según su rol · matriz de acceso</div>
+        <div className={`mt-auto border-t border-white/10 px-[18px] py-4 text-xs text-riel-suave ${oculto}`}>Menú según su rol · matriz de acceso</div>
       </aside>
-      {movil && <div className="velo" onClick={() => setMovil(false)} aria-hidden="true" />}
-      <div className="shell-principal">
-        <header className="encabezado">
+      {movil && <div className="fixed inset-0 z-55 bg-[rgb(4_29_49/0.5)] tableta:hidden" onClick={() => setMovil(false)} aria-hidden="true" />}
+      <div className="flex min-w-0 flex-col">
+        <header className={ENCABEZADO}>
           <button type="button" className="btn btn-texto btn-icono" onClick={alternar} aria-label="Mostrar u ocultar el menú" title="Menú"><Menu size={22} /></button>
-          <div className="encabezado-titulo"><h1 title={actual ? `Caso de uso ${actual.caso_uso}` : undefined}>{actual?.nombre}</h1></div>
-          <Buscador />
-          <div className="encabezado-acciones"><BotonTema /><Apariencia /><Perfil /></div>
+          <div className="min-w-0 max-movil:flex-1"><h1 className="truncate text-xl" title={actual ? `Caso de uso ${actual.caso_uso}` : undefined}>{actual?.nombre}</h1></div>
+          <Buscador className={BUSCADOR} />
+          <div className={ACCIONES}><BotonTema /><Apariencia /><Perfil /></div>
         </header>
-        <main id="contenido" className="contenido"><div className="contenido-ancho">{children}</div></main>
+        <main id="contenido" className="min-w-0 flex-1 p-[clamp(16px,2.4vw,32px)]"><div className="mx-auto w-full max-w-[1440px]">{children}</div></main>
         <Pie />
       </div>
     </div>

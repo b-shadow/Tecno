@@ -38,5 +38,5 @@ export default function GraficoLineas({ etiquetas, series, formato = (v) => v, d
     })
     return () => grafico.destroy()
   }, [etiquetas, series, formato, apariencia, tipo])
-  return <div className="grafico"><canvas ref={lienzo} role="img" aria-label={descripcion} /></div>
+  return <div className="relative h-[260px]"><canvas ref={lienzo} role="img" aria-label={descripcion} /></div>
 }

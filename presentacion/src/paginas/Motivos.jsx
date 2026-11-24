@@ -23,7 +23,7 @@ export default function Motivos() {
       <CabeceraPagina titulo="Motivos de pérdida" acciones={editable && <button type="button" className="btn btn-primario" onClick={() => setEditando({ nombre: '', categoria: 'Económico', nuevo: true })}><Plus size={16} /> Nuevo motivo</button>}>
         Al marcar una tarjeta como Perdida se elige uno de estos motivos. La categoría agrupa las estadísticas.
       </CabeceraPagina>
-      <div className="rejilla-ancha">
+      <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6 max-movil:grid-cols-1">
         <div className="tabla-marco">
           <table className="tabla">
             <thead><tr><th>Motivo</th><th>Categoría</th><th className="num">Tarjetas</th><th /></tr></thead>
@@ -61,7 +61,7 @@ function EditarMotivo({ motivo, categorias, onCerrar, onListo }) {
   }
   return (
     <Modal titulo={motivo.nuevo ? 'Nuevo motivo' : 'Editar motivo'} onCerrar={onCerrar}>
-      <form className="formulario" onSubmit={guardar}>
+      <form className="grid gap-4" onSubmit={guardar}>
         <Campo etiqueta="Motivo" requerido error={errores.nombre}><input required maxLength={80} value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} /></Campo>
         <Campo etiqueta="Categoría" requerido><select value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })}>{categorias.map((c) => <option key={c}>{c}</option>)}</select></Campo>
         {errores.general && <Aviso tipo="error">{errores.general}</Aviso>}

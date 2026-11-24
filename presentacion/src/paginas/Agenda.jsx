@@ -3,7 +3,7 @@ import { CreditCard, MessageCircle, NotebookTabs, Pencil, Upload } from 'lucide-
 import { leerArchivo } from '../servicios/archivos'
 import { go, useAppRoute } from '../servicios/navigation'
 import { puede, useAuth } from '../servicios/auth'
-import { Aviso, Boton, Campo, Cargando, Etiqueta, Modal, Vacio, bs, erroresDe, fecha, nombre, useAviso, useDatos } from '../componentes/ui'
+import { Aviso, Boton, Campo, Cargando, Etiqueta, Modal, Vacio, bs, erroresDe, fecha, nombre, useAviso, useDatos, HISTORIAL } from '../componentes/ui'
 import { apiErrorMessage } from '../servicios/errors'
 import * as catalogoApi from '../api/catalogo'
 import * as interesesApi from '../api/intereses'
@@ -32,26 +32,27 @@ export default function Agenda() {
   }, [lista.datos, sel])
 
   return (
-    <div className="agenda agenda-page">
-      <aside className="hoja agenda-lista" aria-label="Tarjetas" id="lista-tarjetas">
-        <div className="hoja-cuerpo apilado-s">
+    <div className="grid grid-cols-[minmax(280px,360px)_minmax(0,1fr)] items-start gap-6 max-ficha:grid-cols-1">
+      <aside className="hoja sticky top-21 flex max-h-[calc(100dvh-110px)] flex-col overflow-hidden max-ficha:static max-ficha:max-h-[360px]" aria-label="Tarjetas" id="lista-tarjetas">
+        <div className="grid gap-2 border-b border-filete p-3">
           <input className="control" type="search" placeholder="Buscar prospecto o módulo…" aria-label="Buscar en mis tarjetas" value={buscar} onChange={(e) => setBuscar(e.target.value)} />
           <select className="control" aria-label="Filtrar por etapa" value={estado} onChange={(e) => setEstado(e.target.value)}>
             <option value="">Todas las etapas</option>
             {(lista.datos?.estados || []).map((e) => <option key={e}>{e}</option>)}
           </select>
         </div>
-        {lista.cargando && !lista.datos ? <div className="cargando-marco"><Cargando /></div> : (
-          <ul className="agenda-items">
+        {lista.cargando && !lista.datos ? <div className="p-3"><Cargando /></div> : (
+          <ul className="overflow-y-auto p-1.5">
             {(lista.datos?.intereses || []).map((t) => (
               <li key={t.nro_tarjeta}>
-                <button type="button" className="chat-list-item" aria-current={t.nro_tarjeta === sel} onClick={() => {
+                <button type="button" aria-current={t.nro_tarjeta === sel} onClick={() => {
                   setSel(t.nro_tarjeta)
                   window.history.replaceState(null, '', `?interes=${t.nro_tarjeta}`)
                   setEnfocar((n) => n + 1)
-                }}>
-                  <strong>{nombre(t.prospecto)}</strong>
-                  <small>{t.modulo_nombre}</small>
+                }}
+                  className="grid h-max w-full shrink-0 gap-0.5 rounded-ui px-3 py-2.5 text-left hover:bg-niebla-2 aria-[current=true]:bg-acento-suave aria-[current=true]:outline aria-[current=true]:-outline-offset-1 aria-[current=true]:outline-[color-mix(in_srgb,var(--acento-texto)_55%,transparent)]">
+                  <strong className="font-[650]">{nombre(t.prospecto)}</strong>
+                  <small className="text-xs text-tinta-suave">{t.modulo_nombre}</small>
                   <span><Etiqueta estado={t.estado} /></span>
                 </button>
               </li>
@@ -85,32 +86,32 @@ function Ficha({ nro, sesion, enfocar, onCambio }) {
   const telefono = String(p.telefono || '').replace(/\D/g, '')
 
   return (
-    <section className="hoja agenda-detail-window" aria-label={`Ficha de ${nombre(p)}`}>
-      <header className="ficha-portada">
+    <section className="hoja scroll-mt-6" aria-label={`Ficha de ${nombre(p)}`}>
+      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 rounded-t-hoja bg-portada p-6 text-portada-tinta max-movil:grid-cols-1">
         <div>
-          <h2>{nombre(p)}</h2>
-          <p>{t.modulo_nombre} · {t.programa_nombre} · Tarjeta #{t.nro_tarjeta}</p>
+          <h2 className="text-3xl">{nombre(p)}</h2>
+          <p className="mt-1.5 text-portada-suave">{t.modulo_nombre} · {t.programa_nombre} · Tarjeta #{t.nro_tarjeta}</p>
         </div>
         <div className="acciones">
-          <button type="button" className="btn btn-secundario solo-movil" onClick={() => document.getElementById('lista-tarjetas')?.scrollIntoView({ block: 'start' })}>Volver a los interesados</button>
-          <Etiqueta estado={t.estado} />
+          <button type="button" className="btn btn-secundario hidden max-ficha:inline-flex" onClick={() => document.getElementById('lista-tarjetas')?.scrollIntoView({ block: 'start' })}>Volver a los interesados</button>
+          <Etiqueta estado={t.estado} sobreOscuro />
           {telefono && <a className="btn btn-acento" href={`https://wa.me/591${telefono.slice(-8)}`} target="_blank" rel="noreferrer"><MessageCircle size={16} /> WhatsApp</a>}
         </div>
       </header>
-      <dl className="ficha-datos">
-        <div><dt>Carnet</dt><dd className="cifra">{p.documento}</dd></div>
-        <div><dt>Teléfono</dt><dd className="cifra">{p.telefono}</dd></div>
-        <div><dt>Correo</dt><dd>{p.correo}</dd></div>
-        <div><dt>Origen</dt><dd>{p.origen}</dd></div>
-        <div><dt>Profesión · ciudad</dt><dd>{p.profesion || '—'} · {p.ubicacion || '—'}</dd></div>
-        <div><dt>Vendedor</dt><dd>{t.vendedor ? nombre(t.vendedor) : 'Sin asignar'}</dd></div>
+      <dl className="my-4 grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-x-6 gap-y-3 border-b border-filete px-6 py-4">
+        <Dato titulo="Carnet" cifra>{p.documento}</Dato>
+        <Dato titulo="Teléfono" cifra>{p.telefono}</Dato>
+        <Dato titulo="Correo">{p.correo}</Dato>
+        <Dato titulo="Origen">{p.origen}</Dato>
+        <Dato titulo="Profesión · ciudad">{p.profesion || '—'} · {p.ubicacion || '—'}</Dato>
+        <Dato titulo="Vendedor">{t.vendedor ? nombre(t.vendedor) : 'Sin asignar'}</Dato>
       </dl>
-      <div className="hoja-cuerpo apilado-m">
+      <div className="hoja-cuerpo grid gap-4">
         {t.estado !== 'Convertido' && datos.faltantes_conversion?.length> 0 && (
           <Aviso>Para matricular falta: {datos.faltantes_conversion.join(' ')}</Aviso>
         )}
         {t.estado === 'Perdido' && <Aviso tipo="error">Perdido. Motivo: {t.motivo_perdida}{t.observacion ? ` — ${t.observacion}` : ''}</Aviso>}
-        <div className="acciones al-inicio">
+        <div className="acciones justify-start">
           {editable && <button type="button" className="btn btn-secundario" onClick={() => setEditar(true)}><Pencil size={16} /> Editar datos</button>}
           <button type="button" className="btn btn-texto" onClick={() => go('/embudo')}>Ver en el embudo</button>
           {editable && t.estado !== 'Convertido' && datos.faltantes_conversion?.length === 0 && (
@@ -144,12 +145,12 @@ function Historial({ t }) {
   ].sort((a, b) => new Date(b.fecha) - new Date(a.fecha)), [t])
   if (!eventos.length) return <Vacio titulo="Sin historial todavía">El primer contacto que registre aparecerá aquí.</Vacio>
   return (
-    <ol className="historial">
+    <ol className={HISTORIAL.lista}>
       {eventos.map((e, i) => (
-        <li key={i}>
-          <span className="tipo">{e.tipo} · {fecha(e.fecha, true)}</span>
-          <p>{e.texto}</p>
-          <small>{e.quien ? nombre(e.quien) : 'Sistema'}{e.detalle ? ` · ${e.detalle}` : ''}</small>
+        <li key={i} className={HISTORIAL.item}>
+          <span className={HISTORIAL.tipo}>{e.tipo} · {fecha(e.fecha, true)}</span>
+          <p className={HISTORIAL.texto}>{e.texto}</p>
+          <small className={HISTORIAL.nota}>{e.quien ? nombre(e.quien) : 'Sistema'}{e.detalle ? ` · ${e.detalle}` : ''}</small>
         </li>
       ))}
     </ol>
@@ -173,11 +174,11 @@ function Contacto({ nro, onListo }) {
     }
   }
   return (
-    <form className="formulario dos" onSubmit={guardar}>
+    <form className="grid gap-4 grid-cols-2 max-movil:grid-cols-1" onSubmit={guardar}>
       <Campo etiqueta="Medio" requerido><select value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })}>{TIPOS.map((x) => <option key={x} value={x}>{TIPO_TEXTO[x] || x}</option>)}</select></Campo>
       <Campo etiqueta="Resultado" error={errores.resultado}><input maxLength={500} value={form.resultado} onChange={(e) => setForm({ ...form, resultado: e.target.value })} placeholder="Ej. Pidió el plan de cuotas" /></Campo>
-      <div className="ancho"><Campo etiqueta="¿Qué pasó?" requerido error={errores.descripcion}><textarea required minLength={3} maxLength={2000} value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} placeholder="Ej. Se envió el PDF del diplomado por WhatsApp." /></Campo></div>
-      <div className="acciones ancho"><Boton type="submit" cargando={enviando}>Registrar contacto</Boton></div>
+      <div className="col-span-full"><Campo etiqueta="¿Qué pasó?" requerido error={errores.descripcion}><textarea required minLength={3} maxLength={2000} value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} placeholder="Ej. Se envió el PDF del diplomado por WhatsApp." /></Campo></div>
+      <div className="acciones col-span-full"><Boton type="submit" cargando={enviando}>Registrar contacto</Boton></div>
     </form>
   )
 }
@@ -201,21 +202,21 @@ function Recordatorios({ t, editable, aviso, onCambio }) {
     }
   }
   return (
-    <div className="apilado">
+    <div className="grid gap-6">
       {editable && (
-        <form className="formulario dos" onSubmit={agendar}>
+        <form className="grid gap-4 grid-cols-2 max-movil:grid-cols-1" onSubmit={agendar}>
           <Campo etiqueta="Fecha y hora" requerido error={errores.fecha_programada}><input type="datetime-local" required value={form.fecha_programada} onChange={(e) => setForm({ ...form, fecha_programada: e.target.value })} /></Campo>
           <Campo etiqueta="Actividad" requerido error={errores.descripcion}><input required minLength={3} maxLength={1000} placeholder="Ej. Llamar mañana a las 10:00" value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} /></Campo>
-          <div className="acciones ancho"><button type="submit" className="btn btn-primario">Agendar actividad</button></div>
+          <div className="acciones col-span-full"><button type="submit" className="btn btn-primario">Agendar actividad</button></div>
         </form>
       )}
       <div>
-        <h4 className="tramo-xs">Pendientes</h4>
-        {!pendientes.length ? <p className="nota">No hay actividades pendientes.</p> : (
+        <h4 className="mb-2">Pendientes</h4>
+        {!pendientes.length ? <p className="text-tinta-suave">No hay actividades pendientes.</p> : (
           <div className="tabla-marco"><table className="tabla"><thead><tr><th>Fecha</th><th>Actividad</th><th>Estado</th><th /></tr></thead><tbody>
             {pendientes.map((r) => (
               <tr key={r.nro_recordatorio}>
-                <td className="cifra">{fecha(r.fecha_programada, true)}</td><td>{r.descripcion}</td><td><Etiqueta estado={r.estado} /></td>
+                <td className="tabular-nums">{fecha(r.fecha_programada, true)}</td><td>{r.descripcion}</td><td><Etiqueta estado={r.estado} /></td>
                 <td className="acciones">{editable && <>
                   <button type="button" className="btn btn-secundario" onClick={() => setCompletar({ r, resultado: '' })}>Marcar realizada</button>
                   <button type="button" className="btn btn-texto" onClick={async () => { try { aviso.ok((await seguimientoApi.cancelarRecordatorio(r.nro_recordatorio)).data.mensaje); onCambio() } catch (e) { aviso.error(e) } }}>Cancelar</button>
@@ -244,14 +245,14 @@ function Pagos({ t, esSuVendedor, editable, aviso, onCambio }) {
   const metodos = t.prospecto.metodos_pago || []
   const activos = metodos.filter((m) => m.estado === 'activo')
   return (
-    <div className="apilado">
+    <div className="grid gap-6">
       <section>
-        <div className="hoja-titulo subtitulo"><h4>Métodos de pago</h4>{editable && <button type="button" className="btn btn-secundario" onClick={() => setModal({ tipo: 'metodo' })}><CreditCard size={16} /> Registrar método</button>}</div>
-        {!metodos.length ? <p className="nota">El prospecto todavía no tiene métodos registrados.</p> : (
-          <div className="cuotas">{metodos.map((m) => (
-            <div key={m.nro_metodo} className="metodo">
+        <div className="hoja-titulo border-b-0 px-0 pt-0 pb-2"><h4>Métodos de pago</h4>{editable && <button type="button" className="btn btn-secundario" onClick={() => setModal({ tipo: 'metodo' })}><CreditCard size={16} /> Registrar método</button>}</div>
+        {!metodos.length ? <p className="text-tinta-suave">El prospecto todavía no tiene métodos registrados.</p> : (
+          <div className="grid gap-2">{metodos.map((m) => (
+            <div key={m.nro_metodo} className="flex items-center gap-2.5 rounded-ui border border-filete px-3 py-2.5">
               <CreditCard size={18} aria-hidden="true" />
-              <span className="crece"><b>{m.tipo === 'Tarjeta' ? `${m.marca} ` : m.tipo}</b>{m.tipo === 'Tarjeta' && <span className="cifra">•••• {m.ultimos_digitos} · vence {m.vencimiento}</span>} · {m.titular}</span>
+              <span className="flex-1"><b>{m.tipo === 'Tarjeta' ? `${m.marca} ` : m.tipo}</b>{m.tipo === 'Tarjeta' && <span className="tracking-[0.04em] tabular-nums">•••• {m.ultimos_digitos} · vence {m.vencimiento}</span>} · {m.titular}</span>
               <Etiqueta estado={m.estado} />
               {editable && <button type="button" className="btn btn-texto" onClick={async () => { try { aviso.ok((await pagosApi.cambiarEstadoMetodo(m.nro_metodo, m.estado === 'activo' ? 'inactivo' : 'activo')).data.mensaje); onCambio() } catch (e) { aviso.error(e) } }}>{m.estado === 'activo' ? 'Desactivar' : 'Activar'}</button>}
             </div>
@@ -259,15 +260,15 @@ function Pagos({ t, esSuVendedor, editable, aviso, onCambio }) {
         )}
       </section>
       <section>
-        <div className="hoja-titulo subtitulo"><h4>Órdenes y cuotas</h4>{editable && esSuVendedor && t.estado !== 'Convertido' && <button type="button" className="btn btn-primario" onClick={() => setModal({ tipo: 'orden' })}>Generar orden de pago</button>}</div>
-        {!t.ordenes_pago.length ? <p className="nota">{esSuVendedor ? 'Genere la orden cuando el prospecto confirme los módulos.' : 'Sin órdenes de pago.'}</p> : t.ordenes_pago.map((o) => (
-          <article key={o.nro_orden} className="hoja tramo-s">
+        <div className="hoja-titulo border-b-0 px-0 pt-0 pb-2"><h4>Órdenes y cuotas</h4>{editable && esSuVendedor && t.estado !== 'Convertido' && <button type="button" className="btn btn-primario" onClick={() => setModal({ tipo: 'orden' })}>Generar orden de pago</button>}</div>
+        {!t.ordenes_pago.length ? <p className="text-tinta-suave">{esSuVendedor ? 'Genere la orden cuando el prospecto confirme los módulos.' : 'Sin órdenes de pago.'}</p> : t.ordenes_pago.map((o) => (
+          <article key={o.nro_orden} className="hoja mb-3">
             <div className="hoja-titulo"><h4>Orden #{o.nro_orden} · {bs(o.total)}</h4><small>{o.items.map((i) => i.modulo_nombre).join(', ')}{Number(o.descuento_total)> 0 && ` · descuento ${bs(o.descuento_total)}`}</small></div>
-            <div className="hoja-cuerpo cuotas">
+            <div className="hoja-cuerpo grid gap-2">
               {o.cuotas.map((c) => (
-                <div key={c.nro_cuota} className="cuota">
-                  <b>{String(c.nro_cuota).padStart(2, '0')}</b>
-                  <div><strong className="cifra">{bs(c.monto)}</strong><small> · vence {fecha(c.fecha_vencimiento)}{c.observacion ? ` · ${c.observacion}` : ''}</small></div>
+                <div key={c.nro_cuota} className="grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-ui border border-filete px-3 py-2.5">
+                  <b className="font-titulo text-xl text-acento-2-texto tabular-nums">{String(c.nro_cuota).padStart(2, '0')}</b>
+                  <div><strong className="tabular-nums">{bs(c.monto)}</strong><small className="text-xs text-tinta-suave"> · vence {fecha(c.fecha_vencimiento)}{c.observacion ? ` · ${c.observacion}` : ''}</small></div>
                   <div className="acciones">
                     <Etiqueta estado={c.estado} />
                     {editable && ['Pendiente de pago', 'Pago rechazado'].includes(c.estado) && <>
@@ -298,15 +299,15 @@ function NuevoMetodo({ documento, onCerrar, onListo }) {
   }
   return (
     <Modal titulo="Registrar método de pago" descripcion="De la tarjeta solo se guardan marca, últimos 4 dígitos y vencimiento." onCerrar={onCerrar}>
-      <form className="formulario dos" onSubmit={guardar}>
+      <form className="grid gap-4 grid-cols-2 max-movil:grid-cols-1" onSubmit={guardar}>
         <Campo etiqueta="Tipo" requerido><select value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })}><option>Tarjeta</option><option>QR</option><option>Transferencia</option></select></Campo>
         <Campo etiqueta="Titular" requerido error={errores.titular}><input required maxLength={120} value={form.titular} onChange={(e) => setForm({ ...form, titular: e.target.value })} autoComplete="off" /></Campo>
         {form.tipo === 'Tarjeta' && <>
           <Campo etiqueta="Número de tarjeta" requerido error={errores.numero} ayuda="Simulado: pruebe 4111 1111 1111 1111"><input required inputMode="numeric" autoComplete="off" pattern="[0-9 ]{13,23}" title="Entre 13 y 19 dígitos." value={form.numero} onChange={(e) => setForm({ ...form, numero: e.target.value })} /></Campo>
           <Campo etiqueta="Vencimiento (MM/AA)" requerido error={errores.vencimiento}><input required placeholder="12/28" pattern="(0[1-9]|1[0-2])/[0-9]{2}" title="Formato MM/AA." value={form.vencimiento} onChange={(e) => setForm({ ...form, vencimiento: e.target.value })} /></Campo>
         </>}
-        {errores.general && <div className="ancho"><Aviso tipo="error">{errores.general}</Aviso></div>}
-        <div className="acciones ancho"><button type="button" className="btn btn-secundario" onClick={onCerrar}>Cancelar</button><button type="submit" className="btn btn-primario">Registrar</button></div>
+        {errores.general && <div className="col-span-full"><Aviso tipo="error">{errores.general}</Aviso></div>}
+        <div className="acciones col-span-full"><button type="button" className="btn btn-secundario" onClick={onCerrar}>Cancelar</button><button type="submit" className="btn btn-primario">Registrar</button></div>
       </form>
     </Modal>
   )
@@ -333,17 +334,17 @@ function NuevaOrden({ t, onCerrar, onListo }) {
   return (
     <Modal ancho titulo="Generar orden de pago" descripcion={`${nombre(t.prospecto)} · ${t.programa_nombre}`} onCerrar={onCerrar}>
       {!programa ? <Cargando /> : (
-        <form className="formulario" onSubmit={generar}>
-          <fieldset className="formulario grupo-campos">
-            <legend>Módulos</legend>
+        <form className="grid gap-4" onSubmit={generar}>
+          <fieldset className="grid gap-4 min-w-0">
+            <legend className="mb-2 font-bold">Módulos</legend>
             <label className="check"><input type="checkbox" checked={modulos.length === programa.modulos.length} onChange={(e) => setModulos(e.target.checked ? programa.modulos.map((m) => m.codigo) : [t.modulo_codigo])} /> Programa completo ({programa.modulos.length} módulos)</label>
             {programa.modulos.map((m, i) => <label key={m.codigo} className="check"><input type="checkbox" checked={modulos.includes(m.codigo)} onChange={() => alternar(modulos, setModulos, m.codigo)} /> {String(i + 1).padStart(2, '0')} · {m.nombre} — {bs(m.precio)}</label>)}
           </fieldset>
-          <fieldset className="formulario grupo-campos">
-            <legend>Descuentos</legend>
+          <fieldset className="grid gap-4 min-w-0">
+            <legend className="mb-2 font-bold">Descuentos</legend>
             {(descuentos.datos || []).map((d) => <label key={d.codigo} className="check"><input type="checkbox" checked={dctos.includes(d.codigo)} onChange={() => alternar(dctos, setDctos, d.codigo)} /> {d.nombre} ({Number(d.porcentaje)}%)</label>)}
           </fieldset>
-          <div className="formulario dos">
+          <div className="grid gap-4 grid-cols-2 max-movil:grid-cols-1">
             <Campo etiqueta="Forma de pago" requerido><select value={cuotas} onChange={(e) => setCuotas(Number(e.target.value))}><option value={1}>Pago único</option>{[2, 3, 4, 5, 6, 8, 10, 12].map((n) => <option key={n} value={n}>Plan de {n} cuotas mensuales</option>)}</select></Campo>
             <Campo etiqueta={cuotas === 1 ? 'Vencimiento' : 'Vencimiento de la 1.ª cuota'} requerido><input type="date" min={new Date().toISOString().slice(0, 10)} required value={vence} onChange={(e) => setVence(e.target.value)} /></Campo>
           </div>
@@ -372,9 +373,9 @@ function Comprobante({ orden, cuota, metodos, onCerrar, onListo }) {
   }
   return (
     <Modal titulo={`Comprobante · cuota ${cuota.nro_cuota} de la orden #${orden.nro_orden}`} descripcion={`${bs(cuota.monto)}. Coordinación lo revisará.`} onCerrar={onCerrar}>
-      <form className="formulario" onSubmit={enviar}>
+      <form className="grid gap-4" onSubmit={enviar}>
         <Campo etiqueta="Archivo (imagen o PDF, hasta 5 MB)" requerido><input type="file" required accept="image/png,image/jpeg,image/webp,application/pdf" onChange={async (e) => { const f = e.target.files[0]; if (f) { if (f.size> 5 * 1024 * 1024) { setError('El archivo supera 5 MB.'); return } setError(null); setForm({ ...form, archivo: await leerArchivo(f) }) } }} /></Campo>
-        <div className="formulario dos">
+        <div className="grid gap-4 grid-cols-2 max-movil:grid-cols-1">
           <Campo etiqueta="Método usado"><select value={form.nro_metodo} onChange={(e) => setForm({ ...form, nro_metodo: e.target.value })}><option value="">Sin especificar</option>{metodos.map((m) => <option key={m.nro_metodo} value={m.nro_metodo}>{m.tipo}{m.ultimos_digitos ? ` •••• ${m.ultimos_digitos}` : ''}</option>)}</select></Campo>
           <Campo etiqueta="Hora del pago"><input type="datetime-local" value={form.hora_pago} onChange={(e) => setForm({ ...form, hora_pago: e.target.value })} /></Campo>
         </div>
@@ -416,7 +417,7 @@ function EditarProspecto({ p, onCerrar, onListo }) {
   }
   return (
     <Modal titulo="Editar datos del prospecto" descripcion={`CI ${p.documento}`} onCerrar={onCerrar}>
-      <form className="formulario dos" onSubmit={guardar}>
+      <form className="grid gap-4 grid-cols-2 max-movil:grid-cols-1" onSubmit={guardar}>
         <Campo etiqueta="Nombre" requerido error={errores.nombre}><input required maxLength={120} value={form.nombre} onChange={set('nombre')} /></Campo>
         <Campo etiqueta="Apellido" requerido error={errores.apellido}><input required maxLength={120} value={form.apellido} onChange={set('apellido')} /></Campo>
         <Campo etiqueta="Correo" requerido error={errores.correo}><input type="email" required value={form.correo} onChange={set('correo')} /></Campo>
@@ -424,9 +425,19 @@ function EditarProspecto({ p, onCerrar, onListo }) {
         <Campo etiqueta="Profesión" error={errores.profesion}><input maxLength={120} value={form.profesion} onChange={set('profesion')} /></Campo>
         <Campo etiqueta="Ciudad" error={errores.ubicacion}><input maxLength={160} value={form.ubicacion} onChange={set('ubicacion')} /></Campo>
         <Campo etiqueta="Origen" requerido><select value={form.origen} onChange={set('origen')}>{['Facebook', 'Instagram', 'TikTok', 'WhatsApp', 'Referido', 'Web', 'Correo', 'Feria', 'Otro'].map((o) => <option key={o}>{o}</option>)}</select></Campo>
-        {errores.general && <div className="ancho"><Aviso tipo="error">{errores.general}</Aviso></div>}
-        <div className="acciones ancho"><button type="button" className="btn btn-secundario" onClick={onCerrar}>Cancelar</button><button type="submit" className="btn btn-primario">Guardar</button></div>
+        {errores.general && <div className="col-span-full"><Aviso tipo="error">{errores.general}</Aviso></div>}
+        <div className="acciones col-span-full"><button type="button" className="btn btn-secundario" onClick={onCerrar}>Cancelar</button><button type="submit" className="btn btn-primario">Guardar</button></div>
       </form>
     </Modal>
+  )
+}
+
+/** Un dato del prospecto en la franja bajo la portada de la ficha. */
+function Dato({ titulo, cifra = false, children }) {
+  return (
+    <div>
+      <dt className="text-xs text-tinta-suave">{titulo}</dt>
+      <dd className={`mt-0.5 font-semibold wrap-anywhere ${cifra ? 'tabular-nums' : ''}`}>{children}</dd>
+    </div>
   )
 }

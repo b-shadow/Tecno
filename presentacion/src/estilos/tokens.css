@@ -202,9 +202,17 @@
   --enlace: #ffff66;
   --acento: #00ffff;
   --acento-texto: #00ffff;
+  /* Fondo de lo elegido y de los avisos: oscuro, para que el texto blanco se lea (heredaba el blanco del contraste de día). */
+  --acento-suave: #003336;
   --sobre-acento: #000000;
   --foco: #ffff00;
   --exito: #7dff9e;
   --aviso: #ffd166;
   --peligro: #ff8f8f;
+}
+
+/* ---------- Catálogo y login (data-zona="oferta") en el público adulto: títulos en grotesca pesada ---------- */
+:root:not([data-audiencia='jovenes']):not([data-audiencia='ninos']) [data-zona='oferta'] {
+  --fuente-titulo: var(--fuente-ui);
+  --titulo-peso: 800;
 }
