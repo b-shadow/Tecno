@@ -22,7 +22,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        RateLimiter::for('crm-login', fn (Request $request) => Limit::perMinute(10)
-            ->by(mb_strtolower((string) $request->input('correo')).'|'.$request->ip()));
+        // Fuerza bruta: por correo+IP, por IP (muchas cuentas desde un equipo) y por correo (una cuenta desde muchas IP).
+        RateLimiter::for('crm-login', function (Request $request) {
+            $correo = mb_strtolower((string) $request->input('correo'));
+
+            return [
+                Limit::perMinute(10)->by('par:'.$correo.'|'.$request->ip()),
+                Limit::perMinute(30)->by('ip:'.$request->ip()),
+                Limit::perMinute(20)->by('correo:'.$correo),
+            ];
+        });
     }
 }

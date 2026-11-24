@@ -61,7 +61,7 @@ Publicados por el grupo el 14/09/2026. Ajustes acordados el 20/11/2026 en **negr
 |---|---|---|
 | 1 | Diseño y navegación | La barra de navegación sale de los permisos del usuario logueado; plantilla base única; pantallas según el diagrama de navegación |
 | 2 | RBAC + menú dinámico | Coordinador y Vendedor (+ Administrador). El menú se lee de la BD (`recursos` + `permisos` rol × recurso con tipo de acceso); cambiar un permiso cambia el menú sin tocar código |
-| 3 | Laravel API REST + React | Toda la UI en React (`@inertiajs/react` + axios a `/api`); Laravel solo sirve la plantilla y la API |
+| 3 | Laravel API REST + React | 3 carpetas: `presentacion/` (React SPA, react-router, axios por `src/api/`), `negocio/` (Laravel solo API) y `datos/` (repositorios, modelos, migraciones). Laravel no sirve páginas |
 | 4 | Matriz + bitácora | Middleware por recurso y acción en cada ruta; tabla de bitácora con login exitoso, fallido, IP, recurso y fecha; pantalla con recursos más accedidos |
 | 5 | Estilo único, 3 temas, día/noche, accesibilidad | CSS propio en archivos aparte; selector Niños/Jóvenes/Adultos; día/noche automático por la hora del cliente y manual; letra con deslizador o A−/A+; alto contraste (WCAG AA mínimo) |
 | 6 | Validación en español | Cada formulario valida en cliente y servidor; todos los mensajes en español con tildes |
@@ -103,9 +103,11 @@ De `CLASES_DOCENTE.md` (número de clase entre corchetes):
 
 ## 6. Despliegue en tecnoweb (sin SSH)
 
-Detalle en `CRM_WEB.md` § Brechas: Laravel en `~/laravel_app/`, `~/proyecto2/` con copia de `public/` cuyo `index.php`
-apunta a `../laravel_app/`; build local con `CRM_ASSET_BASE=/inf513/grupo05sa/proyecto2/build/ npm run build` y
-`composer install --no-dev`; subida por FTP; migraciones desde fuera contra `db.tecnoweb.org.bo`;
+Con las 3 carpetas: `~/laravel_app/negocio/` y `~/laravel_app/datos/` (vendor con `COMPOSER_MIRROR_PATH_REPOS=1
+composer install --no-dev`, para que `datos` quede copiado y no como enlace); `~/proyecto2/` = `negocio/public/`
+(`index.php` apuntando a `../laravel_app/negocio/`) **+** `presentacion/dist/` (`VITE_BASE=/inf513/grupo05sa/proyecto2/
+npm run build`), con `.htaccess`: archivo existente → se sirve; `^api/` y `^up$` → `index.php`; resto → `index.html`
+(SPA, mismo dominio, sin CORS); subida por FTP; migraciones desde fuera contra `db.tecnoweb.org.bo`;
 `chmod -R 775 storage bootstrap/cache`. Cambios de esquema en producción: respaldo comprobado, lector del P1 detenido y
 **≥3,2 s entre conexiones**: el docente bloquea conexiones más seguidas.
 
@@ -178,6 +180,29 @@ Importantes:
 Menores: "En revision" sin tilde en Agenda y Embudo; `pattern` del cliente desigual entre formularios; Luhn solo en el
 servidor; `programas_responsables` sin campo propio; líneas de más de 150 caracteres (formatear con Pint/Prettier);
 5 endpoints sin pantalla; buscador muestra "Sin resultados" mientras espera; Jóvenes y Adultos se parecen poco.
+
+## 7c. Estado (24/11/2026): 3 capas estrictas (rama `p2-final`, base = rama `b-shadow` de Brandon)
+
+Pedido del usuario: "3 capas estricto" para que el diseño procedimental salga limpio. Decisiones: carpetas separadas,
+CSS propio (no Tailwind), partir de la rama de Brandon (Services + Repositories).
+- **Estructura:** `presentacion/` (React + Vite + react-router-dom, sin Inertia), `negocio/` (Laravel solo API: sin
+  Blade ni `web.php`), `datos/` (paquete Composer `grupo05sa/datos`: `Datos\Repositorios`, `Datos\Modelos`,
+  migraciones y semillas; `negocio` lo carga como repositorio `path`).
+- **Capa 1:** `src/api/<area>.js` = un módulo por controlador, mismos nombres de método; las páginas no usan axios.
+  Página 404 con contador (recurso `error`, migración `000007`). Un 403 relee el menú. **Sin estilos en línea** (71 →
+  0: clases en `estilos/`; barras con `<progress>` y tono por clase).
+- **Capa 2:** cada acción = FormRequest (`app/Http/Requests/<Area>`) → Controller → Service; ningún Service usa
+  `Request`/`response()`/`abort`/`DB::` (errores con `ReglaNegocioException`); middleware sin acceso a la BD.
+- **Capa 3:** solo `datos/` toca la BD; bitácora por `BitacoraRepository` (el modelo ya no recibe el Request).
+- **Bloqueantes 1–4 resueltos:** tarjeta → cuota "En revisión" y la aprueba coordinación (el vendedor recibe 403);
+  CSV con `modulo_codigo`/`programa_codigo` opcionales entra al Kanban y al Round-Robin; 71 estilos inline fuera;
+  "En revisión" con tilde. Importantes resueltos: RF1.3 en comisiones y exportaciones (porcentaje solo administrador),
+  una sola orden abierta por tarjeta (como el P1), seeder bloqueado en producción, 404 propia, 403 refresca el menú,
+  login limitado por correo+IP, por IP y por correo, `verificar_integridad.sql` corregido (+ chequeo de `id` extra).
+- **Pruebas:** `verificar_p2.py` en verde y repetible sobre la misma base; navegadores 321/0 contra Vite (:5173);
+  integridad OK sobre una base creada desde cero con las migraciones de `datos/`.
+- **Pendiente:** despliegue en tecnoweb (§6, adaptado a 3 carpetas), repo `inf513-proyecto2` público, tarball, documento
+  (diseño procedimental: ver `REGLAS_DOCUMENTO_P2.md` §6b) y hoja de rescate.
 
 ## 8. Lista de verificación final
 

@@ -11,8 +11,11 @@ export const claseEstado = (estado = '') => `e-${String(estado).toLowerCase().no
 export const iniciales = (u) => `${u?.nombre?.[0] || ''}${u?.apellido?.[0] || ''}`.toUpperCase()
 export const nombre = (u) => (u ? `${u.nombre} ${u.apellido}`.trim() : '')
 
+// Valores de la BD (compartidos con el P1) que se muestran con tilde.
+const TEXTO_ESTADO = { 'En revision': 'En revisión' }
+
 export function Etiqueta({ estado, children }) {
-  return <span className={`etiqueta ${claseEstado(estado)}`}>{children || estado}</span>
+  return <span className={`etiqueta ${claseEstado(estado)}`}>{children || TEXTO_ESTADO[estado] || estado}</span>
 }
 
 export function Avatar({ usuario, chica = false }) {

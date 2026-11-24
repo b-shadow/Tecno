@@ -50,19 +50,19 @@ primera cuota aprobada. La matrícula sale del CRM ya validada hacia el sistema 
   tamaño de letra (deslizador o botones) y alto contraste (WCAG); **búsqueda global en el encabezado** de la página
   principal; **contador de visitas en el pie de cada página**; dashboard con estadísticas del negocio y de accesos;
   validación en español en cliente y servidor.
-- Estilo único en CSS propio, en archivos aparte (regla del docente). React con `@inertiajs/react`, Vite, Chart.js,
+- Estilo único en CSS propio, en archivos aparte (regla del docente). React (SPA con react-router-dom), Vite, Chart.js,
   `lucide-react`.
 - Pagos simulados: tarjeta (solo marca, últimos 4 y vencimiento), QR y transferencia; pasarela simulada.
 
 ## Brand Commitments
 
 - Nombre: **UNEXO** (el logo es una U con un nodo y debajo "NEXO"; se lee UNEXO). Descriptor: "CRM Comercial Educativo".
-- Logo: `backend/resources/assets/UNEXO.png`. Colores del logo, obligatorios: navy `#083456` (U y "NE") y teal
+- Logo: `presentacion/src/assets/unexo-logo.png` (y `unexo-marca.png`, `unexo-logo-noche.png`). Colores del logo, obligatorios: navy `#083456` (U y "NE") y teal
   `#10aeb5` (nodo y "XO").
 
 ## Evidence on Hand
 
-- Catálogo simulado: 5 programas y 25 módulos con ilustraciones SVG en `backend/public/catalogo-demo/` (placeholder
+- Catálogo simulado: 5 programas y 25 módulos con ilustraciones SVG en `negocio/public/catalogo-demo/` (placeholder
   hasta la API real del Grupo 06).
 - Datos de demostración ficticios (seeder). No hay testimonios, cifras de ventas reales ni fotos de alumnos: no inventarlos.
 
