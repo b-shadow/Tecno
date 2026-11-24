@@ -38,12 +38,12 @@ export default function Comisiones() {
               ))}</tbody>
             </table></div>
           </section>
-          <form className="hoja hoja-cuerpo formulario" onSubmit={async (e) => { e.preventDefault(); try { aviso.ok((await seguimientoApi.actualizarConfiguracionComision(porcentaje)).data.mensaje); setPorcentaje(''); recargar() } catch (err) { aviso.error(err) } }}>
+          {sesion.usuario?.rol === 'administrador' && <form className="hoja hoja-cuerpo formulario" onSubmit={async (e) => { e.preventDefault(); try { aviso.ok((await seguimientoApi.actualizarConfiguracionComision(porcentaje)).data.mensaje); setPorcentaje(''); recargar() } catch (err) { aviso.error(err) } }}>
             <h3>Porcentaje de comisión</h3>
             <p style={{ color: 'var(--tinta-suave)', fontSize: 'var(--t-s)' }}>Se aplica a las ventas que se matriculen desde ahora.</p>
             <Campo etiqueta="Nuevo porcentaje (0 a 50)" requerido><input type="number" min={0} max={50} step="0.5" required value={porcentaje} onChange={(e) => setPorcentaje(e.target.value)} /></Campo>
             <div className="acciones"><button type="submit" className="btn btn-primario">Guardar</button></div>
-          </form>
+          </form>}
         </div>
       )}
       {!lista.length ? <Vacio titulo="Todavía no hay ventas concretadas" icono={BadgeDollarSign} /> : (

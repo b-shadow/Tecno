@@ -94,6 +94,12 @@ caso('Perdido sin motivo se rechaza', s == 422 and 'motivo' in json.dumps(r, ens
 s, r = api('PATCH', f"/intereses/{abierta['nro_tarjeta']}/estado", {'estado': 'Convertido'}, vend)
 caso('Convertido sin pago aprobado se rechaza', s == 422 and r.get('faltantes'), r)
 
+# Datos completos del prospecto (RF3.4) para que la conversión dependa solo del pago: así el script se puede repetir.
+p = abierta['prospecto']
+s, r = api('PUT', f"/prospectos/{p['documento']}", {k: p.get(k) for k in ('nombre', 'apellido', 'correo', 'telefono', 'origen')}
+           | {'profesion': p.get('profesion') or 'Contador', 'ubicacion': p.get('ubicacion') or 'Santa Cruz'}, vend)
+caso('el vendedor completa los datos del prospecto', s == 200, r)
+
 # --- Enunciado 10: métodos de pago, plan de cuotas y pasarela simulada
 doc = abierta['documento']
 s, r = api('POST', f'/prospectos/{doc}/metodos-pago', {'tipo': 'Tarjeta', 'titular': 'Prueba Demo', 'numero': '4111 1111 1111 1112', 'vencimiento': '12/30'}, vend)
@@ -106,8 +112,18 @@ s, r = api('POST', f"/intereses/{abierta['nro_tarjeta']}/ordenes-pago", {'modulo
 orden = r.get('orden', {})
 caso('orden con plan de 3 cuotas', s == 201 and len(orden.get('cuotas', [])) == 3 and abs(sum(float(c['monto']) for c in orden['cuotas']) - float(orden['total'])) < 0.01, r)
 
-s, r = api('POST', f"/ordenes-pago/{orden.get('nro_orden')}/cuotas/1/pagar", {'nro_metodo': metodo.get('nro_metodo')}, vend)
-caso('pasarela simulada aprueba la 1.ª cuota', s == 200 and r.get('transaccion', '').startswith('SIM-'), r)
+s, r = api('POST', f"/intereses/{abierta['nro_tarjeta']}/ordenes-pago", {'modulos': [abierta['modulo_codigo']], 'cuotas': 1, 'primer_vencimiento': '2030-01-10'}, vend)
+caso('segunda orden con otra abierta se rechaza (venta duplicada)', s == 422, r)
+
+nro = orden.get('nro_orden')
+s, r = api('POST', f"/ordenes-pago/{nro}/cuotas/1/pagar", {'nro_metodo': metodo.get('nro_metodo')}, vend)
+caso('pasarela simulada cobra la 1.ª cuota', s == 200 and r.get('transaccion', '').startswith('SIM-'), r)
+s, r = api('GET', f"/intereses/{abierta['nro_tarjeta']}", token=vend)
+caso('el cobro con tarjeta queda En revisión (no se autoaprueba)', r.get('interes', {}).get('estado') == 'Promesa de Pago', r.get('interes', {}).get('estado'))
+s, r = api('PATCH', f"/ordenes-pago/{nro}/cuotas/1/aprobar", {}, vend)
+caso('el vendedor no aprueba su propio pago', s == 403, (s, r))
+s, r = api('PATCH', f"/ordenes-pago/{nro}/cuotas/1/aprobar", {}, admin)
+caso('administración aprueba la cuota en revisión', s == 200, r)
 s, r = api('GET', f"/intereses/{abierta['nro_tarjeta']}", token=vend)
 caso('1.ª cuota aprobada + datos completos = Convertido', r.get('interes', {}).get('estado') == 'Convertido', r.get('interes', {}).get('estado'))
 s, r = api('GET', '/cuotas?estado=Pendiente de pago'.replace(' ', '%20'), token=coord)
@@ -133,6 +149,19 @@ s, r = api('POST', '/prospectos/importar', {'csv': csv}, coord)
 caso('CSV duplicado se rechaza sin cargar nada', s == 422, r)
 s, r = api('POST', '/prospectos/importar', {'csv': csv}, vend)
 caso('el vendedor no importa prospectos', s == 403, s)
+
+# CSV con la columna opcional modulo_codigo: el prospecto entra al Kanban sin vendedor, listo para el Round-Robin
+s, r = api('GET', '/intereses', token=coord)
+modulo_coord = r['intereses'][0]['modulo_codigo'] if s == 200 and r.get('intereses') else abierta['modulo_codigo']
+ci_csv2 = str(int(ci_csv) + 1)
+csv2 = f'documento,nombre,apellido,telefono,correo,origen,modulo_codigo\n{ci_csv2},Rosa,Prueba Kanban,71234568,rosa.{ci_csv2}@correo-demo.bo,Feria,{modulo_coord}\n'
+s, r = api('POST', '/prospectos/importar', {'csv': csv2}, coord)
+caso('CSV con módulo crea el interés', s == 200 and r.get('creados') == 1, r)
+s, r = api('GET', f'/intereses?buscar={ci_csv2}', token=coord)
+nueva = (r.get('intereses') or [{}])[0]
+caso('el prospecto del CSV aparece en el embudo como Nuevo sin vendedor', nueva.get('estado') == 'Nuevo' and not nueva.get('vendedor_correo'), r)
+s, r = api('POST', '/prospectos/importar', {'csv': csv2.replace(ci_csv2, str(int(ci_csv2) + 1)).replace(modulo_coord, 'NO-EXISTE')}, coord)
+caso('CSV con módulo inexistente se rechaza', s == 422 and any(e.get('columna') == 'modulo_codigo' for e in r.get('errores', [])), r)
 
 # --- RF2.3 Round-Robin
 s, r = api('POST', '/intereses/distribuir', {}, coord)

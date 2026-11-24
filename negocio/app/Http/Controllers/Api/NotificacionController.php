@@ -3,23 +3,21 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ConsultaRequest;
+use App\Http\Requests\Notificacion\EnviarNotificacionRequest;
 use App\Services\NotificacionService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
-/** Adaptador HTTP del CU7: valida la petición y serializa la respuesta del servicio. */
+/** CU7: correos enviados desde el CRM y su registro. */
 class NotificacionController extends Controller
 {
-    public function enviar(Request $request, NotificacionService $service): JsonResponse
+    public function __construct(private readonly NotificacionService $notificaciones)
     {
-        $usuario = $request->attributes->get('auth_usuario');
-        $datos = $request->validate([
-            'destinatario' => ['required', 'email', 'max:160'],
-            'tipo' => ['required', 'string', 'max:120'],
-            'mensaje' => ['required', 'string', 'min:3', 'max:5000'],
-        ], [], ['tipo' => 'asunto']);
+    }
 
-        [$estado, $notificacion] = $service->enviar($usuario, $datos);
+    public function enviar(EnviarNotificacionRequest $r): JsonResponse
+    {
+        [$estado, $notificacion] = $this->notificaciones->enviar($r->usuario(), $r->validated());
 
         return response()->json([
             'mensaje' => $estado === 'enviada' ? 'Correo enviado.' : 'No se pudo enviar el correo; quedó registrado como fallido.',
@@ -27,19 +25,13 @@ class NotificacionController extends Controller
         ], 201);
     }
 
-    public function index(Request $request, NotificacionService $service): JsonResponse
+    public function index(ConsultaRequest $r): JsonResponse
     {
-        return response()->json([
-            'notificaciones' => $service->listar($request->attributes->get('auth_usuario')),
-        ]);
+        return response()->json(['notificaciones' => $this->notificaciones->listar($r->usuario())]);
     }
 
-    public function marcarLeida(Request $request, int $notificacion, NotificacionService $service): JsonResponse
+    public function marcarLeida(ConsultaRequest $r, int $notificacion): JsonResponse
     {
-        $usuario = $request->attributes->get('auth_usuario');
-
-        return response()->json([
-            'notificacion' => $service->marcarLeida($usuario, $notificacion),
-        ]);
+        return response()->json(['notificacion' => $this->notificaciones->marcarLeida($r->usuario(), $notificacion)]);
     }
 }

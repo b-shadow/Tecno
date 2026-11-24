@@ -396,11 +396,11 @@ function CobroTarjeta({ orden, cuota, metodos, onCerrar, onListo }) {
         setEnviando(true)
         try {
           const { data } = await pagosApi.pagarConTarjeta(orden.nro_orden, cuota.nro_cuota, metodo)
-          onListo(`${data.mensaje} Transacción ${data.transaccion}.${data.faltantes_conversion?.length ? ` Para matricular falta: ${data.faltantes_conversion.join(' ')}` : ''}`)
+          onListo(data.mensaje)
         } catch (e) { setError(apiErrorMessage(e)); setEnviando(false) }
       }}>Cobrar {bs(cuota.monto)}</Boton></div>}>
       <Campo etiqueta="Tarjeta"><select value={metodo} onChange={(e) => setMetodo(e.target.value)}>{metodos.map((m) => <option key={m.nro_metodo} value={m.nro_metodo}>{m.marca} •••• {m.ultimos_digitos} · {m.titular}</option>)}</select></Campo>
-      <Aviso>Es una simulación: no se realiza ningún cargo real.</Aviso>
+      <Aviso>Es una simulación: no se realiza ningún cargo real. La cuota queda en revisión hasta que coordinación la valide.</Aviso>
       <Aviso tipo="error">{error}</Aviso>
     </Modal>
   )

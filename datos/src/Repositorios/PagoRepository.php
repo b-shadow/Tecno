@@ -71,7 +71,19 @@ class PagoRepository
         return DB::table('cuotas')->where('nro_orden', $orden)->where('nro_cuota', $numero)->lockForUpdate()->first();
     }
     public function crearComprobante(array $datos): ComprobantePago { return ComprobantePago::query()->create($datos); }
-    public function metodo(int $numero): MetodoPago { return MetodoPago::query()->findOrFail($numero); }
+    public function metodoActivo(string $documento, int $numero, ?string $tipo = null): ?MetodoPago
+    {
+        return MetodoPago::query()->whereKey($numero)->where('documento', $documento)->where('estado', 'activo')
+            ->when($tipo, fn ($q, $valor) => $q->where('tipo', $valor))->first();
+    }
+
+    /** Orden de la tarjeta con su 1.ª cuota todavía abierta (pendiente o en revisión), como en el P1. */
+    public function ordenAbierta(int $nroTarjeta): ?object
+    {
+        return DB::table('ordenes_pago as op')->join('pagos as pg', 'pg.nro_orden', '=', 'op.nro_orden')
+            ->where('op.nro_tarjeta', $nroTarjeta)->whereIn('pg.estado', ['Pendiente de pago', 'En revision'])
+            ->select('op.nro_orden', 'pg.estado')->first();
+    }
     public function metodoConProspecto(MetodoPago $metodo): MetodoPago { return $metodo->loadMissing('prospecto'); }
     public function interesDeOrden(OrdenPago $orden): Interes { return $orden->loadMissing('interes.prospecto')->interes; }
     public function cambiarEstadoCuota(int $orden, int $numero, string $estado, array $extra = []): void

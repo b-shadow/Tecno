@@ -2,18 +2,17 @@
 
 namespace App\Services;
 
+use App\Exceptions\ReglaNegocioException;
+use Carbon\CarbonImmutable;
+use Datos\Modelos\Interaccion;
 use Datos\Modelos\Interes;
-use Datos\Modelos\Comision;
 use Datos\Modelos\Recordatorio;
 use Datos\Modelos\Usuario;
 use Datos\Repositorios\SeguimientoRepository;
-use App\Services\Alcance;
-use Carbon\CarbonImmutable;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 
-/** CU7: interacciones (RF4.1, RF4.2) y recordatorios (RF4.3). CU8: ventas, comisiones e inscripciones. */
+/** CU7: interacciones (RF4.1, RF4.2) y recordatorios (RF4.3). CU6: inscripciones y comisiones de las ventas. */
 class SeguimientoService
 {
     private const ZONA_NEGOCIO = 'America/La_Paz';
@@ -23,138 +22,119 @@ class SeguimientoService
     }
 
     /** RF4.2: nota o contacto ya ocurrido. La primera interacción de una tarjeta nueva la pasa a En Contacto. */
-    public function registrarInteraccion(Request $request, Interes $interes): JsonResponse
+    public function registrarInteraccion(Usuario $usuario, Interes $interes, array $datos): Interaccion
     {
-        $usuario = $request->attributes->get('auth_usuario');
-        Alcance::autorizarTarjeta($usuario, $interes);
-        $data = $request->validate([
-            'tipo' => ['required', Rule::in(['WhatsApp', 'Llamada', 'Correo electronico', 'Reunion', 'Nota comercial'])],
-            'descripcion' => ['required', 'string', 'min:3', 'max:2000'],
-            'resultado' => ['nullable', 'string', 'max:500'],
-        ], [], ['descripcion' => 'descripción']);
+        AlcanceService::autorizarTarjeta($usuario, $interes);
 
-        $interaccion = $this->seguimiento->transaccion(function () use ($interes, $usuario, $data) {
-            $interaccion = $this->seguimiento->registrarInteraccion($interes, $data + ['usuario_correo' => $usuario->correo, 'fecha' => now()]);
+        $interaccion = $this->seguimiento->transaccion(function () use ($interes, $usuario, $datos) {
+            $interaccion = $this->seguimiento->registrarInteraccion($interes, $datos + ['usuario_correo' => $usuario->correo, 'fecha' => now()]);
             $this->seguimiento->actualizarInteres($interes, ['estado' => $interes->estado === 'Nuevo' ? 'En Contacto' : $interes->estado, 'ultima_actividad_en' => now()]);
 
             return $interaccion;
         });
 
-        return response()->json(['mensaje' => 'Interacción registrada.', 'interaccion' => $this->seguimiento->cargarInteraccion($interaccion)], 201);
+        return $this->seguimiento->cargarInteraccion($interaccion);
     }
 
-    public function recordatorios(Request $request): JsonResponse
+    /** Recordatorios dentro del alcance; desde/hasta llegan como fechas de Bolivia (YYYY-MM-DD). */
+    public function recordatorios(Usuario $usuario, ?string $estado, ?string $desde, ?string $hasta): Collection
     {
-        $usuario = $request->attributes->get('auth_usuario');
-        $desde = $request->query('desde') ? $this->fechaNegocio($request->query('desde')) : null;
-        $hasta = $request->query('hasta') ? $this->fechaNegocio($request->query('hasta'))->addDay() : null;
-        $recordatorios = $this->seguimiento->listarRecordatorios($usuario, $request->query('estado'), $desde, $hasta);
-
-        return response()->json(['recordatorios' => $recordatorios]);
+        return $this->seguimiento->listarRecordatorios(
+            $usuario, $estado,
+            $desde ? $this->fechaNegocio($desde) : null,
+            $hasta ? $this->fechaNegocio($hasta)->addDay() : null,
+        );
     }
 
     /** RF4.3: actividad a futuro ("Llamar mañana a las 10:00"). Queda a cargo del vendedor de la tarjeta. */
-    public function crearRecordatorio(Request $request, Interes $interes): JsonResponse
+    public function crearRecordatorio(Usuario $usuario, Interes $interes, array $datos): Recordatorio
     {
-        $usuario = $request->attributes->get('auth_usuario');
-        Alcance::autorizarTarjeta($usuario, $interes);
-        $data = $request->validate([
-            'fecha_programada' => ['required', 'date'],
-            'descripcion' => ['required', 'string', 'min:3', 'max:1000'],
-        ], [], ['fecha_programada' => 'fecha y hora', 'descripcion' => 'descripción']);
-
-        $fecha = $this->fechaNegocio($data['fecha_programada']);
+        AlcanceService::autorizarTarjeta($usuario, $interes);
+        $fecha = $this->fechaNegocio($datos['fecha_programada']);
         if ($fecha->isPast()) {
-            throw \Illuminate\Validation\ValidationException::withMessages(['fecha_programada' => 'La actividad debe programarse para una fecha y hora futura.']);
+            throw ValidationException::withMessages(['fecha_programada' => 'La actividad debe programarse para una fecha y hora futura.']);
         }
-        $recordatorio = $this->seguimiento->transaccion(function () use ($interes, $usuario, $data, $fecha) {
+
+        return $this->seguimiento->transaccion(function () use ($interes, $usuario, $datos, $fecha) {
             $recordatorio = $this->seguimiento->crearRecordatorio($interes, [
-                'fecha_programada' => $fecha, 'descripcion' => $data['descripcion'], 'estado' => 'Pendiente',
+                'fecha_programada' => $fecha, 'descripcion' => $datos['descripcion'], 'estado' => 'Pendiente',
                 'usuario_correo' => $interes->vendedor_correo ?? $usuario->correo,
             ]);
             $this->seguimiento->actualizarInteres($interes, ['proximo_contacto' => $fecha]);
 
             return $recordatorio;
         });
-
-        return response()->json(['mensaje' => 'Actividad agendada.', 'recordatorio' => $recordatorio], 201);
     }
 
     /** Marcar como realizada exige el resultado; queda como interacción en el historial. */
-    public function completarRecordatorio(Request $request, Recordatorio $recordatorio): JsonResponse
+    public function completarRecordatorio(Usuario $usuario, Recordatorio $recordatorio, string $resultado): void
     {
-        $usuario = $request->attributes->get('auth_usuario');
         $this->seguimiento->cargarInteresRecordatorio($recordatorio);
-        Alcance::autorizarTarjeta($usuario, $recordatorio->interes);
-        $data = $request->validate(['resultado' => ['required', 'string', 'min:3', 'max:1000']], [], ['resultado' => 'resultado de la actividad']);
+        AlcanceService::autorizarTarjeta($usuario, $recordatorio->interes);
 
-        $this->seguimiento->transaccion(function () use ($recordatorio, $usuario, $data) {
+        $this->seguimiento->transaccion(function () use ($recordatorio, $usuario, $resultado) {
             $recordatorio = $this->seguimiento->buscarRecordatorioBloqueado($recordatorio->nro_recordatorio);
-            abort_unless(in_array($recordatorio->estado, ['Pendiente', 'Atrasada'], true), 422, 'La actividad ya fue realizada o cancelada.');
+            $this->exigirAbierto($recordatorio);
             $this->seguimiento->recordatorio($recordatorio, ['estado' => 'Realizada', 'fecha_realizada' => now()]);
 
             $programada = $recordatorio->fecha_programada->timezone(self::ZONA_NEGOCIO)->format('d/m/Y H:i');
             $this->seguimiento->insertarInteraccion([
                 'nro_tarjeta' => $recordatorio->nro_tarjeta, 'usuario_correo' => $usuario->correo, 'tipo' => 'Nota comercial',
-                'descripcion' => "Actividad agendada para {$programada}: {$recordatorio->descripcion}", 'resultado' => $data['resultado'], 'fecha' => now(),
+                'descripcion' => "Actividad agendada para {$programada}: {$recordatorio->descripcion}", 'resultado' => $resultado, 'fecha' => now(),
             ]);
             $this->seguimiento->actualizarInteres($recordatorio->interes, ['ultima_actividad_en' => now()]);
         });
-
-        return response()->json(['mensaje' => 'Actividad marcada como realizada.']);
     }
 
-    public function cancelarRecordatorio(Request $request, Recordatorio $recordatorio): JsonResponse
+    public function cancelarRecordatorio(Usuario $usuario, Recordatorio $recordatorio): void
     {
         $this->seguimiento->cargarInteresRecordatorio($recordatorio);
-        Alcance::autorizarTarjeta($request->attributes->get('auth_usuario'), $recordatorio->interes);
-        abort_unless(in_array($recordatorio->estado, ['Pendiente', 'Atrasada'], true), 422, 'La actividad ya fue realizada o cancelada.');
+        AlcanceService::autorizarTarjeta($usuario, $recordatorio->interes);
+        $this->exigirAbierto($recordatorio);
         $this->seguimiento->recordatorio($recordatorio, ['estado' => 'Cancelado']);
-
-        return response()->json(['mensaje' => 'Actividad cancelada.']);
     }
 
-    public function comisiones(Request $request): JsonResponse
+    /** RF1.2/RF1.3: el vendedor ve las suyas; el coordinador, las de sus programas; el administrador, todas. */
+    public function comisiones(Usuario $usuario): Collection
     {
-        $usuario = $request->attributes->get('auth_usuario');
-        $comisiones = $this->seguimiento->comisiones($usuario);
-
-        return response()->json(['comisiones' => $comisiones, 'porcentaje' => $this->seguimiento->porcentajeComision()]);
+        return $this->seguimiento->comisiones($usuario);
     }
 
-    public function resumenComisiones(Request $request): JsonResponse
+    public function resumenComisiones(Usuario $usuario): Collection
     {
-        $resumen = $this->seguimiento->resumenComisiones();
-
-        return response()->json(['vendedores' => $resumen]);
+        return $this->seguimiento->resumenComisiones($usuario);
     }
 
-    public function pagarComisiones(Usuario $vendedor): JsonResponse
+    /** Registra el pago de las comisiones pendientes del vendedor dentro del alcance de quien paga. */
+    public function pagarComisiones(Usuario $usuario, Usuario $vendedor): int
     {
-        abort_if($vendedor->rol !== 'vendedor', 422, 'El usuario seleccionado no es vendedor.');
-        $total = $this->seguimiento->pagarComisiones($vendedor->correo);
+        ReglaNegocioException::si($vendedor->rol !== 'vendedor', 'El usuario seleccionado no es vendedor.');
 
-        return response()->json(['mensaje' => $total ? "{$total} comisión(es) marcadas como pagadas." : 'No había comisiones pendientes.']);
+        return $this->seguimiento->pagarComisiones($vendedor->correo, $usuario);
     }
 
-    public function configuracionComision(): JsonResponse
+    public function porcentajeComision(): float
     {
-        return response()->json(['porcentaje' => $this->seguimiento->porcentajeComision()]);
+        return $this->seguimiento->porcentajeComision();
     }
 
-    public function actualizarConfiguracionComision(Request $request): JsonResponse
+    /** El porcentaje es global (todas las ventas): solo el administrador lo cambia. */
+    public function actualizarPorcentajeComision(Usuario $usuario, float $porcentaje): float
     {
-        $data = $request->validate(['porcentaje' => ['required', 'numeric', 'min:0', 'max:50']], [], ['porcentaje' => 'porcentaje de comisión']);
-        $this->seguimiento->actualizarPorcentajeComision((string) $data['porcentaje'], $request->attributes->get('auth_usuario')->correo);
+        ReglaNegocioException::si($usuario->rol !== 'administrador', 'Solo el administrador cambia el porcentaje de comisión.', 403);
+        $this->seguimiento->actualizarPorcentajeComision((string) $porcentaje, $usuario->correo);
 
-        return response()->json(['mensaje' => 'Porcentaje de comisión actualizado.', 'porcentaje' => $this->seguimiento->porcentajeComision()]);
+        return $this->seguimiento->porcentajeComision();
     }
 
-    public function inscripciones(Request $request): JsonResponse
+    public function inscripciones(Usuario $usuario): Collection
     {
-        $usuario = $request->attributes->get('auth_usuario');
+        return $this->seguimiento->inscripciones($usuario);
+    }
 
-        return response()->json(['inscripciones' => $this->seguimiento->inscripciones($usuario)]);
+    private function exigirAbierto(Recordatorio $recordatorio): void
+    {
+        ReglaNegocioException::si(! in_array($recordatorio->estado, ['Pendiente', 'Atrasada'], true), 'La actividad ya fue realizada o cancelada.');
     }
 
     private function fechaNegocio(string $valor): CarbonImmutable

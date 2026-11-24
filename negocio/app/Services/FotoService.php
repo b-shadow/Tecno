@@ -9,7 +9,7 @@ use Illuminate\Validation\ValidationException;
  * Fotos de usuario (CU1). Clase 40 del docente: nombre de archivo legible y ligado al dato (perez_juan.jpg),
  * guardado en la BD. Llegan como data URL (base64) desde el formulario React.
  */
-class Fotos
+class FotoService
 {
     private const TIPOS = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
 

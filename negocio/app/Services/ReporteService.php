@@ -16,7 +16,7 @@ class ReporteService
     public function dashboard(Usuario $usuario): array
     {
         $dias = collect(range(13, 0))->map(fn ($n) => now()->subDays($n)->toDateString());
-        $datos = $this->reportes->dashboard($usuario, $dias, Acceso::permite($usuario, 'bitacora'));
+        $datos = $this->reportes->dashboard($usuario, $dias, AccesoService::permite($usuario, 'bitacora'));
 
         return [
             'indicadores' => $datos['indicadores'],

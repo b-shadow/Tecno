@@ -121,8 +121,8 @@ function ImportarCsv({ onCerrar, onListo }) {
     }
   }
   return (
-    <Modal titulo="Importar prospectos desde CSV" descripcion="Columnas: documento, nombre, apellido, telefono, correo, origen (profesion y ubicacion opcionales). Si una fila tiene errores no se carga ninguna." onCerrar={onCerrar}
-      pie={<div className="acciones"><button type="button" className="btn btn-texto" onClick={() => descargarCsv('plantilla_prospectos.csv', [{ documento: '7845123', nombre: 'Ana', apellido: 'Rojas', telefono: '71234567', correo: 'ana.rojas@correo.bo', origen: 'Facebook', profesion: 'Contadora', ubicacion: 'Santa Cruz' }])}><Download size={16} /> Plantilla</button><button type="button" className="btn btn-secundario" onClick={onCerrar}>Cancelar</button><button type="button" className="btn btn-primario" disabled={!archivo} onClick={importar}>Importar</button></div>}>
+    <Modal titulo="Importar prospectos desde CSV" descripcion="Columnas: documento, nombre, apellido, telefono, correo, origen. Opcionales: profesion, ubicacion y modulo_codigo o programa_codigo (con ellas el prospecto entra al embudo para el reparto). Si una fila tiene errores no se carga ninguna." onCerrar={onCerrar}
+      pie={<div className="acciones"><button type="button" className="btn btn-texto" onClick={() => descargarCsv('plantilla_prospectos.csv', [{ documento: '7845123', nombre: 'Ana', apellido: 'Rojas', telefono: '71234567', correo: 'ana.rojas@correo.bo', origen: 'Facebook', profesion: 'Contadora', ubicacion: 'Santa Cruz', modulo_codigo: '', programa_codigo: '' }])}><Download size={16} /> Plantilla</button><button type="button" className="btn btn-secundario" onClick={onCerrar}>Cancelar</button><button type="button" className="btn btn-primario" disabled={!archivo} onClick={importar}>Importar</button></div>}>
       <Campo etiqueta="Archivo CSV" requerido><input key={clave} type="file" accept=".csv,text/csv" onChange={(e) => setArchivo(e.target.files[0] || null)} /></Campo>
       {resultado && (
         <Aviso tipo="error">

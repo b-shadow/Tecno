@@ -5,10 +5,11 @@ namespace App\Services;
 use Datos\Modelos\Permiso;
 use Datos\Modelos\Usuario;
 use Datos\Repositorios\AccesoRepository;
+use Datos\Repositorios\BitacoraRepository;
 use Illuminate\Support\Collection;
 
 /** Lee la matriz rol × recurso de la BD; el menú dinámico sale de la misma consulta. */
-class Acceso
+class AccesoService
 {
     /** @var array<string, array<string, string>> permisos por rol, leídos una vez por petición */
     private static array $cache = [];
@@ -28,6 +29,12 @@ class Acceso
     public static function menu(Usuario $usuario): Collection
     {
         return AccesoRepository::menuPorRol($usuario->rol);
+    }
+
+    /** Intento sin permiso: queda en la bitácora como acceso_denegado (enunciado 4). */
+    public static function registrarDenegado(?Usuario $usuario, string $recurso, string $ip, ?string $navegador): void
+    {
+        app(BitacoraRepository::class)->registrar('acceso_denegado', $ip, $navegador, $usuario?->correo, $recurso);
     }
 
     public static function olvidar(): void

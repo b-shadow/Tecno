@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\ReglaNegocioException;
 use Datos\Modelos\Interes;
 use Datos\Modelos\Usuario;
 use Datos\Repositorios\ConversionRepository;
@@ -11,7 +12,7 @@ use Datos\Repositorios\ConversionRepository;
  * Si están completos se dispara la matrícula: inscripción comercial y comisión por cada módulo de la orden aprobada.
  * Se llama al aprobar la 1.ª cuota y al mover la tarjeta a Convertido en el Kanban.
  */
-class Conversion
+class ConversionService
 {
     /** @return string[] lo que falta para convertir (vacío = se puede) */
     public static function faltantes(Interes $interes): array
@@ -44,7 +45,7 @@ class Conversion
     {
         $conversiones = app(ConversionRepository::class);
         [$prospecto, $orden] = $conversiones->datosConversion($interes);
-        abort_unless($orden, 422, 'No se encontró una orden de pago aprobada.');
+        ReglaNegocioException::si(! $orden, 'No se encontró una orden de pago aprobada.');
         $conversiones->registrarInscripcionesYComisiones($orden);
         $conversiones->actualizarConversion($interes, ['estado' => 'Convertido', 'ultima_actividad_en' => now()], 'Convertido');
         $conversiones->registrarInteraccion($interes, [

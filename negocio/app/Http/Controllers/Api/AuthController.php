@@ -3,70 +3,49 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\ActualizarPerfilRequest;
+use App\Http\Requests\Auth\CambiarPasswordRequest;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\ConsultaRequest;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
-/** Adaptador HTTP de inicio/cierre de sesión y perfil propio. */
+/** CU1: inicio y cierre de sesión, sesión actual (menú del rol) y perfil propio. */
 class AuthController extends Controller
 {
-    public function login(Request $request, AuthService $service): JsonResponse
+    public function __construct(private readonly AuthService $auth)
     {
-        $datos = $request->validate([
-            'correo' => ['required', 'email', 'max:160'],
-            'password' => ['required', 'string', 'max:120'],
-        ]);
-        [$estado, $respuesta] = $service->iniciarSesion($request, $datos['correo'], $datos['password']);
-
-        return response()->json($respuesta, $estado);
     }
 
-    public function me(Request $request, AuthService $service): JsonResponse
+    public function login(LoginRequest $r): JsonResponse
     {
-        return response()->json($service->sesion($request->attributes->get('auth_usuario')));
+        $sesion = $this->auth->iniciarSesion($r->validated('correo'), $r->validated('password'), (string) $r->ip(), $r->navegador());
+
+        return response()->json(['mensaje' => 'Acceso correcto.'] + $sesion);
     }
 
-    public function logout(Request $request, AuthService $service): JsonResponse
+    public function me(ConsultaRequest $r): JsonResponse
     {
-        $service->cerrarSesion(
-            $request,
-            $request->attributes->get('auth_usuario'),
-            $request->attributes->get('auth_token'),
-        );
+        return response()->json($this->auth->sesion($r->usuario()));
+    }
+
+    public function logout(ConsultaRequest $r): JsonResponse
+    {
+        $this->auth->cerrarSesion($r->usuario(), $r->attributes->get('auth_token'), (string) $r->ip(), $r->navegador());
 
         return response()->json(['mensaje' => 'Sesión cerrada correctamente.']);
     }
 
-    public function actualizarPerfil(Request $request, AuthService $service): JsonResponse
+    public function actualizarPerfil(ActualizarPerfilRequest $r): JsonResponse
     {
-        $datos = $request->validate([
-            'nombre' => ['required', 'string', 'max:120'],
-            'apellido' => ['required', 'string', 'max:120'],
-            'telefono' => ['nullable', 'string', 'regex:/^[0-9+ ]{7,20}$/'],
-            'foto' => ['nullable', 'string'],
-        ]);
-        $usuario = $service->actualizarPerfil($request->attributes->get('auth_usuario'), $datos);
+        $usuario = $this->auth->actualizarPerfil($r->usuario(), $r->validated());
 
         return response()->json(['mensaje' => 'Perfil actualizado correctamente.', 'usuario' => $usuario]);
     }
 
-    public function cambiarPassword(Request $request, AuthService $service): JsonResponse
+    public function cambiarPassword(CambiarPasswordRequest $r): JsonResponse
     {
-        $datos = $request->validate([
-            'password_actual' => ['required', 'string'],
-            'password' => ['required', 'string', 'min:8', 'max:120', 'regex:/(?=.*[A-Za-z])(?=.*\d)/', 'confirmed'],
-        ]);
-
-        if (! $service->cambiarPassword(
-            $request->attributes->get('auth_usuario'),
-            $request->attributes->get('auth_token'),
-            $datos,
-        )) {
-            return response()->json([
-                'mensaje' => 'La contraseña actual no es correcta.',
-                'errores' => ['password_actual' => ['La contraseña actual no es correcta.']],
-            ], 422);
-        }
+        $this->auth->cambiarPassword($r->usuario(), $r->attributes->get('auth_token'), $r->validated('password_actual'), $r->validated('password'));
 
         return response()->json(['mensaje' => 'Contraseña actualizada correctamente.']);
     }

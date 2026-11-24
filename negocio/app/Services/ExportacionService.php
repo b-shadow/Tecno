@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\ReglaNegocioException;
 use Datos\Modelos\Exportacion;
 use Datos\Modelos\Usuario;
 use Datos\Repositorios\ExportacionRepository;
@@ -30,8 +31,11 @@ class ExportacionService
         ];
     }
 
-    public function registrarResultado(int $numero, array $datos): Exportacion
+    /** RF1.3: el coordinador solo registra el resultado de exportaciones de sus programas. */
+    public function registrarResultado(Usuario $usuario, int $numero, array $datos): Exportacion
     {
+        ReglaNegocioException::si(! $this->historial($usuario)->contains('nro_exportacion', $numero), 'Esta exportación no está dentro de sus programas.', 403);
+
         return $this->exportaciones->registrarResultado($numero, $datos);
     }
 
@@ -42,6 +46,6 @@ class ExportacionService
 
     private function modulosACargo(Usuario $usuario): ?array
     {
-        return $usuario->rol === 'coordinador' ? Alcance::modulosACargo($usuario)->all() : null;
+        return $usuario->rol === 'coordinador' ? AlcanceService::modulosACargo($usuario)->all() : null;
     }
 }

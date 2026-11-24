@@ -3,40 +3,66 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ConsultaRequest;
+use App\Http\Requests\Prospecto\CrearInteresRequest;
+use App\Http\Requests\Prospecto\ImportarCsvRequest;
+use App\Http\Requests\Prospecto\RegistrarInteresRequest;
+use App\Http\Requests\Prospecto\StoreProspectoRequest;
+use App\Http\Requests\Prospecto\UpdateProspectoRequest;
 use App\Services\ProspectoService;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Datos\Modelos\Prospecto;
+use Illuminate\Http\JsonResponse;
 
+/** CU2 (registro público de interés) y CU3 (prospectos: alta, edición, CSV e intereses). */
 class ProspectoController extends Controller
 {
-    public function registrarInteres(Request $request, ProspectoService $service): JsonResponse
+    public function __construct(private readonly ProspectoService $prospectos)
     {
-        return $service->registrarInteres($request);
     }
 
-    public function index(Request $request, ProspectoService $service): JsonResponse
+    public function registrarInteres(RegistrarInteresRequest $r): JsonResponse
     {
-        return $service->index($request);
+        $nuevo = $this->prospectos->registrarInteres($r->validated());
+
+        return response()->json([
+            'mensaje' => 'Interés registrado correctamente.',
+            'detalle' => 'Un asesor se comunicará con usted por WhatsApp.',
+            'nuevo_prospecto' => $nuevo,
+        ], $nuevo ? 201 : 200);
     }
 
-    public function store(Request $request, ProspectoService $service): JsonResponse
+    public function index(ConsultaRequest $r): JsonResponse
     {
-        return $service->store($request);
+        $prospectos = $this->prospectos->listar($r->usuario(), (string) $r->query('buscar', ''), $r->query('origen'));
+
+        return response()->json(['prospectos' => $prospectos, 'origenes' => ProspectoService::ORIGENES]);
     }
 
-    public function update(Request $request, Prospecto $prospecto, ProspectoService $service): JsonResponse
+    public function store(StoreProspectoRequest $r): JsonResponse
     {
-        return $service->update($request, $prospecto);
+        $prospecto = $this->prospectos->registrar($r->usuario(), $r->validated());
+
+        return response()->json(['mensaje' => 'Prospecto registrado correctamente.', 'prospecto' => $prospecto], 201);
     }
 
-    public function crearInteres(Request $request, Prospecto $prospecto, ProspectoService $service): JsonResponse
+    public function update(UpdateProspectoRequest $r, Prospecto $prospecto): JsonResponse
     {
-        return $service->crearInteres($request, $prospecto);
+        $prospecto = $this->prospectos->actualizar($r->usuario(), $prospecto, $r->validated());
+
+        return response()->json(['mensaje' => 'Datos del prospecto actualizados.', 'prospecto' => $prospecto]);
     }
 
-    public function importarCSV(Request $request, ProspectoService $service): JsonResponse
+    public function crearInteres(CrearInteresRequest $r, Prospecto $prospecto): JsonResponse
     {
-        return $service->importarCSV($request);
+        $intereses = $this->prospectos->crearInteres($r->usuario(), $prospecto, $r->validated());
+
+        return response()->json(['mensaje' => 'Interés registrado.', 'intereses' => $intereses], 201);
+    }
+
+    public function importarCSV(ImportarCsvRequest $r): JsonResponse
+    {
+        $creados = $this->prospectos->importarCSV($r->usuario(), $r->validated('csv'));
+
+        return response()->json(['mensaje' => "{$creados} prospecto(s) cargados.", 'creados' => $creados, 'errores' => []]);
     }
 }

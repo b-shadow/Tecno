@@ -3,49 +3,37 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Datos\Modelos\Bitacora;
-use Datos\Modelos\Permiso;
+use App\Http\Requests\Seguridad\AsignarPermisoRequest;
+use App\Http\Requests\Seguridad\BitacoraRequest;
 use App\Services\SeguridadService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
-/** Adaptador HTTP de la matriz de acceso y la bitácora. */
+/** Enunciados 2 y 4: matriz de acceso rol × recurso (menú dinámico) y bitácora de auditoría. */
 class SeguridadController extends Controller
 {
-    public function matriz(SeguridadService $service): JsonResponse
+    public function __construct(private readonly SeguridadService $seguridad)
     {
-        return response()->json($service->matriz());
     }
 
-    public function asignar(Request $request, SeguridadService $service): JsonResponse
+    public function matriz(): JsonResponse
     {
-        $datos = $request->validate([
-            'rol' => ['required', 'exists:roles,nombre'],
-            'recurso_codigo' => ['required', Rule::exists('recursos', 'codigo')->where('publico', false)],
-            'acceso' => ['nullable', Rule::in(array_keys(Permiso::NIVELES))],
-        ], [], ['recurso_codigo' => 'recurso']);
+        return response()->json($this->seguridad->matriz());
+    }
 
-        $service->asignar($datos);
+    public function asignar(AsignarPermisoRequest $r): JsonResponse
+    {
+        $this->seguridad->asignar($r->validated());
 
         return response()->json(['mensaje' => 'Permiso actualizado.']);
     }
 
-    public function bitacora(Request $request, SeguridadService $service): JsonResponse
+    public function bitacora(BitacoraRequest $r): JsonResponse
     {
-        $request->validate([
-            'evento' => ['nullable', Rule::in(Bitacora::EVENTOS)],
-            'desde' => ['nullable', 'date'],
-            'hasta' => ['nullable', 'date', 'after_or_equal:desde'],
-            'usuario' => ['nullable', 'string', 'max:160'],
-            'ip' => ['nullable', 'string', 'max:45'],
-        ], [], ['desde' => 'fecha inicial', 'hasta' => 'fecha final']);
-
-        return response()->json(['registros' => $service->bitacora($request->query())]);
+        return response()->json(['registros' => $this->seguridad->bitacora($r->query())]);
     }
 
-    public function resumen(SeguridadService $service): JsonResponse
+    public function resumen(): JsonResponse
     {
-        return response()->json($service->resumen());
+        return response()->json($this->seguridad->resumen());
     }
 }

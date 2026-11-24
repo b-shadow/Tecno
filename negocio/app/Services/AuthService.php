@@ -2,48 +2,75 @@
 
 namespace App\Services;
 
+use App\Exceptions\ReglaNegocioException;
 use Datos\Modelos\ApiToken;
-use Datos\Modelos\Bitacora;
 use Datos\Modelos\Usuario;
 use Datos\Repositorios\AuthRepository;
-use Illuminate\Http\Request;
+use Datos\Repositorios\BitacoraRepository;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
-/** Casos de negocio de autenticación, vigencia y perfil. */
+/** Autenticación por token, vigencia de la credencial (clase 03), perfil propio y bitácora de accesos (enunciado 4). */
 class AuthService
 {
-    public function __construct(private readonly AuthRepository $auth)
+    public function __construct(private readonly AuthRepository $auth, private readonly BitacoraRepository $bitacora)
     {
     }
 
-    public function iniciarSesion(Request $request, string $correo, string $password): array
+    /** Devuelve token + sesión (usuario, menú y permisos). Todo intento queda en la bitácora con su IP. */
+    public function iniciarSesion(string $correo, string $password, string $ip, ?string $navegador): array
     {
         $correo = mb_strtolower(trim($correo));
         $usuario = $this->auth->usuarioPorCorreo($correo);
 
         if (! $usuario || ! Hash::check($password, $usuario->password)) {
-            Bitacora::registrar('login_fallido', $request, $usuario?->correo, 'login', $correo);
-
-            return [422, ['mensaje' => 'Correo o contraseña incorrectos.']];
+            $this->bitacora->registrar('login_fallido', $ip, $navegador, $usuario?->correo, 'login', $correo);
+            throw new ReglaNegocioException('Correo o contraseña incorrectos.');
         }
 
         if (! $usuario->vigente()) {
-            Bitacora::registrar('login_fallido', $request, $usuario->correo, 'login', $correo);
-
-            return [403, ['mensaje' => 'Su cuenta está inactiva o fuera de su periodo de vigencia.']];
+            $this->bitacora->registrar('login_fallido', $ip, $navegador, $usuario->correo, 'login', $correo);
+            throw new ReglaNegocioException('Su cuenta está inactiva o fuera de su periodo de vigencia.', 403);
         }
 
         $token = Str::random(80);
         $this->auth->crearToken($usuario->correo, $token);
-        Bitacora::registrar('login_exitoso', $request, $usuario->correo, 'login');
+        $this->bitacora->registrar('login_exitoso', $ip, $navegador, $usuario->correo, 'login');
 
-        return [200, ['mensaje' => 'Acceso correcto.', 'token' => $token] + $this->sesion($usuario)];
+        return ['token' => $token] + $this->sesion($usuario);
+    }
+
+    /** Token vigente y credencial vigente; deja al usuario como autor de los cambios en la BD (trigger del embudo). */
+    public function autenticarToken(string $tokenPlano): ApiToken
+    {
+        $token = $this->auth->tokenPorPlano($tokenPlano);
+        ReglaNegocioException::si(! $token || ($token->expira_en && $token->expira_en->isPast()), 'Su sesión expiró. Vuelva a iniciar sesión.', 401);
+
+        if (! $token->usuario || ! $token->usuario->vigente()) {
+            $this->auth->eliminarToken($token);
+            throw new ReglaNegocioException('Su cuenta está inactiva o fuera de vigencia.', 401);
+        }
+
+        $this->auth->marcarUso($token);
+        $this->auth->fijarAutorDeCambios($token->usuario->correo);
+
+        return $token;
+    }
+
+    /** Usuario de un token válido, o null (rutas públicas que se comportan distinto con sesión). */
+    public function usuarioOpcional(?string $tokenPlano): ?Usuario
+    {
+        $token = $tokenPlano ? $this->auth->tokenPorPlano($tokenPlano) : null;
+
+        return $token && (! $token->expira_en || $token->expira_en->isFuture()) && $token->usuario?->vigente()
+            ? $token->usuario
+            : null;
     }
 
     public function sesion(Usuario $usuario): array
     {
-        $menu = Acceso::menu($usuario);
+        $menu = AccesoService::menu($usuario);
 
         return [
             'usuario' => $usuario,
@@ -52,16 +79,16 @@ class AuthService
         ];
     }
 
-    public function cerrarSesion(Request $request, Usuario $usuario, ?ApiToken $token): void
+    public function cerrarSesion(Usuario $usuario, ?ApiToken $token, string $ip, ?string $navegador): void
     {
-        Bitacora::registrar('logout', $request, $usuario->correo);
+        $this->bitacora->registrar('logout', $ip, $navegador, $usuario->correo);
         $this->auth->eliminarToken($token);
     }
 
     public function actualizarPerfil(Usuario $usuario, array $datos): Usuario
     {
         if (! empty($datos['foto'])) {
-            $datos['foto'] = Fotos::guardar($datos['foto'], $datos['apellido'], $datos['nombre'], $usuario->foto);
+            $datos['foto'] = FotoService::guardar($datos['foto'], $datos['apellido'], $datos['nombre'], $usuario->foto);
         } else {
             unset($datos['foto']);
         }
@@ -69,15 +96,14 @@ class AuthService
         return $this->auth->actualizarUsuario($usuario, $datos);
     }
 
-    public function cambiarPassword(Usuario $usuario, ApiToken $token, array $datos): bool
+    /** Cambia la contraseña y cierra las demás sesiones del usuario. */
+    public function cambiarPassword(Usuario $usuario, ApiToken $token, string $actual, string $nueva): void
     {
-        if (! Hash::check($datos['password_actual'], $usuario->password)) {
-            return false;
+        if (! Hash::check($actual, $usuario->password)) {
+            throw ValidationException::withMessages(['password_actual' => 'La contraseña actual no es correcta.']);
         }
 
-        $this->auth->actualizarUsuario($usuario, ['password' => Hash::make($datos['password'])]);
+        $this->auth->actualizarUsuario($usuario, ['password' => Hash::make($nueva)]);
         $this->auth->revocarOtrosTokens($usuario, $token->token_hash);
-
-        return true;
     }
 }
