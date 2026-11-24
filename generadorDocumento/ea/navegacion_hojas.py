@@ -1,15 +1,15 @@
-"""7.5 en Enterprise Architect: sincroniza los elementos de navegación de cada actor con navegacion.py (el modelo es el
-del código) y dibuja cada hoja del documento como un diagrama propio, con el acomodo de acomodo_navegacion.py.
+"""7.5 en Enterprise Architect, como G07: un diagrama de navegación grande por actor («Diagrama de Navegacion -
+<Actor>», en su paquete «Navegacion <Actor>») que el documento corta en franjas apaisadas.
 
   python ea/navegacion_hojas.py                 # los cuatro actores
   python ea/navegacion_hojas.py Vendedor        # solo uno
-  python ea/navegacion_hojas.py --simular       # sin EA: tamaños y letra impresa de cada hoja
+  python ea/navegacion_hojas.py --simular       # sin EA: tamaño, franjas y letra impresa de cada actor
 
-En el EAPX, cada actor conserva su paquete «Navegacion <Actor>» con un solo elemento por página, formulario, server
-page y tabla (los que ya no existen en el código se borran); las hojas son los diagramas «Diagrama de Navegacion -
-<Actor> (n de N)» de ese paquete, que se rehacen en cada corrida (el diagrama general del actor se conserva). Una hoja muestra solo las relaciones de sus secciones: las demás quedan ocultas en ese
-diagrama (siguen en el modelo). Salida: diagramas/nav-<actor>-NN.png/.emf y diagramas/nav-hojas.json (lo lee
-insertar_navegacion.py). Cerrar EA antes de correrlo; respaldar el EAPX.
+Sincroniza los elementos del paquete con navegacion.py (el modelo es el del código: crea, actualiza y borra lo que
+sobra), los ubica con ea/franjas_navegacion.py y escribe cada relación con sus quiebres por COM; la posición de sus
+rótulos («estereotipo» arriba, texto abajo, junto a la caja) va directo en t_diagramlinks.Geometry porque la API no
+la expone. Salida: diagramas/nav-<actor>.emf/.png y diagramas/nav-franjas.json (alturas de corte y referencias para
+ubicar el diagrama dentro del EMF; lo lee insertar_navegacion.py). Cerrar EA antes de correrlo; respaldar el EAPX.
 """
 import json
 import sys
@@ -18,14 +18,13 @@ from pathlib import Path
 
 AQUI = Path(__file__).resolve().parent
 sys.path.insert(0, str(AQUI)); sys.path.insert(0, str(AQUI.parent))
-import acomodo_navegacion as A  # noqa: E402
 import navegacion as N  # noqa: E402
 from rutas import DIAGRAMAS  # noqa: E402
 
 EAPX = AQUI / 'crm-p2.eapx'
 ESTEREOTIPO = {'cliente': 'client page', 'externo': 'client page', 'form': 'Formulario', 'ps': 'server page', 'bd': 'database'}
 VERDE_BD, GRIS_EXTERNO = 0xE0ECCF, 0xEEEEEE   # COLORREF 0xBBGGRR, como G07
-SUBPAQUETE = 'Hojas 7.5'
+SUBPAQUETE = 'Hojas 7.5'   # versiones anteriores (se borran si quedaron)
 DESPLAZA = 80        # margen extra: ningún rótulo queda en coordenadas negativas (el EMF de EA las recorta)
 FUENTE_ROTULOS = 9   # pt de los rótulos de las líneas (preferencia FONTSIZE13 de EA; se restaura al terminar)
 
@@ -80,9 +79,10 @@ def sincronizar(r, pkg, actor, paginas, enlaces):
     deseadas = {}
     for a, b, st, texto in enlaces:
         if st == 'contiene': clave = (el[b].ElementID, el[a].ElementID, 'Aggregation', '', '')
-        else:   # rótulo en dos renglones: un salto final deja ambos sobre la línea (EA centra el bloque del nombre)
-            partes = A.partir(texto)
-            clave = (el[a].ElementID, el[b].ElementID, 'Association', st, '\r\n'.join(partes) + ('\r\n' if len(partes) > 1 else ''))
+        else:   # el texto en renglones cortos: su rótulo va junto a la caja (franjas_navegacion)
+            import franjas_navegacion as F
+            entre_paginas = paginas[a][0] in F.PAGINA and paginas[b][0] in F.PAGINA   # pasillo izquierdo: un renglón
+            clave = (el[a].ElementID, el[b].ElementID, 'Association', st, texto if entre_paginas else '\r\n'.join(F.renglones(texto)))
         deseadas[clave] = (a, b, st, texto)
     conector = {}
     for e in el.values():
@@ -103,11 +103,42 @@ def sincronizar(r, pkg, actor, paginas, enlaces):
     return el, conector
 
 
-def dibujar(r, pkg_hojas, nombre, el, conector, paginas, relaciones, ac):
-    d = pkg_hojas.Diagrams.AddNew(nombre, 'Logical'); d.Update()
-    ac = dict(ac, cajas={k: (x + DESPLAZA, y + DESPLAZA, w, h) for k, (x, y, w, h) in ac['cajas'].items()},
-              lineas=[dict(l, puntos=[(px + DESPLAZA, py + DESPLAZA) for px, py in l['puntos']]) for l in ac['lineas']])
-    for k, (x, y, w, h) in ac['cajas'].items():
+DT_NOMBRE, DT_ESTEREOTIPO = 8, 10   # dónde pone EA los rótulos por omisión: nombre arriba, estereotipo abajo del ancla
+
+
+def geometria(l, cs, ce):
+    """Geometry de t_diagramlinks: extremos (SX/SY/EX/EY, y de EA hacia arriba) y rótulos movidos a su lugar.
+    EA ancla los rótulos en el medio del tramo entre los dos últimos quiebres (o de la recta); OX/OY los corren desde ahí."""
+    pts = l['puntos']
+    (sx, sy), (ex, ey) = pts[0], pts[-1]
+    lado = lambda px, py, b: 2 if px >= b[2] + b[4] - 1 else 4 if px <= b[2] + 1 else 3 if py >= b[3] + b[5] - 1 else 1
+    g = f'SX={round(sx - cs[0])};SY={round(cs[1] - sy)};EX={round(ex - ce[0])};EY={round(ce[1] - ey)};EDGE={lado(sx, sy, cs)};'
+    if not l['rotulos']: return g
+    t = (pts[-3], pts[-2]) if len(pts) > 3 else (pts[0], pts[-1])   # EA: tramo entre los dos últimos quiebres
+    ax, ay = (t[0][0] + t[1][0]) / 2, (t[0][1] + t[1][1]) / 2
+    (stx, sty), w_st = l['rotulos']['estereotipo']
+    x0, y_linea, hacia_der, filas = l['rotulos']['nombre']
+    # bloque del texto debajo de la línea, alineado a la caja. Medido en el EMF de EA: el bloque empieza 7 u. arriba
+    # del centro pedido; con varios renglones (ALN=0) su borde izquierdo queda en centro − CX + 128 − 47·renglones.
+    # EA ajusta el texto al ancho CX: se le da holgura para que respete solo los saltos de renglón propios.
+    n = max(1, len(filas)); largo = max([len(f) for f in filas] + [1])
+    w_texto, w_nom = 5.0 * largo, 6.0 * largo + 14
+    izq = x0 if hacia_der else x0 - w_texto
+    nx = izq + w_nom - 128 + 47 * n if n > 1 else izq + w_texto / 2   # medido en el EMF para 2 y 3 renglones
+    ny = y_linea + 3 + 7
+    rot = lambda w, h, ox, oy: (f'CX={round(w)}:CY={round(h)}:OX={round(ox)}:OY={round(oy)}:HDN=0:BLD=0:ITA=0:UND=0:'
+                                'CLR=-1:ALN={}:DIR=0:ROT=0;')
+    lmt = rot(w_nom, 14 * n, nx - ax, ny - (ay - DT_NOMBRE)).format(0 if n > 1 else 1)
+    lmb = rot(w_st + 14, 14, stx - ax, sty - (ay + DT_ESTEREOTIPO)).format(1)
+    return g + f'$LLB=;LLT=;LMT={lmt}LMB={lmb}LRT=;LRB=;IRHS=;ILHS=;'
+
+
+def dibujar(r, d, el, conector, paginas, ac):
+    """Rehace el diagrama general del actor con el acomodo de franjas_navegacion."""
+    for i in reversed(range(d.DiagramObjects.Count)): d.DiagramObjects.DeleteAt(i, False)
+    d.DiagramObjects.Refresh(); d.Update()
+    cajas = {k: (x + DESPLAZA, y + DESPLAZA, w, h) for k, (x, y, w, h) in ac['cajas'].items()}
+    for k, (x, y, w, h) in cajas.items():
         x, y, w, h = round(x), round(y), round(w), round(h)
         o = d.DiagramObjects.AddNew(f'l={x};r={x + w};t={-y};b={-(y + h)};', ''); o.ElementID = el[k].ElementID; o.Update()
         o.SetStyleEx('font', 'Calibri'); o.SetStyleEx('fontsz', '100')
@@ -116,36 +147,57 @@ def dibujar(r, pkg_hojas, nombre, el, conector, paginas, relaciones, ac):
         if tipo == 'externo': o.BackgroundColor = GRIS_EXTERNO
         o.Update()
     d.Update(); r.ReloadDiagram(d.DiagramID); d = r.GetDiagramByID(d.DiagramID)
-    por_id = {conector[l['enlace']]: l for l in ac['lineas']}
-    centro = {el[k].ElementID: (x + w / 2, y + h / 2, x, y, w, h) for k, (x, y, w, h) in ac['cajas'].items()}
-    for dl in d.DiagramLinks:
+    centro = {el[k].ElementID: (x + w / 2, y + h / 2, x, y, w, h) for k, (x, y, w, h) in cajas.items()}
+    mov = lambda p: (p[0] + DESPLAZA, p[1] + DESPLAZA)
+    por_id = {}
+    for l in ac['lineas']:
+        rot = l['rotulos'] and dict(estereotipo=(mov(l['rotulos']['estereotipo'][0]), l['rotulos']['estereotipo'][1]),
+                                    nombre=(l['rotulos']['nombre'][0] + DESPLAZA, l['rotulos']['nombre'][1] + DESPLAZA,
+                                            *l['rotulos']['nombre'][2:]))
+        por_id[conector[l['enlace']]] = dict(l, puntos=[mov(p) for p in l['puntos']], rotulos=rot)
+    ids = [dl.ConnectorID for dl in d.DiagramLinks]
+    faltan = set(por_id) - set(ids)
+    assert not faltan, f'EA no mostró {len(faltan)} relaciones en el diagrama'
+    rotulos = {}
+    for dl in d.DiagramLinks:   # por COM: crea la fila de t_diagramlinks con extremos y quiebres
         l = por_id.get(dl.ConnectorID)
         if l is None: dl.IsHidden = True; dl.Update(); continue
         c = r.GetConnectorByID(dl.ConnectorID)
-        pts = l['puntos']
-        (sx, sy), (ex, ey) = pts[0], pts[-1]
-        cs, ce = centro[c.ClientID], centro[c.SupplierID]
-        lado = lambda px, py, b: 2 if px >= b[2] + b[4] - 1 else 4 if px <= b[2] + 1 else 3 if py >= b[3] + b[5] - 1 else 1
-        dl.Geometry = (f'SX={round(sx - cs[0])};SY={round(cs[1] - sy)};EX={round(ex - ce[0])};EY={round(ce[1] - ey)};'   # y de EA hacia arriba
-                       f'EDGE={lado(sx, sy, cs)};')
-        if len(pts) > 2:
-            dl.Style = 'Mode=3;EOID=;SOID=;Color=-1;LWidth=0;'
-            dl.Path = ''.join(f'{round(px)}:{-round(py)};' for px, py in pts[1:-1])
-        dl.Update()
+        g = geometria(l, centro[c.ClientID], centro[c.SupplierID])
+        camino = ''.join(f'{round(px)}:{-round(py)};' for px, py in l['puntos'][1:-1])
+        dl.Geometry = g.split('$')[0]
+        if camino: dl.Style = 'Mode=3;EOID=;SOID=;Color=-1;LWidth=0;'; dl.Path = camino
+        dl.IsHidden = False; dl.Update()
+        if '$' in g: rotulos[dl.ConnectorID] = g
     d.Update()
-    return d
+    for cid, g in rotulos.items():   # por SQL: la posición de los rótulos (la API no la expone)
+        r.Execute(f"UPDATE t_diagramlinks SET Geometry='{g}' WHERE DiagramID={d.DiagramID} AND ConnectorID={cid}")
+    r.ReloadDiagram(d.DiagramID)
+    return r.GetDiagramByID(d.DiagramID)
+
+
+def exportar(r, d, stem):
+    """EMF (vectorial, va al documento) y PNG de control. El EMF de un diagrama tan alto ya trae su propio viewport,
+    así que va tal cual (compatibilidad_emf.mjs solo hace falta cuando falta el viewport)."""
+    pi = r.GetProjectInterface()
+    r.ReloadDiagram(d.DiagramID)
+    assert pi.PutDiagramImageToFile(d.DiagramGUID, str(DIAGRAMAS / f'{stem}.emf'), 0), f'No exportó {stem}.emf'
+    pi.PutDiagramImageToFile(d.DiagramGUID, str(DIAGRAMAS / f'{stem}.png'), 1)
+    print('Exportado', stem, flush=True)
 
 
 def correr(actores, simular):
     import win32com.client
     import sincronizar_documentacion as S
-    manifiesto = json.loads((DIAGRAMAS / 'nav-hojas.json').read_text(encoding='utf-8')) if (DIAGRAMAS / 'nav-hojas.json').exists() else {}
+    import franjas_navegacion as F
+    ruta_m = DIAGRAMAS / 'nav-franjas.json'
+    manifiesto = json.loads(ruta_m.read_text(encoding='utf-8')) if ruta_m.exists() else {}
     planes = {}
     for actor in actores:
         paginas, enlaces, secciones = N.hojas(actor)
-        planes[actor] = (paginas, enlaces, A.paginar(paginas, enlaces, secciones))
-        for n, (titulos, claves, rel, ac) in enumerate(planes[actor][2], 1):
-            print(f'{actor} {n:2}: {10 * A.escala(ac["ancho"], ac["alto"]):4.1f} pt, {len(claves):2} cajas — {" + ".join(titulos)}')
+        ac, cortes, escala = F.armar_en_franjas(paginas, enlaces, secciones, con_titulo_75=(actor == list(N.DIAGRAMAS)[0]))
+        planes[actor] = (paginas, enlaces, ac, cortes, escala)
+        print(f'{actor}: {round(ac["ancho"])} x {round(ac["alto"])}, {len(cortes) - 1} franjas, letra impresa {10 * escala:.1f} pt')
     if simular: return
     errores = N.verificar()
     assert not errores, 'navegacion.py no coincide con el código:\n' + '\n'.join(errores)
@@ -158,26 +210,29 @@ def correr(actores, simular):
     try:
         assert r.OpenFile(str(EAPX)), 'EA no abrió el EAPX'
         for actor in actores:
-            paginas, enlaces, hojas = planes[actor]
+            paginas, enlaces, ac, cortes, escala = planes[actor]
             pkg = paquete_actor(r, actor)
             el, conector = sincronizar(r, pkg, actor, paginas, enlaces)
-            for i in reversed(range(pkg.Packages.Count)):   # versión anterior de este script
+            for i in reversed(range(pkg.Packages.Count)):   # versiones anteriores de este script
                 if pkg.Packages.GetAt(i).Name == SUBPAQUETE: pkg.Packages.DeleteAt(i, True)
-            for i in reversed(range(pkg.Diagrams.Count)):   # hojas de la corrida anterior (el diagrama general se conserva)
+            for i in reversed(range(pkg.Diagrams.Count)):
                 if pkg.Diagrams.GetAt(i).Name.startswith(f'Diagrama de Navegacion - {actor} ('): pkg.Diagrams.DeleteAt(i, True)
             pkg.Packages.Refresh(); pkg.Diagrams.Refresh()
-            sub = pkg   # mismo paquete que los elementos: EA no antepone «Navegacion <Actor>::» a los nombres
+            nombre = f'Diagrama de Navegacion - {actor}'
+            d = next((x for x in pkg.Diagrams if x.Name == nombre), None)
+            if d is None: d = pkg.Diagrams.AddNew(nombre, 'Logical'); d.Update()
+            d = dibujar(r, d, el, conector, paginas, ac)
             for viejo in DIAGRAMAS.glob(f'nav-{actor.lower()}-[0-9][0-9].*'): viejo.unlink()
-            registro, salida = [], []
-            for n, (titulos, claves, rel, ac) in enumerate(hojas, 1):
-                nombre = f'Diagrama de Navegacion - {actor} ({n} de {len(hojas)})'
-                d = dibujar(r, sub, nombre, el, conector, paginas, rel, ac)
-                stem = f'nav-{actor.lower()}-{n:02d}'
-                S.export(r, d, stem, registro, 'navegacion-hojas')
-                salida.append({'stem': stem, 'secciones': titulos, 'ancho': round(ac['ancho']), 'alto': round(ac['alto']),
-                               'letra_pt': round(10 * A.escala(ac['ancho'], ac['alto']), 1)})
-            manifiesto[actor] = salida
-            (DIAGRAMAS / 'nav-hojas.json').write_text(json.dumps(manifiesto, ensure_ascii=False, indent=1), encoding='utf-8')
+            stem = f'nav-{actor.lower()}'
+            exportar(r, d, stem)
+            xs = [x for x, _, _, _ in ac['cajas'].values()] + [p[0] for l in ac['lineas'] for p in l['puntos']]
+            manifiesto[actor] = dict(stem=stem, cortes=[round(c + DESPLAZA, 1) for c in cortes],
+                                     arriba=round(min(y for _, y, _, _ in ac['cajas'].values()) + DESPLAZA, 1),
+                                     abajo=round(max(y + h for _, y, _, h in ac['cajas'].values()) + DESPLAZA, 1),
+                                     izquierda=round(min(xs) + DESPLAZA, 1), ancho=round(ac['ancho']), letra_pt=round(10 * escala, 1),
+                                     referencias={paginas[k][1]: round(y + DESPLAZA, 1) for k, (_, y, _, _) in ac['cajas'].items()
+                                                  if paginas[k][0] in ('cliente', 'ps')})
+            ruta_m.write_text(json.dumps(manifiesto, ensure_ascii=False, indent=1), encoding='utf-8')
     finally:
         r.CloseFile(); r.Exit()
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, clave_reg, 0, winreg.KEY_SET_VALUE) as k:

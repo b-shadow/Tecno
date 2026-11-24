@@ -91,13 +91,15 @@ Generador: esta carpeta, `crm-web/generadorDocumento/` (autosuficiente; cómo re
   solo las acciones que la interfaz le habilita con su nivel (la misma condición `puede(recurso, nivel)` de las páginas
   React). Ej.: el vendedor **no** registra ni importa prospectos (exige modificación en `interesados`) y **sí** envía
   notificaciones (modificación en `agenda`). Marco `class Diagrama de Navegacion - <Actor>`, con login → menú → CU en el orden de implementación.
-  **Partido en hojas apaisadas**, como siempre, pero cada hoja es un diagrama EA propio y legible (letra impresa de
-  6–10 pt; antes las franjas de un único diagrama quedaban a ~2 pt): el título `7.5.n. Diagrama de Navegación del
-  <Actor>` va solo en la primera hoja del actor y cada hoja muestra el marco `Diagrama de Navegacion - <Actor> (n de N)`.
-  Las secciones de cada hoja siguen el orden de implementación (login → menú → CU1 … CU8 → partes compartidas del
-  servidor) y una hoja junta secciones vecinas mientras la letra no baje de 6,5 pt. Acomodo por columnas, como se lee
-  un WAE: actor / páginas de entrada | client pages con sus formularios debajo | server pages | tablas; ninguna línea
-  cruza una caja y los rótulos de un mismo pasillo no se enciman (`ea/acomodo_navegacion.py`).
+  **Un diagrama grande por actor, cortado en franjas apaisadas como G07** (una por página; el título `7.5.n.
+  Diagrama de Navegación del <Actor>` solo en la primera): cada elemento aparece una vez y las relaciones siguen de una
+  franja a la siguiente. Orden de implementación (login → menú → CU1 … CU8 → partes compartidas del servidor), cada
+  elemento en la primera sección donde actúa. Columnas: páginas (y sus formularios debajo) | server pages | tablas.
+  Relaciones ortogonales: salen del extremo con rótulo y llegan por el carril vertical de la caja del otro extremo
+  (un carril por caja, como un bus), sin cruzar cajas; el `«estereotipo»` va arriba de la línea y su texto debajo,
+  pegados a la caja, para que se distinga el tipo de cada relación. Los cortes caen en huecos sin cajas ni rótulos.
+  Letra impresa de 6,3 a 7,2 pt (las franjas viejas quedaban a ~2 pt). Estereotipo escrito solo donde G07 lo pone
+  («Formulario», «database»); client page y server page llevan su ícono de Conallen.
 - Elementos (estereotipos de Conallen que EA trae, como G07), **todos tomados del código** (`navegacion.verificar()`
   falla si algo no existe):
   - actor → `«link» /login` (o `/anuncios`) → primera página;

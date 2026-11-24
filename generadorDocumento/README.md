@@ -50,11 +50,13 @@ El mantenimiento incremental utiliza:
 - `insertar_53.py`: 5.3.1 y 5.3.2 con un diagrama por CU, cada uno en su
   hoja (los de `ea/ea_faltantes.py --analisis`, subpaquete EA «Un diagrama
   por CU (5.3)»); reemplaza solo esas dos secciones del maestro.
-- `navegacion.py` + `ea/navegacion_hojas.py` + `insertar_navegacion.py`: 7.5 desde el código. `navegacion.py`
+- `navegacion.py` + `ea/navegacion_hojas.py` + `insertar_navegacion.py`: 7.5 desde el código, como G07. `navegacion.py`
   describe cada actor con los nombres reales del JSX y de `api.php` y lo comprueba (`python navegacion.py`);
-  `ea/navegacion_hojas.py` sincroniza los paquetes «Navegacion <Actor>» del EAPX y dibuja cada hoja como un diagrama
-  propio (`--simular` muestra la letra impresa de cada hoja sin abrir EA); `insertar_navegacion.py` reemplaza solo
-  las imágenes de 7.5 del maestro, una hoja apaisada por página. Reemplaza a `ea/actualizar_navegacion.py` para 7.5.
+  `ea/navegacion_hojas.py` sincroniza los paquetes «Navegacion <Actor>» del EAPX y dibuja un diagrama grande por actor
+  (`ea/franjas_navegacion.py`: columnas páginas | server pages | tablas, relaciones ortogonales por carriles, rótulos
+  junto a la caja y cortes que no parten cajas; `--simular` da tamaño, franjas y letra sin abrir EA);
+  `insertar_navegacion.py` corta ese EMF en franjas apaisadas, una por página, con las relaciones siguiendo entre
+  páginas. Reemplaza a `ea/actualizar_navegacion.py` para 7.5.
 - `exportar.ps1`: actualiza campos con Microsoft Word y produce DOC y PDF.
 
 Respaldar el maestro y el EAPX antes de editar. No ejecutar dos escritores COM
@@ -111,8 +113,8 @@ python actualizar_figura_docx.py conceptual|despliegue   # sustituye solo esa fi
 python actualizar_datos_docx.py                    # tras cambiar esquema.sql: Mapeo y Físico del documento manual actual
 python insertar_diagramas.py                       # sustituye solo diagramas pendientes del DOCX actual
 python navegacion.py                               # 7.5: comprueba la navegación contra el código (vacío = cuadra)
-python ea/navegacion_hojas.py [Actor] [--simular]  # 7.5: modelo y hojas en EA -> diagramas/nav-<actor>-NN + nav-hojas.json
-python insertar_navegacion.py                      # 7.5: pone las hojas en el maestro (y luego limpiar_medios_docx.py)
+python ea/navegacion_hojas.py [Actor] [--simular]  # 7.5: modelo y diagrama por actor en EA -> diagramas/nav-<actor> + nav-franjas.json
+python insertar_navegacion.py                      # 7.5: corta cada diagrama en franjas en el maestro (y luego limpiar_medios_docx.py)
 python ea/ea_faltantes.py --secuencias [CU1 CU6]   # rehace los sd de 7.4 desde el código (falla si un recorrido ya no coincide)
 python actualizar_secuencias.py                    # si el DOCX ya tiene las figuras, refresca solo las ocho secuencias
 python ea/ea_p2.py --recrear [--solo datos|nav|clases|org]   # reconstruye el EAPX completo: usar solo tras respaldarlo

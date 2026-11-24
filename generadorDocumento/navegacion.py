@@ -18,8 +18,9 @@ Estereotipos (Conallen, REGLAS_DOCUMENTO_P2.md §5): client page → client page
 con la URL y sus parámetros; «Formulario» → server page «submit» (uno por formulario); server page → client page
 «build»; server page → server page «include»; server page → BD «access»; página ◇— formulario (agregación).
 
-Cada diagrama se parte en HOJAS (una por página apaisada del documento), en el orden de implementación:
-login → menú → CU1 … CU8. ea/navegacion_hojas.py dibuja cada hoja en EA y insertar_navegacion.py las pone en 7.5.
+Cada diagrama se arma por SECCIONES en el orden de implementación (login → menú → CU1 … CU8 → partes compartidas):
+cada elemento se ubica en la primera sección donde actúa. ea/navegacion_hojas.py dibuja un diagrama por actor en EA
+y insertar_navegacion.py lo corta en franjas apaisadas en 7.5, como G07.
 """
 import re
 
