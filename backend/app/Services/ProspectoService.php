@@ -34,8 +34,10 @@ class ProspectoService
     {
         $request->merge(['correo' => mb_strtolower(trim((string) $request->input('correo')))]);
         $data = $request->validate([
-            'modulo_codigo' => ['nullable', 'string', 'required_without:programa_codigo'],
-            'programa_codigo' => ['nullable', 'string'],
+            'modulo_codigo' => ['nullable', 'string', 'required_without_all:programa_codigo,modulo_codigos'],
+            'programa_codigo' => ['nullable', 'string', 'required_without_all:modulo_codigo,modulo_codigos'],
+            'modulo_codigos' => ['sometimes', 'array', 'min:1'],
+            'modulo_codigos.*' => ['required', 'string', 'distinct'],
         ] + $this->reglasPersona(), [], $this->atributos());
 
         $modulos = $this->modulosSolicitados($data);
@@ -206,8 +208,11 @@ class ProspectoService
     {
         $modulos = $this->prospectos->modulosSolicitados($data);
 
-        if ($modulos->isEmpty()) {
-            throw ValidationException::withMessages(['modulo_codigo' => 'Seleccione un programa o módulo con inscripciones abiertas.']);
+        if ($modulos->isEmpty() || (isset($data['modulo_codigos']) && $modulos->count() !== count($data['modulo_codigos']))) {
+            throw ValidationException::withMessages(['modulo_codigos' => 'Uno o más módulos seleccionados ya no están disponibles. Revise la selección.']);
+        }
+        if (isset($data['modulo_codigos']) && $modulos->pluck('programa_codigo')->unique()->count() > 1) {
+            throw ValidationException::withMessages(['modulo_codigos' => 'Seleccione módulos de un solo programa por registro.']);
         }
 
         return $modulos;
