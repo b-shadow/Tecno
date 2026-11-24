@@ -3,37 +3,34 @@
 .env.*
 !.env.example
 !.env.production.example
-backend/.env
-backend/.env.*
-!backend/.env.example
-!backend/.env.production.example
-frontend/.env
-frontend/.env.*
-!frontend/.env.example
-!frontend/.env.production.example
+negocio/.env
+negocio/.env.*
+!negocio/.env.example
+!negocio/.env.production.example
+presentacion/.env
+presentacion/.env.*
+!presentacion/.env.example
+!presentacion/.env.production.example
 
 # Dependencies and local toolchains
 node_modules/
 vendor/
 .tools/
-backend/vendor/
-frontend/node_modules/
+negocio/vendor/
+presentacion/node_modules/
 
 # Builds and generated assets
 dist/
 dist-ssr/
-frontend/dist/
-backend/public/build/
-backend/public/hot
-backend/public/storage
-backend/public/fonts-manifest.dev.json
+presentacion/dist/
+negocio/public/storage
 
 # Logs and runtime output
 *.log
 logs/
 .logs/
-backend/storage/logs/*.log
-backend/storage/pail/
+negocio/storage/logs/*.log
+negocio/storage/pail/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -41,22 +38,22 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Laravel runtime/cache artifacts
-backend/storage/*.key
-backend/storage/framework/cache/data/*
-backend/storage/framework/sessions/*
-backend/storage/framework/testing/*
-backend/storage/framework/views/*
-!backend/storage/**/.gitignore
-backend/bootstrap/cache/*.php
-backend/database/*.sqlite
-backend/.phpunit.result.cache
-backend/.phpunit.cache/
+negocio/storage/*.key
+negocio/storage/framework/cache/data/*
+negocio/storage/framework/sessions/*
+negocio/storage/framework/testing/*
+negocio/storage/framework/views/*
+!negocio/storage/**/.gitignore
+negocio/bootstrap/cache/*.php
+datos/*.sqlite
+negocio/.phpunit.result.cache
+negocio/.phpunit.cache/
 
 # Tests hidden for delivery
-backend/tests/
-backend/phpunit.xml
-frontend/**/*.spec.*
-frontend/**/*.test.*
+negocio/tests/
+negocio/phpunit.xml
+presentacion/**/*.spec.*
+presentacion/**/*.test.*
 
 # AI/editor assistant files
 CLAUDE.md
@@ -67,14 +64,14 @@ docs/informacion/Prompt_*.md
 docs/
 .codex/
 .impeccable/
-backend/.codex/
-frontend/.codex/
+negocio/.codex/
+presentacion/.codex/
 .claude/
-backend/.claude/
-frontend/.claude/
+negocio/.claude/
+presentacion/.claude/
 .cursor/
-backend/.cursor/
-frontend/.cursor/
+negocio/.cursor/
+presentacion/.cursor/
 .windsurf/
 .continue/
 .aider*
@@ -104,10 +101,7 @@ graphify
 # Respaldos locales de la base
 backups/
 
-# Laravel + Vite (Inertia)
-backend/node_modules/
-backend/public/build/
-backend/public/hot
+# Laravel (negocio)
 
 # Private data, generated analysis and temporary artifacts
 .secrets/

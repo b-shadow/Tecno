@@ -2,7 +2,7 @@
 import { createRequire } from 'node:module'
 import fs from 'node:fs/promises'
 import assert from 'node:assert/strict'
-const require = createRequire(new URL('../backend/package.json', import.meta.url))
+const require = createRequire(new URL('../presentacion/package.json', import.meta.url))
 const { chromium, firefox, webkit } = require('playwright')
 const base = process.env.QA_BASE || 'http://localhost:18002'
 assert(['localhost', '127.0.0.1', 'crm-qa-audit'].includes(new URL(base).hostname), 'Solo QA aislado')

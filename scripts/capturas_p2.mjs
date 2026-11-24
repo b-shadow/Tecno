@@ -2,7 +2,7 @@
 // Uso: node scripts/capturas_p2.mjs [http://localhost:8001] [carpeta]
 import { createRequire } from 'node:module'
 import fs from 'node:fs/promises'
-const require = createRequire(new URL('../backend/package.json', import.meta.url))
+const require = createRequire(new URL('../presentacion/package.json', import.meta.url))
 const { chromium } = require('playwright')
 
 const base = process.argv[2] || 'http://localhost:8001'
