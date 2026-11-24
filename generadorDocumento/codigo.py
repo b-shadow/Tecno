@@ -218,6 +218,32 @@ def llamadas_en_orden(clase, metodo, pila=()):
     return res
 
 
+def metodos_datos(clase, metodo, pila=(), cortes=frozenset(), propio=False):
+    """[(DClase, método)] de la capa de datos que alcanza clase::metodo de N, en orden de aparición. A diferencia de
+    llamadas_en_orden, también sigue app(DX::class)->m(), variables tipadas o asignadas con app(DX::class),
+    self::/static::m() y otras clases N (inyectadas o estáticas). Recorre todas las ramas (navegación, 7.5).
+    cortes: {'NClase.metodo'} donde no se entra: se devuelve ('incluye', 'NClase.metodo') (el «include» de 7.5).
+    propio: el método inicial es uno de los cortes y se recorre igual (su propio server page)."""
+    C = clases_php()
+    if (clase, metodo) in pila or clase not in C or metodo not in C[clase]['metodos']: return []
+    pila, m = pila + ((clase, metodo),), C[clase]['metodos'][metodo]
+    txt = _leer(C[clase]['archivo'])
+    tipos = dict((n, t.rsplit('\\', 1)[-1]) for t, n in re.findall(r'(?:private|protected|public)(?: readonly)? \??([\w\\]+) \$(\w+)', txt))
+    tipos |= dict((n, t) for t, n in re.findall(r'\b([A-Z]\w+) \$(\w+)', m['params']))
+    tipos |= dict((n, t) for n, t in re.findall(r'\$(\w+) = app\((\w+)::class\)', m['cuerpo']))
+    res = []
+    patron = re.compile(r'\$this->(\w+)->(\w+)\(|app\((\w+)::class\)->(\w+)\(|\$(\w+)->(\w+)\(|(?:\$this->|self::|static::)(\w+)\(|\b([A-Z]\w+)::(\w+)\(')
+    for x in patron.finditer(m['cuerpo']):
+        prop, mp, appc, ma, var, mv, propio, est, me = x.groups()
+        destino, met = ((tipos.get(prop), mp) if prop else (appc, ma) if appc else ((clase if var == 'this' else tipos.get(var)), mv) if var
+                        else (clase, propio) if propio else (est, me))
+        if destino not in C: continue
+        if C[destino]['estereotipo'] == 'datos': res.append((destino, met))
+        elif f'{destino}.{met}' in cortes: res.append(('incluye', f'{destino}.{met}'))
+        elif C[destino]['estereotipo'] == 'negocio': res += metodos_datos(destino, met, pila, cortes)
+    return list(dict.fromkeys(res))
+
+
 def modelos(clase, metodo, seguir=True, pila=()):
     """Modelos Eloquent (tablas) que usa clase::metodo de D: X::op(), new X, parámetros tipados X $x. seguir: también
     los de sus auxiliares propios ($this->m())."""

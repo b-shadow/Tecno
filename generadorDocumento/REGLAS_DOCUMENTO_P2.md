@@ -91,21 +91,36 @@ Generador: esta carpeta, `crm-web/generadorDocumento/` (autosuficiente; cómo re
   solo las acciones que la interfaz le habilita con su nivel (la misma condición `puede(recurso, nivel)` de las páginas
   React). Ej.: el vendedor **no** registra ni importa prospectos (exige modificación en `interesados`) y **sí** envía
   notificaciones (modificación en `agenda`). Marco `class Diagrama de Navegacion - <Actor>`, con login → menú → CU en el orden de implementación.
-  Exportado como **una sola imagen grande y cortada en franjas horizontales, una por página apaisada** (márgenes
-  laterales chicos); el título `7.5.n. Diagrama de Navegación del <Actor>` solo en la primera franja. El corte se hace en
-  la fila con menos tinta para no partir cajas.
-- Elementos (estereotipos de Conallen que EA trae, como G07):
-  - actor → `«link» usa el sistema` → página de login;
-  - **client page** (icono de página): pantalla React; atributos `- dato {bag}`, operaciones de la UI;
-  - **«Formulario»**: campos `{bag}` que envía y `guardar()`;
-  - **server page** con nombre `ps …` (engranaje): el endpoint de la API; parámetros `{bag}` y su método real
-    (`store()`, `update()`, `index()`…);
-  - **«database» `BD: tabla`** (verde): columnas que se tocan;
-  - mensaje de error como client page `PC Message`.
-- Relaciones con estereotipo **y** texto (G07 escribe el texto; el docente exige el estereotipo): `«link»` entre
-  páginas y hacia el detalle (parámetros en el texto), `«submit»` del formulario al server page (uno por formulario),
-  `«build»` del server page a la página que arma (`redirect`, `page load`), `access SELECT|INSERT|UPDATE|DELETE campo`
-  del server page a la tabla. Flechas en el sentido correcto.
+  **Partido en hojas apaisadas**, como siempre, pero cada hoja es un diagrama EA propio y legible (letra impresa de
+  6–10 pt; antes las franjas de un único diagrama quedaban a ~2 pt): el título `7.5.n. Diagrama de Navegación del
+  <Actor>` va solo en la primera hoja del actor y cada hoja muestra el marco `Diagrama de Navegacion - <Actor> (n de N)`.
+  Las secciones de cada hoja siguen el orden de implementación (login → menú → CU1 … CU8 → partes compartidas del
+  servidor) y una hoja junta secciones vecinas mientras la letra no baje de 6,5 pt. Acomodo por columnas, como se lee
+  un WAE: actor / páginas de entrada | client pages con sus formularios debajo | server pages | tablas; ninguna línea
+  cruza una caja y los rótulos de un mismo pasillo no se enciman (`ea/acomodo_navegacion.py`).
+- Elementos (estereotipos de Conallen que EA trae, como G07), **todos tomados del código** (`navegacion.verificar()`
+  falla si algo no existe):
+  - actor → `«link» /login` (o `/anuncios`) → primera página;
+  - **client page** (icono de página): componente React; atributos `- dato {bag}` = su estado (`useState`/`useDatos`),
+    operaciones = sus funciones reales (`mover()`, `entrar()`, `recargar()`…);
+  - **«Formulario»**: los campos `{bag}` que envía y su función de envío real (`guardar()`, `agendar()`…);
+  - **server page** con nombre `ps …` (engranaje): una ruta de `routes/api.php`; atributos = parámetros de la ruta, del
+    FormRequest o de la consulta; operación = el método real de la clase N (`mover()`, `crearOrden()`…);
+  - **«database» `BD: tabla`** (verde): columnas que tocan los endpoints;
+  - mensaje como client page `PC Message` (el `Aviso()` de la pantalla); Stripe Checkout como página externa (gris).
+- Relaciones con estereotipo **y** texto, en el sentido correcto (Conallen; clases del docente §3):
+  - `«link»` client page → client page (ruta) y **client page → server page con la URL real y sus parámetros**
+    (`GET /intereses?buscar&estado`, `PATCH /intereses/{interes}/estado`);
+  - `«submit»` **solo** del «Formulario» al server page (uno por formulario), con su `POST/PUT/PATCH` real;
+  - `«build»` del server page a la página que arma (lo que devuelve: `usuario, menu`, `422: mensaje`…);
+  - `«include»` del server page a una parte compartida del servidor que ejecuta: la conversión a matrícula
+    (`NConversion`) y la conciliación de una sesión de Stripe (`NStripe::confirmar…DesdeSesion`). Sus tablas se dibujan
+    una sola vez, en la hoja «Partes compartidas del servidor»;
+  - `«access» SELECT / INSERT / UPDATE / DELETE` del server page a la tabla. **No se escribe a mano**: sale de la cadena
+    N → D del endpoint (`codigo.metodos_datos`, todas las ramas) y de `navegacion.DATOS` (qué lee o escribe cada método
+    de D). Se dibuja la tabla consultada (FROM/JOIN) o escrita; las relaciones cargadas con `with()`, los filtros de
+    alcance y la autorización no; los triggers están en 7.3.4.
+  - página ◇— formulario (agregación, rombo en la página).
 - **Ninguna clase vacía**: toda página tiene atributos y operaciones (excepción del docente: el «Formulario» puede no
   tener operaciones). Cada recurso del menú del rol (`recursos` + `permisos`) aparece en su diagrama.
 

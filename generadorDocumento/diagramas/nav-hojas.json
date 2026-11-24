@@ -1,0 +1,626 @@
+{
+ "Vendedor": [
+  {
+   "stem": "nav-vendedor-01",
+   "secciones": [
+    "CU1 Inicio de sesión",
+    "CU1 Menú, búsqueda y perfil",
+    "CU1 Búsqueda global"
+   ],
+   "ancho": 1418,
+   "alto": 833,
+   "letra_pt": 6.7
+  },
+  {
+   "stem": "nav-vendedor-02",
+   "secciones": [
+    "CU1 Perfil y cierre de sesión",
+    "CU3 Prospectos"
+   ],
+   "ancho": 1274,
+   "alto": 849,
+   "letra_pt": 7.1
+  },
+  {
+   "stem": "nav-vendedor-03",
+   "secciones": [
+    "CU3 Prospectos: nuevo interés",
+    "CU4 Embudo de ventas"
+   ],
+   "ancho": 1322,
+   "alto": 754,
+   "letra_pt": 7.2
+  },
+  {
+   "stem": "nav-vendedor-04",
+   "secciones": [
+    "CU4 / CU5 Mover tarjeta y marcar perdido"
+   ],
+   "ancho": 1163,
+   "alto": 720,
+   "letra_pt": 8.1
+  },
+  {
+   "stem": "nav-vendedor-05",
+   "secciones": [
+    "CU6 Orden de pago y métodos",
+    "CU6 Métodos de pago"
+   ],
+   "ancho": 1260,
+   "alto": 880,
+   "letra_pt": 6.8
+  },
+  {
+   "stem": "nav-vendedor-06",
+   "secciones": [
+    "CU6 Anular orden"
+   ],
+   "ancho": 1276,
+   "alto": 607,
+   "letra_pt": 7.4
+  },
+  {
+   "stem": "nav-vendedor-07",
+   "secciones": [
+    "CU6 Registrar tarjeta con Stripe"
+   ],
+   "ancho": 1230,
+   "alto": 704,
+   "letra_pt": 7.7
+  },
+  {
+   "stem": "nav-vendedor-08",
+   "secciones": [
+    "CU6 Enlace de pago de una cuota",
+    "CU6 Enviar el enlace por correo"
+   ],
+   "ancho": 1454,
+   "alto": 776,
+   "letra_pt": 6.6
+  },
+  {
+   "stem": "nav-vendedor-09",
+   "secciones": [
+    "CU6 Retorno de Stripe"
+   ],
+   "ancho": 1550,
+   "alto": 628,
+   "letra_pt": 6.2
+  },
+  {
+   "stem": "nav-vendedor-10",
+   "secciones": [
+    "CU6 Pago cancelado en Stripe"
+   ],
+   "ancho": 1571,
+   "alto": 658,
+   "letra_pt": 6.1
+  },
+  {
+   "stem": "nav-vendedor-11",
+   "secciones": [
+    "CU7 Seguimiento y agenda",
+    "CU7 Contacto y recordatorios"
+   ],
+   "ancho": 1314,
+   "alto": 863,
+   "letra_pt": 7.0
+  },
+  {
+   "stem": "nav-vendedor-12",
+   "secciones": [
+    "CU7 Editar prospecto y convertir"
+   ],
+   "ancho": 1188,
+   "alto": 862,
+   "letra_pt": 7.0
+  },
+  {
+   "stem": "nav-vendedor-13",
+   "secciones": [
+    "CU7 Mi día"
+   ],
+   "ancho": 1246,
+   "alto": 659,
+   "letra_pt": 7.6
+  },
+  {
+   "stem": "nav-vendedor-14",
+   "secciones": [
+    "CU7 Notificaciones",
+    "CU8 Reportes y estadísticas"
+   ],
+   "ancho": 1336,
+   "alto": 811,
+   "letra_pt": 7.1
+  },
+  {
+   "stem": "nav-vendedor-15",
+   "secciones": [
+    "CU8 Listados de reportes"
+   ],
+   "ancho": 1323,
+   "alto": 799,
+   "letra_pt": 7.2
+  },
+  {
+   "stem": "nav-vendedor-16",
+   "secciones": [
+    "CU8 Ventas y comisiones",
+    "Partes compartidas del servidor",
+    "Partes compartidas del servidor",
+    "Partes compartidas del servidor"
+   ],
+   "ancho": 1211,
+   "alto": 865,
+   "letra_pt": 7.0
+  }
+ ],
+ "Administrador": [
+  {
+   "stem": "nav-administrador-01",
+   "secciones": [
+    "CU1 Inicio de sesión",
+    "CU1 Menú, búsqueda y perfil",
+    "CU1 Búsqueda global"
+   ],
+   "ancho": 1448,
+   "alto": 833,
+   "letra_pt": 6.6
+  },
+  {
+   "stem": "nav-administrador-02",
+   "secciones": [
+    "CU1 Perfil y cierre de sesión"
+   ],
+   "ancho": 865,
+   "alto": 693,
+   "letra_pt": 8.5
+  },
+  {
+   "stem": "nav-administrador-03",
+   "secciones": [
+    "CU1 Usuarios"
+   ],
+   "ancho": 1067,
+   "alto": 769,
+   "letra_pt": 7.8
+  },
+  {
+   "stem": "nav-administrador-04",
+   "secciones": [
+    "CU1 Matriz de acceso",
+    "CU1 Bitácora de accesos",
+    "CU2 Oferta académica"
+   ],
+   "ancho": 1451,
+   "alto": 906,
+   "letra_pt": 6.6
+  },
+  {
+   "stem": "nav-administrador-05",
+   "secciones": [
+    "CU3 Prospectos",
+    "CU3 Prospectos: nuevo interés"
+   ],
+   "ancho": 1327,
+   "alto": 843,
+   "letra_pt": 7.1
+  },
+  {
+   "stem": "nav-administrador-06",
+   "secciones": [
+    "CU3 Asignación de prospectos",
+    "CU4 Embudo de ventas"
+   ],
+   "ancho": 1459,
+   "alto": 794,
+   "letra_pt": 6.5
+  },
+  {
+   "stem": "nav-administrador-07",
+   "secciones": [
+    "CU4 / CU5 Mover tarjeta y marcar perdido",
+    "CU5 Motivos de pérdida"
+   ],
+   "ancho": 1419,
+   "alto": 806,
+   "letra_pt": 6.7
+  },
+  {
+   "stem": "nav-administrador-08",
+   "secciones": [
+    "CU6 Validación de pagos"
+   ],
+   "ancho": 1297,
+   "alto": 662,
+   "letra_pt": 7.3
+  },
+  {
+   "stem": "nav-administrador-09",
+   "secciones": [
+    "CU6 Aprobar o rechazar cuota"
+   ],
+   "ancho": 1312,
+   "alto": 630,
+   "letra_pt": 7.2
+  },
+  {
+   "stem": "nav-administrador-10",
+   "secciones": [
+    "CU6 Matrículas y SIS"
+   ],
+   "ancho": 1029,
+   "alto": 553,
+   "letra_pt": 9.2
+  },
+  {
+   "stem": "nav-administrador-11",
+   "secciones": [
+    "CU6 Orden de pago y métodos",
+    "CU6 Métodos de pago"
+   ],
+   "ancho": 1260,
+   "alto": 880,
+   "letra_pt": 6.8
+  },
+  {
+   "stem": "nav-administrador-12",
+   "secciones": [
+    "CU6 Anular orden"
+   ],
+   "ancho": 1276,
+   "alto": 607,
+   "letra_pt": 7.4
+  },
+  {
+   "stem": "nav-administrador-13",
+   "secciones": [
+    "CU6 Registrar tarjeta con Stripe"
+   ],
+   "ancho": 1230,
+   "alto": 704,
+   "letra_pt": 7.7
+  },
+  {
+   "stem": "nav-administrador-14",
+   "secciones": [
+    "CU6 Enlace de pago de una cuota",
+    "CU6 Enviar el enlace por correo"
+   ],
+   "ancho": 1454,
+   "alto": 776,
+   "letra_pt": 6.6
+  },
+  {
+   "stem": "nav-administrador-15",
+   "secciones": [
+    "CU6 Retorno de Stripe"
+   ],
+   "ancho": 1550,
+   "alto": 628,
+   "letra_pt": 6.2
+  },
+  {
+   "stem": "nav-administrador-16",
+   "secciones": [
+    "CU6 Pago cancelado en Stripe"
+   ],
+   "ancho": 1571,
+   "alto": 658,
+   "letra_pt": 6.1
+  },
+  {
+   "stem": "nav-administrador-17",
+   "secciones": [
+    "CU7 Seguimiento y agenda",
+    "CU7 Contacto y recordatorios"
+   ],
+   "ancho": 1344,
+   "alto": 863,
+   "letra_pt": 7.0
+  },
+  {
+   "stem": "nav-administrador-18",
+   "secciones": [
+    "CU7 Editar prospecto y convertir"
+   ],
+   "ancho": 1188,
+   "alto": 862,
+   "letra_pt": 7.0
+  },
+  {
+   "stem": "nav-administrador-19",
+   "secciones": [
+    "CU7 Notificaciones",
+    "CU8 Dashboard"
+   ],
+   "ancho": 1351,
+   "alto": 885,
+   "letra_pt": 6.8
+  },
+  {
+   "stem": "nav-administrador-20",
+   "secciones": [
+    "CU8 Reportes y estadísticas",
+    "CU8 Listados de reportes"
+   ],
+   "ancho": 1363,
+   "alto": 799,
+   "letra_pt": 7.0
+  },
+  {
+   "stem": "nav-administrador-21",
+   "secciones": [
+    "CU8 Ventas y comisiones",
+    "Partes compartidas del servidor"
+   ],
+   "ancho": 1388,
+   "alto": 804,
+   "letra_pt": 6.9
+  },
+  {
+   "stem": "nav-administrador-22",
+   "secciones": [
+    "Partes compartidas del servidor",
+    "Partes compartidas del servidor"
+   ],
+   "ancho": 910,
+   "alto": 769,
+   "letra_pt": 7.7
+  }
+ ],
+ "Coordinador": [
+  {
+   "stem": "nav-coordinador-01",
+   "secciones": [
+    "CU1 Inicio de sesión",
+    "CU1 Menú, búsqueda y perfil",
+    "CU1 Búsqueda global"
+   ],
+   "ancho": 1438,
+   "alto": 833,
+   "letra_pt": 6.6
+  },
+  {
+   "stem": "nav-coordinador-02",
+   "secciones": [
+    "CU1 Perfil y cierre de sesión",
+    "CU2 Oferta académica"
+   ],
+   "ancho": 1222,
+   "alto": 849,
+   "letra_pt": 7.1
+  },
+  {
+   "stem": "nav-coordinador-03",
+   "secciones": [
+    "CU3 Prospectos",
+    "CU3 Prospectos: nuevo interés"
+   ],
+   "ancho": 1327,
+   "alto": 843,
+   "letra_pt": 7.1
+  },
+  {
+   "stem": "nav-coordinador-04",
+   "secciones": [
+    "CU3 Asignación de prospectos",
+    "CU4 Embudo de ventas"
+   ],
+   "ancho": 1459,
+   "alto": 794,
+   "letra_pt": 6.5
+  },
+  {
+   "stem": "nav-coordinador-05",
+   "secciones": [
+    "CU4 / CU5 Mover tarjeta y marcar perdido",
+    "CU5 Motivos de pérdida"
+   ],
+   "ancho": 1414,
+   "alto": 783,
+   "letra_pt": 6.7
+  },
+  {
+   "stem": "nav-coordinador-06",
+   "secciones": [
+    "CU6 Validación de pagos"
+   ],
+   "ancho": 1297,
+   "alto": 662,
+   "letra_pt": 7.3
+  },
+  {
+   "stem": "nav-coordinador-07",
+   "secciones": [
+    "CU6 Aprobar o rechazar cuota"
+   ],
+   "ancho": 1312,
+   "alto": 630,
+   "letra_pt": 7.2
+  },
+  {
+   "stem": "nav-coordinador-08",
+   "secciones": [
+    "CU6 Matrículas y SIS"
+   ],
+   "ancho": 1019,
+   "alto": 553,
+   "letra_pt": 9.2
+  },
+  {
+   "stem": "nav-coordinador-09",
+   "secciones": [
+    "CU6 Orden de pago y métodos",
+    "CU6 Métodos de pago"
+   ],
+   "ancho": 1260,
+   "alto": 880,
+   "letra_pt": 6.8
+  },
+  {
+   "stem": "nav-coordinador-10",
+   "secciones": [
+    "CU6 Anular orden"
+   ],
+   "ancho": 1276,
+   "alto": 607,
+   "letra_pt": 7.4
+  },
+  {
+   "stem": "nav-coordinador-11",
+   "secciones": [
+    "CU6 Registrar tarjeta con Stripe"
+   ],
+   "ancho": 1230,
+   "alto": 704,
+   "letra_pt": 7.7
+  },
+  {
+   "stem": "nav-coordinador-12",
+   "secciones": [
+    "CU6 Enlace de pago de una cuota",
+    "CU6 Enviar el enlace por correo"
+   ],
+   "ancho": 1454,
+   "alto": 776,
+   "letra_pt": 6.6
+  },
+  {
+   "stem": "nav-coordinador-13",
+   "secciones": [
+    "CU6 Retorno de Stripe"
+   ],
+   "ancho": 1550,
+   "alto": 628,
+   "letra_pt": 6.2
+  },
+  {
+   "stem": "nav-coordinador-14",
+   "secciones": [
+    "CU6 Pago cancelado en Stripe"
+   ],
+   "ancho": 1571,
+   "alto": 658,
+   "letra_pt": 6.1
+  },
+  {
+   "stem": "nav-coordinador-15",
+   "secciones": [
+    "CU7 Seguimiento y agenda",
+    "CU7 Contacto y recordatorios"
+   ],
+   "ancho": 1334,
+   "alto": 863,
+   "letra_pt": 7.0
+  },
+  {
+   "stem": "nav-coordinador-16",
+   "secciones": [
+    "CU7 Editar prospecto y convertir"
+   ],
+   "ancho": 1188,
+   "alto": 862,
+   "letra_pt": 7.0
+  },
+  {
+   "stem": "nav-coordinador-17",
+   "secciones": [
+    "CU7 Notificaciones",
+    "CU8 Dashboard"
+   ],
+   "ancho": 1341,
+   "alto": 856,
+   "letra_pt": 7.0
+  },
+  {
+   "stem": "nav-coordinador-18",
+   "secciones": [
+    "CU8 Reportes y estadísticas",
+    "CU8 Listados de reportes"
+   ],
+   "ancho": 1363,
+   "alto": 799,
+   "letra_pt": 7.0
+  },
+  {
+   "stem": "nav-coordinador-19",
+   "secciones": [
+    "CU8 Ventas y comisiones",
+    "Partes compartidas del servidor"
+   ],
+   "ancho": 1285,
+   "alto": 739,
+   "letra_pt": 7.4
+  },
+  {
+   "stem": "nav-coordinador-20",
+   "secciones": [
+    "Partes compartidas del servidor",
+    "Partes compartidas del servidor"
+   ],
+   "ancho": 910,
+   "alto": 769,
+   "letra_pt": 7.7
+  }
+ ],
+ "Visitante": [
+  {
+   "stem": "nav-visitante-01",
+   "secciones": [
+    "CU2 Catálogo y registro de interés"
+   ],
+   "ancho": 1161,
+   "alto": 643,
+   "letra_pt": 8.2
+  },
+  {
+   "stem": "nav-visitante-02",
+   "secciones": [
+    "CU2 Búsqueda, visitas y página no encontrada"
+   ],
+   "ancho": 1013,
+   "alto": 623,
+   "letra_pt": 9.3
+  },
+  {
+   "stem": "nav-visitante-03",
+   "secciones": [
+    "CU6 Pago público de una cuota"
+   ],
+   "ancho": 1726,
+   "alto": 613,
+   "letra_pt": 5.5
+  },
+  {
+   "stem": "nav-visitante-04",
+   "secciones": [
+    "CU6 Retorno de Stripe al visitante"
+   ],
+   "ancho": 1596,
+   "alto": 784,
+   "letra_pt": 6.0
+  },
+  {
+   "stem": "nav-visitante-05",
+   "secciones": [
+    "CU6 Pago cancelado en Stripe (visitante)"
+   ],
+   "ancho": 1633,
+   "alto": 613,
+   "letra_pt": 5.9
+  },
+  {
+   "stem": "nav-visitante-06",
+   "secciones": [
+    "Partes compartidas del servidor",
+    "Partes compartidas del servidor",
+    "Partes compartidas del servidor"
+   ],
+   "ancho": 905,
+   "alto": 910,
+   "letra_pt": 6.6
+  }
+ ]
+}

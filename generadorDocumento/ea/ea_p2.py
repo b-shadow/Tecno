@@ -26,7 +26,7 @@ import ea_base  # noqa: E402
 ea_base.EAPX, ea_base.SALIDA = EAPX, SALIDA   # la clase EA escribe donde le indica su módulo
 SEMILLA_CONCEPTUAL = 5
 VERDE_BD = 0xE0ECCF          # COLORREF 0xBBGGRR: verde claro de las cajas «database» de G07
-ESTEREOTIPO = {'cliente': 'client page', 'form': 'Formulario', 'ps': 'server page', 'bd': 'database'}
+ESTEREOTIPO = {'cliente': 'client page', 'externo': 'client page', 'form': 'Formulario', 'ps': 'server page', 'bd': 'database'}
 
 
 def lista(texto):
@@ -231,8 +231,8 @@ def comprobar_navegacion(actor, paginas, enlaces):
         assert not falta, f'{actor}: {nombre} lista columnas que no existen en la BD: {falta}'
     for a, b, st, _ in enlaces:
         assert a in paginas and b in paginas, f'{actor}: enlace a una página no declarada: {a} -> {b}'
-        assert st in ('link', 'submit', 'build', 'access', 'contiene'), f'{actor}: estereotipo desconocido {st}'
-    vacias = [n for t, n, at, op in paginas.values() if t in ('cliente', 'ps') and not (at and op)]
+        assert st in ('link', 'submit', 'build', 'access', 'include', 'contiene'), f'{actor}: estereotipo desconocido {st}'
+    vacias = [n for t, n, at, op in paginas.values() if t in ('cliente', 'externo', 'ps') and not (at and op)]
     assert not vacias, f'{actor}: clases sin atributos u operaciones (el docente las rechaza): {vacias}'
     sueltas = set(paginas) - {x for a, b, *_ in enlaces for x in (a, b)}
     assert not sueltas, f'{actor}: páginas sin relación: {sueltas}'
