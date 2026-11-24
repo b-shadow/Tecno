@@ -215,3 +215,38 @@
   /* En celular el panel de apariencia ocupa el ancho de la pantalla: anclado al botón se salía por la izquierda. */
   .apariencia-panel { position: fixed; left: 12px; right: 12px; top: 64px; width: auto; max-height: calc(100dvh - 76px); overflow-y: auto; }
 }
+
+/* ---------- Composición: ritmo y texto secundario (antes estilos en línea, regla del docente: CSS aparte) ---------- */
+.nota { color: var(--tinta-suave); }
+.nota-s { color: var(--tinta-suave); font-size: var(--t-s); }
+.bloque { display: block; }
+.capitalizar { text-transform: capitalize; }
+.tramo { margin-bottom: var(--e-5); }
+.tramo-m { margin-bottom: var(--e-4); }
+.tramo-s { margin-bottom: var(--e-3); }
+.tramo-xs { margin-bottom: 8px; }
+.desde-arriba { margin-top: var(--e-5); }
+.desde-arriba-s { margin-top: var(--e-3); }
+.apilado { display: grid; gap: var(--e-5); }
+.apilado-m { display: grid; gap: var(--e-4); }
+.apilado-s { display: grid; gap: 8px; }
+.crece { flex: 1; }
+.ancla { position: relative; }
+.acciones.al-inicio { justify-content: flex-start; }
+.barra-filtros .check { align-self: center; }
+
+/* Grupo de campos con leyenda (módulos, descuentos, programas a cargo) */
+.grupo-campos { border: 0; padding: 0; margin: 0; min-width: 0; }
+.grupo-campos > legend { font-weight: 700; margin-bottom: 8px; padding: 0; }
+
+/* Sub-bloque dentro de una hoja: título sin borde ni relleno lateral */
+.hoja-titulo.subtitulo { padding: 0 0 8px; border: 0; }
+/* Tabla dentro de una hoja: la hoja ya pone el marco */
+.tabla-marco.interna { border: 0; border-radius: 0; }
+
+/* Esqueleto de carga */
+.cargando { display: grid; gap: 10px; }
+.cargando .esqueleto { height: 44px; }
+.cargando-marco { padding: 12px; }
+
+.avatar-chica { width: 32px; height: 32px; }

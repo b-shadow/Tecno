@@ -15,6 +15,8 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       port: 5173,
       strictPort: true,
+      // En Docker sobre Windows no llegan los eventos de archivos: VITE_POLLING=1 los revisa por sondeo.
+      watch: env.VITE_POLLING ? { usePolling: true, interval: 300 } : undefined,
       proxy,
     },
     preview: { port: 4173, proxy },

@@ -2,7 +2,7 @@
 
 /* ---------- Kanban ---------- */
 .etapas { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--e-3); }
-.etapas button { --c: var(--etapa-nuevo); display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid var(--filete); border-radius: 999px; background: var(--papel); cursor: pointer; font-size: var(--t-s); font-weight: 650; }
+.etapas button { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid var(--filete); border-radius: 999px; background: var(--papel); cursor: pointer; font-size: var(--t-s); font-weight: 650; }
 .etapas button::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
 .etapas button b { font-variant-numeric: tabular-nums; color: var(--tinta-suave); }
 .kanban {
@@ -112,9 +112,17 @@
 .grafico { position: relative; height: 260px; }
 .barras { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .barras li { display: grid; grid-template-columns: minmax(110px, 34%) minmax(0, 1fr) 4.5rem; gap: 10px; align-items: center; font-size: var(--t-s); }
-.barras .pista { height: 12px; background: var(--niebla); border-radius: 999px; overflow: hidden; }
-.barras .relleno { height: 100%; background: var(--c, var(--navy)); border-radius: 999px; transition: width 600ms var(--curva); }
-:root[data-theme='dark'] .barras .relleno { background: var(--c, var(--acento)); }
+/* La pista es un <progress> nativo: el ancho sale de value/max, sin estilos en línea. */
+.barras .pista {
+  -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 12px;
+  border: 0; border-radius: 999px; overflow: hidden; background: var(--niebla); color: var(--c, var(--navy));
+}
+.barras .pista::-webkit-progress-bar { background: var(--niebla); border-radius: 999px; }
+.barras .pista::-webkit-progress-value { background: var(--c, var(--navy)); border-radius: 999px; transition: width 600ms var(--curva); }
+.barras .pista::-moz-progress-bar { background: var(--c, var(--navy)); border-radius: 999px; }
+:root[data-theme='dark'] .barras .pista { color: var(--c, var(--acento)); }
+:root[data-theme='dark'] .barras .pista::-webkit-progress-value { background: var(--c, var(--acento)); }
+:root[data-theme='dark'] .barras .pista::-moz-progress-bar { background: var(--c, var(--acento)); }
 .barras .valor { text-align: right; font-variant-numeric: tabular-nums; font-weight: 650; }
 
 /* ---------- Matriz de acceso ---------- */
@@ -140,3 +148,24 @@
   .barras li { grid-template-columns: minmax(0, 1fr) 4rem; }
   .barras .pista { grid-column: 1 / -1; grid-row: 2; }
 }
+
+/* Lista de notificaciones enviadas */
+.aviso-enviado { display: grid; gap: 4px; padding: 12px 14px; border-bottom: 1px solid var(--filete); }
+.aviso-enviado-cabeza { display: flex; justify-content: space-between; gap: 8px; }
+.aviso-enviado p { font-size: var(--t-s); }
+.aviso-enviado .btn-texto { justify-self: start; }
+
+/* Intereses de un prospecto en la tabla de Prospectos */
+.interes-linea { display: flex; gap: 8px; align-items: center; margin-block: 2px; }
+
+/* Comprobante en Validación de pagos */
+.comprobante-pdf { width: 100%; height: 480px; border: 1px solid var(--filete); border-radius: var(--radio); }
+.comprobante-img { max-height: 480px; margin: 0 auto; border-radius: var(--radio); border: 1px solid var(--filete); }
+
+/* Tono de las barras: token del tema (cambia con día/noche y alto contraste) */
+.tono-nuevo { --c: var(--etapa-nuevo); }
+.tono-contacto { --c: var(--etapa-contacto); }
+.tono-seguimiento { --c: var(--etapa-seguimiento); }
+.tono-promesa { --c: var(--etapa-promesa); }
+.tono-convertido { --c: var(--etapa-convertido); }
+.tono-perdido { --c: var(--etapa-perdido); }

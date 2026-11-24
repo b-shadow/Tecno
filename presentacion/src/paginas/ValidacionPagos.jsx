@@ -37,7 +37,7 @@ export default function ValidacionPagos() {
                   <td className="cifra">{fecha(c.fecha_vencimiento)}</td>
                   <td>{c.vendedor}</td>
                   <td><Etiqueta estado={c.estado}>{TEXTO[c.estado] || c.estado}</Etiqueta></td>
-                  <td>{(c.comprobantes.length > 0 || c.estado === 'En revision') && <button type="button" className="btn btn-secundario" onClick={() => setRevisar(c)}><FileSearch size={16} /> {c.estado === 'En revision' ? 'Revisar' : 'Ver'}</button>}</td>
+                  <td>{(c.comprobantes.length> 0 || c.estado === 'En revision') && <button type="button" className="btn btn-secundario" onClick={() => setRevisar(c)}><FileSearch size={16} /> {c.estado === 'En revision' ? 'Revisar' : 'Ver'}</button>}</td>
                 </tr>
               ))}
             </tbody>
@@ -67,8 +67,8 @@ function Revision({ cuota, onCerrar, onListo, aviso }) {
     <Modal ancho titulo={`${cuota.prospecto} · cuota ${cuota.nro_cuota} de la orden #${cuota.nro_orden}`} descripcion={comp ? `${bs(cuota.monto)} · ${comp.nombre_archivo || 'comprobante'} · enviado ${fecha(comp.fecha_envio, true)}` : `${bs(cuota.monto)} · cobro con tarjeta (pasarela simulada)`} onCerrar={onCerrar}
       pie={enRevision && <div className="acciones"><button type="button" className="btn btn-peligro-suave" disabled={!observacion.trim()} onClick={() => decidir('rechazar')}>Rechazar</button><button type="button" className="btn btn-primario" onClick={() => decidir('aprobar')}>Aprobar pago</button></div>}>
       {archivo.cargando ? <Cargando filas={3} /> : a?.mime === 'application/pdf'
-        ? <iframe title="Comprobante" src={a.archivo} style={{ width: '100%', height: 480, border: '1px solid var(--filete)', borderRadius: 'var(--radio)' }} />
-        : a && <img src={a.archivo} alt={`Comprobante de ${cuota.prospecto}`} style={{ maxHeight: 480, margin: '0 auto', borderRadius: 'var(--radio)', border: '1px solid var(--filete)' }} />}
+        ? <iframe title="Comprobante" src={a.archivo} className="comprobante-pdf" />
+        : a && <img src={a.archivo} alt={`Comprobante de ${cuota.prospecto}`} className="comprobante-img" />}
       {!comp && cuota.observacion && <p><b>Transacción:</b> {cuota.observacion}</p>}
       {comp?.remitente && <p><b>Enviado por:</b> {comp.remitente}{comp.hora_pago ? ` · pagado el ${fecha(comp.hora_pago, true)}` : ''}</p>}
       {comp?.observacion && <p><b>Observación:</b> {comp.observacion}</p>}

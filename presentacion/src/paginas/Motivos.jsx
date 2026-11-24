@@ -41,7 +41,7 @@ export default function Motivos() {
           </table>
         </div>
         <section className="hoja"><header className="hoja-titulo"><h3>Pérdidas por categoría</h3></header>
-          <div className="hoja-cuerpo"><Barras datos={porCategoria.map((c) => ({ ...c, porcentaje: Math.round((c.total * 1000) / suma) / 10 }))} color="var(--etapa-perdido)" /></div></section>
+          <div className="hoja-cuerpo"><Barras datos={porCategoria.map((c) => ({ ...c, porcentaje: Math.round((c.total * 1000) / suma) / 10 }))} tono="perdido" /></div></section>
       </div>
       {editando && <EditarMotivo motivo={editando} categorias={datos.categorias} onCerrar={() => setEditando(null)} onListo={(m) => { aviso.ok(m); setEditando(null); recargar() }} />}
       {aviso.nodo}

@@ -215,6 +215,8 @@
   .malla-fila:not(.abierta) .programa-img, .programa-img { display: block; grid-column: 2; grid-row: 1 / span 3; width: 84px; margin: 0; }
   .materia small { grid-column: 2; }
   .areas { justify-content: flex-start; max-width: none; flex-wrap: nowrap; overflow-x: auto; margin-inline: calc(-1 * clamp(16px, 3vw, 40px)); padding: 2px clamp(16px, 3vw, 40px) 6px; scrollbar-width: none; }
+  /* Dentro del panel (Oferta académica) el contenido tiene otro relleno: la tira se desplaza sin salirse del marco. */
+  .contenido .areas { margin-inline: 0; padding-inline: 0; }
   .eleccion { gap: var(--e-2) var(--e-3); }
   .eleccion p small { display: none; }
   .eleccion p strong { font-size: var(--t-m); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

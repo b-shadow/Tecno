@@ -59,6 +59,7 @@ services:
       - "5173:5173"
     environment:
       - VITE_API_PROXY=http://app:8001
+      - VITE_POLLING=1
     volumes:
       - ./presentacion:/app
       # node_modules propio del contenedor (binarios Linux), separado del node_modules del host.

@@ -28,11 +28,11 @@ export default function Matriz() {
       <CabeceraPagina titulo="Matriz de acceso">Qué puede hacer cada rol en cada página. El cambio se aplica de inmediato en la API y en el menú del rol al volver a cargar.</CabeceraPagina>
       <div className="tabla-marco">
         <table className="tabla matriz">
-          <thead><tr><th>Recurso (página)</th><th>CU</th>{datos.roles.map((r) => <th key={r.nombre} style={{ textTransform: 'capitalize' }}>{r.nombre}</th>)}</tr></thead>
+          <thead><tr><th>Recurso (página)</th><th>CU</th>{datos.roles.map((r) => <th key={r.nombre} className="capitalizar">{r.nombre}</th>)}</tr></thead>
           <tbody>
             {datos.recursos.map((rec) => (
               <tr key={rec.codigo}>
-                <td><strong>{rec.nombre}</strong><br /><small className="cifra" style={{ color: 'var(--tinta-suave)' }}>{rec.ruta}</small></td>
+                <td><strong>{rec.nombre}</strong><br /><small className="cifra nota">{rec.ruta}</small></td>
                 <td className="cu">{rec.caso_uso}</td>
                 {datos.roles.map((r) => (
                   <td key={r.nombre}>

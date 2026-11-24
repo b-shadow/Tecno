@@ -38,12 +38,12 @@ export default function Asignacion() {
       <div className="barra-filtros">
         <Campo etiqueta="Buscar"><input type="search" placeholder="Prospecto, CI o módulo" value={filtro.buscar} onChange={(e) => setFiltro({ ...filtro, buscar: e.target.value })} /></Campo>
         <Campo etiqueta="Vendedor"><select value={filtro.vendedor} onChange={(e) => setFiltro({ ...filtro, vendedor: e.target.value, sin_asignar: false })}><option value="">Todos</option>{(vendedores.datos || []).map((v) => <option key={v.correo} value={v.correo}>{nombre(v)}</option>)}</select></Campo>
-        <label className="check" style={{ alignSelf: 'center' }}><input type="checkbox" checked={filtro.sin_asignar} onChange={(e) => setFiltro({ ...filtro, sin_asignar: e.target.checked, vendedor: '' })} /> Solo sin asignar</label>
+        <label className="check"><input type="checkbox" checked={filtro.sin_asignar} onChange={(e) => setFiltro({ ...filtro, sin_asignar: e.target.checked, vendedor: '' })} /> Solo sin asignar</label>
       </div>
       {error && <Aviso tipo="error">{error}</Aviso>}
       {cargando && !datos ? <Cargando /> : !datos?.intereses?.length ? <Vacio titulo={filtro.sin_asignar ? 'No hay prospectos pendientes de reparto' : 'Sin resultados'}>{filtro.sin_asignar ? 'Todos los prospectos tienen vendedor.' : 'Pruebe con otro filtro.'}</Vacio> : (
         <>
-          {filtro.sin_asignar && <p style={{ marginBottom: 'var(--e-3)', color: 'var(--tinta-suave)' }}>{sinAsignar} tarjeta(s) esperan vendedor.</p>}
+          {filtro.sin_asignar && <p className="nota tramo-s">{sinAsignar} tarjeta(s) esperan vendedor.</p>}
           <div className="tabla-marco">
             <table className="tabla">
               <thead><tr><th>Prospecto</th><th>Interés</th><th>Etapa</th><th>Registro</th><th>Vendedor</th></tr></thead>
@@ -51,7 +51,7 @@ export default function Asignacion() {
                 {datos.intereses.map((t) => (
                   <tr key={t.nro_tarjeta}>
                     <td><a href="#" onClick={(e) => { e.preventDefault(); go(`/agenda?interes=${t.nro_tarjeta}`) }}><strong>{nombre(t.prospecto)}</strong></a><br /><small className="cifra">CI {t.documento}</small></td>
-                    <td>{t.modulo_nombre}<br /><small style={{ color: 'var(--tinta-suave)' }}>{t.programa_nombre}</small></td>
+                    <td>{t.modulo_nombre}<br /><small className="nota">{t.programa_nombre}</small></td>
                     <td><Etiqueta estado={t.estado} /></td>
                     <td className="cifra">{fecha(t.fecha)}</td>
                     <td>
