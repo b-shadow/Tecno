@@ -5,7 +5,6 @@ namespace App\Negocio;
 use App\Exceptions\ReglaNegocioException;
 use Datos\Modelos\Usuario;
 use Datos\DAlcance;
-use Illuminate\Contracts\Database\Eloquent\Builder;
 
 /**
  * Qué tarjetas (intereses) ve cada rol:
@@ -14,21 +13,13 @@ use Illuminate\Contracts\Database\Eloquent\Builder;
  */
 class NAlcance
 {
-    /** Filtra una consulta sobre `intereses` (o una relación que llegue a ella). */
-    public static function intereses(Builder $query, Usuario $usuario, string $tabla = 'intereses'): Builder
-    {
-        return DAlcance::intereses($query, $usuario, $tabla);
-    }
-
-    /** Filtra prospectos: los que tienen al menos una tarjeta dentro del alcance. */
-    public static function prospectos(Builder $query, Usuario $usuario): Builder
-    {
-        return DAlcance::prospectos($query, $usuario);
-    }
-
     public static function veTarjeta(Usuario $usuario, object $interes): bool
     {
-        return DAlcance::veTarjeta($usuario, $interes);
+        return match ($usuario->rol) {
+            'vendedor' => $interes->vendedor_correo === $usuario->correo,
+            'coordinador' => DAlcance::codigosModuloCoordinador($usuario->correo)->contains($interes->modulo_codigo),
+            default => true,
+        };
     }
 
     public static function autorizarTarjeta(Usuario $usuario, object $interes): void

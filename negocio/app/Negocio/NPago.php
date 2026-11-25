@@ -4,10 +4,12 @@ namespace App\Negocio;
 
 use App\Exceptions\ReglaNegocioException;
 use App\Http\Requests\ConsultaRequest;
+use App\Http\Requests\Pago\AnularOrdenRequest;
 use App\Http\Requests\Pago\AprobarCuotaRequest;
 use App\Http\Requests\Pago\CambiarEstadoMetodoRequest;
+use App\Http\Requests\Pago\CrearCheckoutRequest;
 use App\Http\Requests\Pago\CrearOrdenRequest;
-use App\Http\Requests\Pago\PagarConTarjetaRequest;
+use App\Http\Requests\Pago\CrearSetupTarjetaRequest;
 use App\Http\Requests\Pago\RechazarCuotaRequest;
 use App\Http\Requests\Pago\RegistrarComprobanteRequest;
 use App\Http\Requests\Pago\RegistrarMetodoRequest;
@@ -17,21 +19,38 @@ use Datos\Modelos\OrdenPago;
 use Datos\Modelos\Prospecto;
 use Datos\Modelos\Usuario;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Capa de negocio — CU6 y enunciado 10: métodos de pago del prospecto, orden con pago único o plan de cuotas,
- * comprobantes, pasarela simulada con tarjeta y validación por coordinación.
- * Aprobar la 1.ª cuota dispara la conversión (matrícula) si los datos están completos (RF3.4).
+ * Capa de negocio — CU6 y enunciado 10: métodos de pago del prospecto (Stripe Setup, QR, transferencia),
+ * órdenes con pago único o plan de cuotas, anulación controlada, comprobantes y Stripe Checkout Sandbox.
+ * Aprobar la 1.ª cuota (por Stripe o validación manual de comprobante) dispara la matrícula si los datos están completos (RF3.4).
  */
 class NPago
 {
     public const MARCAS = ['Visa', 'Mastercard', 'American Express'];
 
-    public function __construct(private readonly DPago $pagos)
+    public function __construct(
+        private readonly DPago $pagos,
+        private readonly NStripe $stripe,
+    ) {
+    }
+
+    /**
+     * Cambia el estado de una cuota. La 1.ª cuota además fija el estado del Pago de la orden (modelo del P1: el Pago
+     * es la 1.ª cuota) y, al validarse, su fecha y observación. Lo usan el flujo manual y el de Stripe.
+     */
+    public static function estadoCuota(DPago $pagos, int $orden, int $numero, string $estado, array $cuota = [], ?string $observacionPago = null): void
     {
+        if ($numero === 1) {
+            $validado = in_array($estado, ['Pago aprobado', 'Pago rechazado'], true);
+            $pagos->actualizarPago($orden, ['estado' => $estado]
+                + ($validado ? ['fecha_validacion' => now(), 'observacion_validacion' => $observacionPago] : []));
+        }
+        $pagos->actualizarCuota($orden, $numero, ['estado' => $estado] + ($estado === 'Pago aprobado' ? ['fecha_pago' => now()] : []) + $cuota);
     }
 
     public function descuentos(): JsonResponse
@@ -49,31 +68,33 @@ class NPago
         return response()->json(['metodos' => $this->pagos->metodos($registro), 'marcas' => self::MARCAS]);
     }
 
-    /** Tarjeta (Luhn y vencimiento), QR o transferencia. De la tarjeta solo se guarda marca, últimos 4 y vencimiento. */
+    /** Registro manual únicamente para QR o transferencia; las tarjetas se registran mediante Stripe Checkout (mode=setup). */
     public function registrarMetodo(RegistrarMetodoRequest $r, string $prospecto): JsonResponse
     {
         $datos = $r->validated();
         $registro = $this->pagos->prospecto($prospecto);
         $this->autorizarProspecto($r->usuario(), $registro);
-        $fila = ['documento' => $registro->documento, 'tipo' => $datos['tipo'], 'titular' => trim($datos['titular']), 'estado' => 'activo'];
-
-        if ($datos['tipo'] === 'Tarjeta') {
-            $numero = preg_replace('/\D/', '', $datos['numero']);
-            $errores = [];
-            if (! $this->luhn($numero)) {
-                $errores['numero'] = 'El número de tarjeta no es válido.';
-            }
-            if ($this->vencida($datos['vencimiento'])) {
-                $errores['vencimiento'] = 'La tarjeta está vencida.';
-            }
-            if ($errores) {
-                throw ValidationException::withMessages($errores);
-            }
-            // Nunca se guarda el número completo ni el CVV.
-            $fila += ['marca' => $this->marca($numero), 'ultimos_digitos' => substr($numero, -4), 'vencimiento' => $datos['vencimiento']];
-        }
+        $fila = [
+            'documento' => $registro->documento,
+            'tipo' => $datos['tipo'],
+            'titular' => trim($datos['titular']),
+            'estado' => 'activo',
+            'proveedor' => 'manual',
+            'registrado_por' => $r->usuario()->correo,
+        ];
 
         return response()->json(['mensaje' => 'Método de pago registrado.', 'metodo' => $this->pagos->crearMetodo($fila)], 201);
+    }
+
+    public function crearSetupTarjeta(CrearSetupTarjetaRequest $r, string $prospecto): JsonResponse
+    {
+        $sesion = $this->stripe->iniciarSetupTarjeta(
+            $prospecto,
+            $r->usuario(),
+            $r->validated('nro_tarjeta') ? (int) $r->validated('nro_tarjeta') : null
+        );
+
+        return response()->json($sesion, 201);
     }
 
     public function cambiarEstadoMetodo(CambiarEstadoMetodoRequest $r, int $metodo): JsonResponse
@@ -103,7 +124,9 @@ class NPago
         ReglaNegocioException::si(in_array($tarjeta->estado, ['Convertido', 'Perdido'], true), 'La tarjeta ya está cerrada.');
 
         $orden = $this->pagos->transaccion(function () use ($tarjeta, $usuario, $datos) {
-            // Igual que el P1: una sola orden abierta por tarjeta (evita la venta duplicada).
+            // Igual que el P1: una sola orden abierta por tarjeta (evita la venta duplicada). El bloqueo de la tarjeta
+            // hace esperar a un segundo pedido simultáneo hasta que este confirme, y entonces ve la orden abierta.
+            $this->pagos->interesBloqueado($tarjeta->nro_tarjeta);
             $abierta = $this->pagos->ordenAbierta($tarjeta->nro_tarjeta);
             ReglaNegocioException::si((bool) $abierta, $abierta
                 ? "La tarjeta ya tiene la orden #{$abierta->nro_orden} ({$abierta->estado}). Registre su comprobante o espere su revisión."
@@ -178,12 +201,13 @@ class NPago
         return response()->json(['cuotas' => $this->pagos->cuotas($r->usuario(), $r->query('estado'))]);
     }
 
-    /** El vendedor registra el comprobante que el prospecto le envió (imagen o PDF, hasta 5 MB). */
+    /** El vendedor registra el comprobante manual (QR/transferencia) que el prospecto le envió (imagen o PDF, hasta 5 MB). */
     public function registrarComprobante(RegistrarComprobanteRequest $r, int $orden, int $cuota): JsonResponse
     {
         $usuario = $r->usuario();
         $datos = $r->validated();
         $registro = $this->pagos->orden($orden);
+        ReglaNegocioException::si($registro->estado !== 'Activa', 'La orden fue anulada.');
         $interes = $this->pagos->interesDeOrden($registro);
         NAlcance::autorizarTarjeta($usuario, $interes);
         if (! empty($datos['nro_metodo'])) {
@@ -205,7 +229,7 @@ class NPago
                 'remitente' => $datos['remitente'] ?? null, 'hora_pago' => $datos['hora_pago'] ?? null, 'observacion' => $datos['observacion'] ?? null,
                 'fecha_envio' => now(), 'estado_revision' => 'En revision',
             ]);
-            $this->pagos->cambiarEstadoCuota($registro->nro_orden, $cuota, 'En revision', ['nro_metodo' => $datos['nro_metodo'] ?? null]);
+            self::estadoCuota($this->pagos, $registro->nro_orden, $cuota, 'En revision', array_filter(['nro_metodo' => $datos['nro_metodo'] ?? null]));
             $this->pagos->registrarInteraccion($interes, [
                 'usuario_correo' => $usuario->correo, 'tipo' => 'Pago informado', 'fecha' => now(),
                 'descripcion' => "Comprobante de la cuota {$cuota} de la orden #{$registro->nro_orden} enviado a revisión.", 'resultado' => 'Pago en revisión',
@@ -216,57 +240,58 @@ class NPago
         return response()->json(['mensaje' => 'Comprobante enviado a revisión.'], 201);
     }
 
-    /**
-     * Pasarela simulada: cobra la cuota con una tarjeta registrada del prospecto y la deja En revisión.
-     * El vendedor no aprueba su propia venta: coordinación la valida (aprobar) y recién ahí se matricula.
-     */
-    public function pagarConTarjeta(PagarConTarjetaRequest $r, int $orden, int $cuota): JsonResponse
+    /** Inicia una sesión oficial de Stripe Checkout (moneda BOB) para pagar una cuota pendiente. */
+    public function crearCheckout(CrearCheckoutRequest $r, int $orden, int $cuota): JsonResponse
     {
-        $usuario = $r->usuario();
-        $registro = $this->pagos->orden($orden);
-        $interes = $this->pagos->interesDeOrden($registro);
-        NAlcance::autorizarTarjeta($usuario, $interes);
-        $metodo = $this->metodoActivo($interes->documento, (int) $r->validated('nro_metodo'), 'Tarjeta', 'Seleccione una tarjeta activa del prospecto.');
-        ReglaNegocioException::si($this->vencida($metodo->vencimiento), 'La tarjeta está vencida.');
+        $r->validated();
+        $resultado = $this->stripe->iniciarCheckoutCuota($orden, $cuota, $r->usuario());
 
-        $transaccion = $this->pagos->transaccion(function () use ($registro, $interes, $cuota, $metodo, $usuario) {
-            $fila = $this->cuotaBloqueada($registro->nro_orden, $cuota);
-            ReglaNegocioException::si(in_array($fila->estado, ['Pago aprobado', 'En revision'], true), 'Esta cuota no está pendiente de pago.');
-            $transaccion = 'SIM-'.Str::upper(Str::random(12));
-            $tarjeta = "{$metodo->marca} ****{$metodo->ultimos_digitos}";
-
-            $this->pagos->cambiarEstadoCuota($registro->nro_orden, $cuota, 'En revision', [
-                'nro_metodo' => $metodo->nro_metodo, 'observacion' => "Pasarela simulada {$transaccion} con {$tarjeta}",
-            ]);
-            $this->pagos->registrarInteraccion($interes, [
-                'usuario_correo' => $usuario->correo, 'tipo' => 'Pago informado', 'fecha' => now(),
-                'descripcion' => "Cuota {$cuota} cobrada con {$tarjeta} (transacción {$transaccion}); pendiente de validación.",
-                'resultado' => 'Pago en revisión',
-            ]);
-            $this->pagos->actualizarInteres($interes, ['ultima_actividad_en' => now()]);
-
-            return $transaccion;
-        });
-
-        return response()->json([
-            'mensaje' => "Cobro registrado por la pasarela simulada ({$transaccion}). Coordinación debe validarlo.",
-            'transaccion' => $transaccion,
-        ]);
+        return response()->json($resultado, 201);
     }
 
-    /** Coordinación aprueba una cuota En revisión; si es la 1.ª y los datos están completos, se matricula. */
+    /** Consulta y confirma de manera idempotente una Checkout Session real en Stripe Sandbox. */
+    public function confirmarCheckout(ConsultaRequest $r, string $sessionId): JsonResponse
+    {
+        return response()->json($this->stripe->verificarSesion($sessionId, $r->usuario()));
+    }
+
+    /** Gestiona el retorno desde Stripe Checkout cuando el usuario cancela o abandona el flujo. */
+    public function cancelarCheckout(ConsultaRequest $r, string $sessionId): JsonResponse
+    {
+        return response()->json($this->stripe->cancelarSesion($sessionId, $r->usuario()));
+    }
+
+    /** Anula una orden sin pagos confirmados ni en revisión, expirando sesiones Stripe pendientes. */
+    public function anularOrden(AnularOrdenRequest $r, int $orden): JsonResponse
+    {
+        $anulada = $this->stripe->anularOrden($orden, $r->usuario(), (string) $r->validated('motivo'));
+
+        return response()->json(['mensaje' => "Orden #{$anulada->nro_orden} anulada.", 'orden' => $anulada]);
+    }
+
+    /** Webhook oficial de Stripe: verifica la firma HMAC y concilia pagos/eventos en modo Sandbox. */
+    public function webhook(Request $r): JsonResponse
+    {
+        $resultado = $this->stripe->procesarWebhook((string) $r->getContent(), (string) $r->header('Stripe-Signature', ''));
+
+        return response()->json($resultado);
+    }
+
+    /** Coordinación aprueba un comprobante manual En revisión; si es la 1.ª cuota y los datos están completos, se matricula. */
     public function aprobar(AprobarCuotaRequest $r, int $orden, int $cuota): JsonResponse
     {
         $usuario = $r->usuario();
         $observacion = $r->validated('observacion');
         $registro = $this->pagos->orden($orden);
+        ReglaNegocioException::si($registro->estado !== 'Activa', 'La orden fue anulada.');
         NAlcance::autorizarTarjeta($usuario, $this->pagos->interesDeOrden($registro));
 
         $faltantes = $this->pagos->transaccion(function () use ($registro, $cuota, $observacion, $usuario) {
             $fila = $this->cuotaBloqueada($registro->nro_orden, $cuota);
+            ReglaNegocioException::si(($fila->proveedor ?? 'manual') === 'stripe', 'Las cuotas procesadas por Stripe solo se confirman mediante la pasarela oficial.', 422);
             ReglaNegocioException::si($fila->estado !== 'En revision', 'Solo se aprueba una cuota en revisión.');
 
-            $this->pagos->cambiarEstadoCuota($registro->nro_orden, $cuota, 'Pago aprobado', ['observacion' => $observacion]);
+            self::estadoCuota($this->pagos, $registro->nro_orden, $cuota, 'Pago aprobado', array_filter(['observacion' => $observacion]), $observacion);
             $this->pagos->actualizarComprobantes($registro->nro_orden, $cuota, 'Pago aprobado');
 
             return $this->trasAprobar($registro, $cuota, $usuario, "Cuota {$cuota} de la orden #{$registro->nro_orden} aprobada por coordinación.");
@@ -280,12 +305,14 @@ class NPago
     {
         $observacion = $r->validated('observacion');
         $registro = $this->pagos->orden($orden);
+        ReglaNegocioException::si($registro->estado !== 'Activa', 'La orden fue anulada.');
         NAlcance::autorizarTarjeta($r->usuario(), $this->pagos->interesDeOrden($registro));
 
         $this->pagos->transaccion(function () use ($registro, $cuota, $observacion) {
             $fila = $this->cuotaBloqueada($registro->nro_orden, $cuota);
+            ReglaNegocioException::si(($fila->proveedor ?? 'manual') === 'stripe', 'Las cuotas procesadas por Stripe reflejan directamente el resultado de la pasarela.');
             ReglaNegocioException::si($fila->estado !== 'En revision', 'Solo se rechaza una cuota en revisión.');
-            $this->pagos->cambiarEstadoCuota($registro->nro_orden, $cuota, 'Pago rechazado', ['observacion' => $observacion]);
+            self::estadoCuota($this->pagos, $registro->nro_orden, $cuota, 'Pago rechazado', array_filter(['observacion' => $observacion]), $observacion);
             $this->pagos->actualizarComprobantes($registro->nro_orden, $cuota, 'Pago rechazado', $observacion);
         });
 
@@ -338,13 +365,6 @@ class NPago
         ReglaNegocioException::si(! $prospecto || ! $this->pagos->prospectoEnCartera($prospecto, $usuario), 'Este prospecto no está dentro de su cartera.', 403);
     }
 
-    private function vencida(string $vencimiento): bool
-    {
-        [$mes, $anio] = explode('/', $vencimiento);
-
-        return Carbon::create(2000 + (int) $anio, (int) $mes)->endOfMonth()->isPast();
-    }
-
     private function validarArchivo(string $archivo): string
     {
         $valido = preg_match('~^data:(image/(?:png|jpeg|webp)|application/pdf);base64,([A-Za-z0-9+/=\r\n]+)$~', $archivo, $partes);
@@ -355,26 +375,5 @@ class NPago
         }
 
         return $mime;
-    }
-
-    private function luhn(string $numero): bool
-    {
-        $suma = 0;
-        foreach (array_reverse(str_split($numero)) as $i => $d) {
-            $d = (int) $d * ($i % 2 ? 2 : 1);
-            $suma += $d > 9 ? $d - 9 : $d;
-        }
-
-        return strlen($numero) >= 13 && strlen($numero) <= 19 && $suma % 10 === 0;
-    }
-
-    private function marca(string $numero): string
-    {
-        return match (true) {
-            str_starts_with($numero, '4') => 'Visa',
-            (bool) preg_match('/^(5[1-5]|2[2-7])/', $numero) => 'Mastercard',
-            (bool) preg_match('/^3[47]/', $numero) => 'American Express',
-            default => 'Otra',
-        };
     }
 }

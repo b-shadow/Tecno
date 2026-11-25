@@ -25,4 +25,9 @@ class Cuota extends Model
     {
         return $this->belongsTo(MetodoPago::class, 'nro_metodo', 'nro_metodo');
     }
+
+    public function ordenPago(): BelongsTo
+    {
+        return $this->belongsTo(OrdenPago::class, 'nro_orden', 'nro_orden');
+    }
 }

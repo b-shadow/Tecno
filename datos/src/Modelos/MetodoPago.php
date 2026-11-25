@@ -15,8 +15,15 @@ class MetodoPago extends Model
 
     public const TIPOS = ['Tarjeta', 'QR', 'Transferencia'];
 
+    public const TIPOS_MANUALES = ['QR', 'Transferencia'];
+
     public function prospecto(): BelongsTo
     {
         return $this->belongsTo(Prospecto::class, 'documento', 'documento');
+    }
+
+    public function registradoPor(): BelongsTo
+    {
+        return $this->belongsTo(Usuario::class, 'registrado_por', 'correo');
     }
 }

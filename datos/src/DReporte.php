@@ -145,15 +145,19 @@ class DReporte
     private function filtrar(Builder $query, array $filtros): Builder
     {
         return $query
-            ->when($filtros['desde'] ?? null, fn ($builder, $desde) => $builder->where('i.fecha', '>=', Carbon::parse($desde, 'America/La_Paz')->startOfDay()->utc()))
-            ->when($filtros['hasta'] ?? null, fn ($builder, $hasta) => $builder->where('i.fecha', '<=', Carbon::parse($hasta, 'America/La_Paz')->endOfDay()->utc()))
+            ->when($filtros['desde'] ?? null, fn ($builder, $desde) => $builder->where('i.fecha', '>=', Carbon::parse($desde, 'America/La_Paz')->startOfDay()->setTimezone(config('app.timezone'))))
+            ->when($filtros['hasta'] ?? null, fn ($builder, $hasta) => $builder->where('i.fecha', '<=', Carbon::parse($hasta, 'America/La_Paz')->endOfDay()->setTimezone(config('app.timezone'))))
             ->when($filtros['vendedor'] ?? null, fn ($builder, $vendedor) => $builder->where('i.vendedor_correo', $vendedor))
             ->when($filtros['programa'] ?? null, fn ($builder, $programa) => $builder->where('i.programa_nombre', $programa))
             ->when(($filtros['estado'] ?? null) && in_array($filtros['estado'], Interes::ESTADOS, true), fn ($builder) => $builder->where('i.estado', $filtros['estado']))
-            ->when($filtros['buscar'] ?? null, fn ($builder, $buscar) => $builder->where(fn ($subquery) => $subquery
-                ->where('i.modulo_nombre', 'ilike', "%{$buscar}%")->orWhere('i.programa_nombre', 'ilike', "%{$buscar}%")
-                ->orWhereExists(fn ($existe) => $existe->from('prospectos as px')->whereColumn('px.documento', 'i.documento')
-                    ->where(fn ($persona) => $persona->where('px.nombre', 'ilike', "%{$buscar}%")
-                        ->orWhere('px.apellido', 'ilike', "%{$buscar}%")->orWhere('px.documento', 'ilike', "%{$buscar}%")))));
+            ->when(trim((string) ($filtros['buscar'] ?? '')) !== '', function ($builder) use ($filtros) {
+                $like = DAlcance::escaparLike((string) $filtros['buscar']);
+
+                return $builder->where(fn ($subquery) => $subquery
+                    ->where('i.modulo_nombre', 'ilike', $like)->orWhere('i.programa_nombre', 'ilike', $like)
+                    ->orWhereExists(fn ($existe) => $existe->from('prospectos as px')->whereColumn('px.documento', 'i.documento')
+                        ->where(fn ($persona) => $persona->where('px.nombre', 'ilike', $like)
+                            ->orWhere('px.apellido', 'ilike', $like)->orWhere('px.documento', 'ilike', $like))));
+            });
     }
 }

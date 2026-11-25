@@ -36,7 +36,7 @@ class DPago
     public function ordenes(Usuario $usuario): Collection
     {
         return OrdenPago::query()->whereHas('interes', fn ($q) => DAlcance::intereses($q, $usuario))
-            ->with('interes.prospecto', 'vendedor:correo,nombre,apellido', 'items', 'descuentos.descuento', 'pago', 'cuotas.metodo')
+            ->with('interes.prospecto', 'vendedor:correo,nombre,apellido', 'anuladaPor:correo,nombre,apellido', 'items', 'descuentos.descuento', 'pago', 'cuotas.metodo', 'transaccionesStripe')
             ->orderByDesc('nro_orden')->get();
     }
 
@@ -84,23 +84,31 @@ class DPago
             ->when($tipo, fn ($q, $valor) => $q->where('tipo', $valor))->first();
     }
 
-    /** Orden de la tarjeta con su 1.ª cuota todavía abierta (pendiente o en revisión), como en el P1. */
+    /** Orden de la tarjeta con su 1.ª cuota todavía abierta (pendiente o en revisión), excluyendo anuladas. */
     public function ordenAbierta(int $nroTarjeta): ?object
     {
         return DB::table('ordenes_pago as op')->join('pagos as pg', 'pg.nro_orden', '=', 'op.nro_orden')
-            ->where('op.nro_tarjeta', $nroTarjeta)->whereIn('pg.estado', ['Pendiente de pago', 'En revision'])
+            ->where('op.nro_tarjeta', $nroTarjeta)->where('op.estado', 'Activa')
+            ->whereIn('pg.estado', ['Pendiente de pago', 'En revision'])
             ->select('op.nro_orden', 'pg.estado')->first();
     }
     public function metodoConProspecto(MetodoPago $metodo): MetodoPago { return $metodo->loadMissing('prospecto'); }
     public function interesDeOrden(OrdenPago $orden): Interes { return $orden->loadMissing('interes.prospecto')->interes; }
-    public function cambiarEstadoCuota(int $orden, int $numero, string $estado, array $extra = []): void
+    public function actualizarCuota(int $orden, int $numero, array $datos): void
     {
-        $extra = array_filter($extra, fn ($valor) => $valor !== null);
-        if ($numero === 1) Pago::query()->whereKey($orden)->update(['estado' => $estado, 'updated_at' => now()]
-            + (in_array($estado, ['Pago aprobado', 'Pago rechazado'], true)
-                ? ['fecha_validacion' => now(), 'observacion_validacion' => $extra['observacion'] ?? null] : []));
-        Cuota::query()->where('nro_orden', $orden)->where('nro_cuota', $numero)->update(['estado' => $estado, 'updated_at' => now()]
-            + ($estado === 'Pago aprobado' ? ['fecha_pago' => now()] : []) + $extra);
+        Cuota::query()->where('nro_orden', $orden)->where('nro_cuota', $numero)->update($datos + ['updated_at' => now()]);
+    }
+    public function actualizarPago(int $orden, array $datos): void
+    {
+        Pago::query()->whereKey($orden)->update($datos + ['updated_at' => now()]);
+    }
+    public function montoCuotasEnEstado(int $orden, string $estado): float
+    {
+        return (float) Cuota::query()->where('nro_orden', $orden)->where('estado', $estado)->sum('monto');
+    }
+    public function hayCuotasEnEstados(int $orden, array $estados): bool
+    {
+        return Cuota::query()->where('nro_orden', $orden)->whereIn('estado', $estados)->exists();
     }
     public function actualizarComprobantes(int $orden, int $cuota, string $estado, ?string $observacion = null): void
     {
@@ -115,4 +123,6 @@ class DPago
     {
         return DAlcance::prospectos(Prospecto::query()->whereKey($prospecto->documento), $usuario)->exists();
     }
+
+    public function esDescuentoActivo(string $codigo): bool { return Descuento::query()->whereKey($codigo)->where('estado', 'activo')->exists(); }
 }

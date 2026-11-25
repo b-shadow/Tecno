@@ -1,7 +1,7 @@
 // Regresion sin navegador ni dependencias: persistencia, cierre y datos corruptos.
 import assert from 'node:assert/strict'
-import { apiErrorMessage } from '../backend/resources/js/services/errors.js'
-import { clearStoredSession, getStoredToken, persistSession, readSession } from '../backend/resources/js/services/session.js'
+import { apiErrorMessage } from '../presentacion/src/servicios/errors.js'
+import { clearStoredSession, getStoredToken, persistSession, readSession } from '../presentacion/src/servicios/session.js'
 
 function storage() {
   const items = new Map()

@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
-import { CreditCard, MessageCircle, NotebookTabs, Pencil, Upload } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Ban, CreditCard, ExternalLink, MessageCircle, NotebookTabs, Pencil, Upload } from 'lucide-react'
 import { leerArchivo } from '../servicios/archivos'
 import { go, useAppRoute } from '../servicios/navigation'
 import { puede, useAuth } from '../servicios/auth'
-import { Aviso, Boton, Campo, Cargando, Etiqueta, Modal, Vacio, bs, erroresDe, fecha, nombre, useAviso, useDatos, HISTORIAL } from '../componentes/ui'
+import { Aviso, Boton, Campo, Cargando, Etiqueta, Modal, Vacio, bs, erroresDe, fecha, hoyLocal, nombre, useAviso, useDatos, HISTORIAL } from '../componentes/ui'
 import { apiErrorMessage } from '../servicios/errors'
 import * as catalogoApi from '../api/catalogo'
 import * as interesesApi from '../api/intereses'
@@ -68,9 +68,10 @@ export default function PAgenda() {
 
 function Ficha({ nro, sesion, enfocar, onCambio }) {
   const { datos, cargando, error, recargar } = useDatos(async () => (await interesesApi.show(nro)).data, [nro])
+  const fichaRef = useRef(null)
   // En celular la ficha queda debajo de la lista: al elegir una tarjeta se lleva a la vista cuando ya cargó.
   useEffect(() => {
-    if (enfocar && datos && window.matchMedia('(max-width: 1100px)').matches) document.querySelector('.agenda-detail-window')?.scrollIntoView({ block: 'start' })
+    if (enfocar && datos && window.matchMedia('(max-width: 1100px)').matches) fichaRef.current?.scrollIntoView({ block: 'start' })
   }, [enfocar, datos])
   const [pestana, setPestana] = useState('historial')
   const [editar, setEditar] = useState(false)
@@ -86,7 +87,7 @@ function Ficha({ nro, sesion, enfocar, onCambio }) {
   const telefono = String(p.telefono || '').replace(/\D/g, '')
 
   return (
-    <section className="hoja scroll-mt-6" aria-label={`Ficha de ${nombre(p)}`}>
+    <section ref={fichaRef} id="ficha-detalle" className="hoja" aria-label={`Ficha de ${nombre(p)}`}>
       <header className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 rounded-t-hoja bg-portada p-6 text-portada-tinta max-movil:grid-cols-1">
         <div>
           <h2 className="text-3xl">{nombre(p)}</h2>
@@ -239,20 +240,63 @@ function Recordatorios({ t, editable, aviso, onCambio }) {
   )
 }
 
-/** CU6 / enunciado 10: métodos de pago del prospecto, órdenes con pago único o cuotas, comprobantes y pasarela. */
+/** CU6 / enunciado 10: métodos de pago del prospecto, órdenes con pago único o cuotas, comprobantes y Stripe Checkout Sandbox. */
 function Pagos({ t, esSuVendedor, editable, aviso, onCambio }) {
   const [modal, setModal] = useState(null)
+  const [stripeCargando, setStripeCargando] = useState(null)
   const metodos = t.prospecto.metodos_pago || []
   const activos = metodos.filter((m) => m.estado === 'activo')
+  const metodosStripe = activos.filter((m) => m.proveedor === 'stripe')
+
+  async function abrirSetupStripe() {
+    if (stripeCargando) return
+    setStripeCargando('setup')
+    try {
+      const { data } = await pagosApi.crearSetupTarjeta(t.documento, t.nro_tarjeta)
+      window.location.assign(data.url)
+    } catch (e) {
+      aviso.error(e)
+      setStripeCargando(null)
+    }
+  }
+
+  async function pagarConStripe(orden, cuota) {
+    const clave = `${orden.nro_orden}-${cuota.nro_cuota}`
+    if (stripeCargando) return
+    setStripeCargando(clave)
+    try {
+      const { data } = await pagosApi.crearCheckout(orden.nro_orden, cuota.nro_cuota)
+      window.location.assign(data.url)
+    } catch (e) {
+      aviso.error(e)
+      setStripeCargando(null)
+    }
+  }
+
   return (
     <div className="grid gap-6">
       <section>
-        <div className="hoja-titulo border-b-0 px-0 pt-0 pb-2"><h4>Métodos de pago</h4>{editable && <button type="button" className="btn btn-secundario" onClick={() => setModal({ tipo: 'metodo' })}><CreditCard size={16} /> Registrar método</button>}</div>
+        <div className="hoja-titulo border-b-0 px-0 pt-0 pb-2 flex-wrap gap-2">
+          <h4>Métodos de pago</h4>
+          {editable && (
+            <div className="acciones">
+              <Boton className="btn-primario" cargando={stripeCargando === 'setup'} disabled={Boolean(stripeCargando && stripeCargando !== 'setup')} onClick={abrirSetupStripe}>
+                <CreditCard size={16} /> Registrar tarjeta con Stripe
+              </Boton>
+              <button type="button" className="btn btn-secundario" onClick={() => setModal({ tipo: 'metodo' })}>QR / Transferencia</button>
+            </div>
+          )}
+        </div>
         {!metodos.length ? <p className="text-tinta-suave">El prospecto todavía no tiene métodos registrados.</p> : (
           <div className="grid gap-2">{metodos.map((m) => (
-            <div key={m.nro_metodo} className="flex items-center gap-2.5 rounded-ui border border-filete px-3 py-2.5">
+            <div key={m.nro_metodo} className="flex flex-wrap items-center gap-2.5 rounded-ui border border-filete px-3 py-2.5">
               <CreditCard size={18} aria-hidden="true" />
-              <span className="flex-1"><b>{m.tipo === 'Tarjeta' ? `${m.marca} ` : m.tipo}</b>{m.tipo === 'Tarjeta' && <span className="tracking-[0.04em] tabular-nums">•••• {m.ultimos_digitos} · vence {m.vencimiento}</span>} · {m.titular}</span>
+              <span className="flex-1">
+                <b>{m.tipo === 'Tarjeta' ? `${m.marca} ` : m.tipo}</b>
+                {m.tipo === 'Tarjeta' && <span className="tracking-[0.04em] tabular-nums">•••• {m.ultimos_digitos} · vence {m.vencimiento}</span>}
+                {' · '}{m.titular}
+                {' · '}<small className="text-tinta-suave">{m.proveedor === 'stripe' ? 'Stripe Sandbox' : 'Manual'}</small>
+              </span>
               <Etiqueta estado={m.estado} />
               {editable && <button type="button" className="btn btn-texto" onClick={async () => { try { aviso.ok((await pagosApi.cambiarEstadoMetodo(m.nro_metodo, m.estado === 'activo' ? 'inactivo' : 'activo')).data.mensaje); onCambio() } catch (e) { aviso.error(e) } }}>{m.estado === 'activo' ? 'Desactivar' : 'Activar'}</button>}
             </div>
@@ -261,51 +305,90 @@ function Pagos({ t, esSuVendedor, editable, aviso, onCambio }) {
       </section>
       <section>
         <div className="hoja-titulo border-b-0 px-0 pt-0 pb-2"><h4>Órdenes y cuotas</h4>{editable && esSuVendedor && t.estado !== 'Convertido' && <button type="button" className="btn btn-primario" onClick={() => setModal({ tipo: 'orden' })}>Generar orden de pago</button>}</div>
-        {!t.ordenes_pago.length ? <p className="text-tinta-suave">{esSuVendedor ? 'Genere la orden cuando el prospecto confirme los módulos.' : 'Sin órdenes de pago.'}</p> : t.ordenes_pago.map((o) => (
-          <article key={o.nro_orden} className="hoja mb-3">
-            <div className="hoja-titulo"><h4>Orden #{o.nro_orden} · {bs(o.total)}</h4><small>{o.items.map((i) => i.modulo_nombre).join(', ')}{Number(o.descuento_total)> 0 && ` · descuento ${bs(o.descuento_total)}`}</small></div>
-            <div className="hoja-cuerpo grid gap-2">
-              {o.cuotas.map((c) => (
-                <div key={c.nro_cuota} className="grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-ui border border-filete px-3 py-2.5">
-                  <b className="font-titulo text-xl text-acento-2-texto tabular-nums">{String(c.nro_cuota).padStart(2, '0')}</b>
-                  <div><strong className="tabular-nums">{bs(c.monto)}</strong><small className="text-xs text-tinta-suave"> · vence {fecha(c.fecha_vencimiento)}{c.observacion ? ` · ${c.observacion}` : ''}</small></div>
-                  <div className="acciones">
-                    <Etiqueta estado={c.estado} />
-                    {editable && ['Pendiente de pago', 'Pago rechazado'].includes(c.estado) && <>
-                      <button type="button" className="btn btn-secundario" onClick={() => setModal({ tipo: 'comprobante', orden: o, cuota: c })}><Upload size={16} /> Comprobante</button>
-                      {activos.some((m) => m.tipo === 'Tarjeta') && <button type="button" className="btn btn-acento" onClick={() => setModal({ tipo: 'tarjeta', orden: o, cuota: c })}><CreditCard size={16} /> Cobrar con tarjeta</button>}
-                    </>}
-                  </div>
+        {!t.ordenes_pago.length ? <p className="text-tinta-suave">{esSuVendedor ? 'Genere la orden cuando el prospecto confirme los módulos.' : 'Sin órdenes de pago.'}</p> : t.ordenes_pago.map((o) => {
+          const anulada = o.estado === 'Anulada'
+          const totalCuotas = o.cuotas.length
+          const cuotasPagadas = o.cuotas.filter((c) => c.estado === 'Pago aprobado')
+          const pagado = cuotasPagadas.reduce((s, c) => s + Number(c.monto || 0), 0)
+          const saldo = Math.max(Number(o.total || 0) - pagado, 0)
+          const anulable = editable && !anulada && !o.cuotas.some((c) => ['Pago aprobado', 'En revision'].includes(c.estado))
+          return (
+            <article key={o.nro_orden} className="hoja mb-3">
+              <div className="hoja-titulo flex-wrap gap-2">
+                <div>
+                  <h4>Orden #{o.nro_orden} · {bs(o.total)} <small className="font-normal text-tinta-suave">(BOB)</small></h4>
+                  <small>
+                    {o.items.map((i) => i.modulo_nombre).join(', ')}
+                    {Number(o.descuento_total) > 0 && ` · descuento ${bs(o.descuento_total)}`}
+                    {' · '}Pagado {bs(pagado)} · Saldo pendiente <b className="tabular-nums">{bs(saldo)}</b> ({cuotasPagadas.length} de {totalCuotas} cuotas)
+                  </small>
                 </div>
-              ))}
-            </div>
-          </article>
-        ))}
+                <div className="acciones">
+                  {anulada ? <Etiqueta estado="Perdido">Anulada</Etiqueta> : <Etiqueta estado={saldo === 0 && totalCuotas > 0 ? 'Pago aprobado' : 'Pendiente de pago'}>{saldo === 0 && totalCuotas > 0 ? 'Liquidada' : 'Activa'}</Etiqueta>}
+                  {anulable && <button type="button" className="btn btn-texto" onClick={() => setModal({ tipo: 'anular', orden: o })}><Ban size={15} /> Anular orden</button>}
+                </div>
+              </div>
+              {anulada && o.motivo_anulacion && <div className="px-6 pt-3"><Aviso tipo="error">Orden anulada: {o.motivo_anulacion}</Aviso></div>}
+              <div className="hoja-cuerpo grid gap-2">
+                {o.cuotas.map((c) => {
+                  const clave = `${o.nro_orden}-${c.nro_cuota}`
+                  const pendiente = editable && !anulada && ['Pendiente de pago', 'Pago rechazado'].includes(c.estado)
+                  const metodoTxt = c.metodo
+                    ? (c.metodo.tipo === 'Tarjeta' ? `${c.metodo.marca} •••• ${c.metodo.ultimos_digitos}` : c.metodo.tipo)
+                    : (metodosStripe[0] ? `${metodosStripe[0].marca} •••• ${metodosStripe[0].ultimos_digitos}` : 'Tarjeta en Stripe Checkout')
+                  return (
+                    <div key={c.nro_cuota} className="flex flex-wrap items-center justify-between gap-3 rounded-ui border border-filete px-3.5 py-3">
+                      <div className="flex min-w-[240px] flex-1 items-start gap-3">
+                        <b className="font-titulo text-xl leading-none text-acento-2-texto tabular-nums">{String(c.nro_cuota).padStart(2, '0')}</b>
+                        <div className="min-w-0 flex-1">
+                          <div><strong className="tabular-nums">{bs(c.monto)}</strong> <small className="text-xs text-tinta-suave">BOB · Cuota {c.nro_cuota} de {totalCuotas}</small></div>
+                          <div className="text-xs text-tinta-suave">
+                            Vence {fecha(c.fecha_vencimiento)}
+                            {' · '}{c.proveedor === 'stripe' ? 'Stripe Sandbox' : 'Manual / histórico'}
+                            {' · '}Método: {metodoTxt}
+                            {c.stripe_pago_intent && <> · Ref: <span className="font-mono break-all">{c.stripe_pago_intent}</span></>}
+                            {c.observacion && !c.stripe_pago_intent ? ` · ${c.observacion}` : ''}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="acciones flex-wrap">
+                        <Etiqueta estado={c.estado} />
+                        {c.stripe_recibo_url && <a className="btn btn-texto" href={c.stripe_recibo_url} target="_blank" rel="noreferrer"><ExternalLink size={15} /> Recibo</a>}
+                        {pendiente && <>
+                          <Boton className="btn-acento" cargando={stripeCargando === clave} disabled={Boolean(stripeCargando && stripeCargando !== clave)} onClick={() => pagarConStripe(o, c)}>
+                            <CreditCard size={16} /> Pagar con Stripe
+                          </Boton>
+                          <button type="button" className="btn btn-secundario" onClick={() => setModal({ tipo: 'comprobante', orden: o, cuota: c })}><Upload size={16} /> Comprobante</button>
+                        </>}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </article>
+          )
+        })}
       </section>
       {modal?.tipo === 'metodo' && <NuevoMetodo documento={t.documento} onCerrar={() => setModal(null)} onListo={(m) => { aviso.ok(m); setModal(null); onCambio() }} />}
       {modal?.tipo === 'orden' && <NuevaOrden t={t} onCerrar={() => setModal(null)} onListo={(m) => { aviso.ok(m); setModal(null); onCambio() }} />}
       {modal?.tipo === 'comprobante' && <Comprobante {...modal} metodos={activos} onCerrar={() => setModal(null)} onListo={(m) => { aviso.ok(m); setModal(null); onCambio() }} />}
-      {modal?.tipo === 'tarjeta' && <CobroTarjeta {...modal} metodos={activos.filter((m) => m.tipo === 'Tarjeta')} onCerrar={() => setModal(null)} onListo={(m) => { aviso.ok(m); setModal(null); onCambio() }} />}
+      {modal?.tipo === 'anular' && <AnularOrden orden={modal.orden} onCerrar={() => setModal(null)} onListo={(m) => { aviso.ok(m); setModal(null); onCambio() }} />}
     </div>
   )
 }
 
 function NuevoMetodo({ documento, onCerrar, onListo }) {
-  const [form, setForm] = useState({ tipo: 'Tarjeta', titular: '', numero: '', vencimiento: '' })
+  const [form, setForm] = useState({ tipo: 'QR', titular: '' })
   const [errores, setErrores] = useState({})
   async function guardar(e) {
     e.preventDefault()
     try { onListo((await pagosApi.registrarMetodo(documento, form)).data.mensaje) } catch (err) { setErrores({ ...erroresDe(err), general: apiErrorMessage(err) }) }
   }
   return (
-    <Modal titulo="Registrar método de pago" descripcion="De la tarjeta solo se guardan marca, últimos 4 dígitos y vencimiento." onCerrar={onCerrar}>
+    <Modal titulo="Registrar método manual (QR / Transferencia)" descripcion="Para registrar una tarjeta de débito o crédito utilice el botón «Registrar tarjeta con Stripe»." onCerrar={onCerrar}>
       <form className="grid gap-4 grid-cols-2 max-movil:grid-cols-1" onSubmit={guardar}>
-        <Campo etiqueta="Tipo" requerido><select value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })}><option>Tarjeta</option><option>QR</option><option>Transferencia</option></select></Campo>
+        <Campo etiqueta="Tipo" requerido><select value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })}><option>QR</option><option>Transferencia</option></select></Campo>
         <Campo etiqueta="Titular" requerido error={errores.titular}><input required maxLength={120} value={form.titular} onChange={(e) => setForm({ ...form, titular: e.target.value })} autoComplete="off" /></Campo>
-        {form.tipo === 'Tarjeta' && <>
-          <Campo etiqueta="Número de tarjeta" requerido error={errores.numero} ayuda="Simulado: pruebe 4111 1111 1111 1111"><input required inputMode="numeric" autoComplete="off" pattern="[0-9 ]{13,23}" title="Entre 13 y 19 dígitos." value={form.numero} onChange={(e) => setForm({ ...form, numero: e.target.value })} /></Campo>
-          <Campo etiqueta="Vencimiento (MM/AA)" requerido error={errores.vencimiento}><input required placeholder="12/28" pattern="(0[1-9]|1[0-2])/[0-9]{2}" title="Formato MM/AA." value={form.vencimiento} onChange={(e) => setForm({ ...form, vencimiento: e.target.value })} /></Campo>
-        </>}
         {errores.general && <div className="col-span-full"><Aviso tipo="error">{errores.general}</Aviso></div>}
         <div className="acciones col-span-full"><button type="button" className="btn btn-secundario" onClick={onCerrar}>Cancelar</button><button type="submit" className="btn btn-primario">Registrar</button></div>
       </form>
@@ -320,7 +403,7 @@ function NuevaOrden({ t, onCerrar, onListo }) {
   const [modulos, setModulos] = useState([t.modulo_codigo])
   const [dctos, setDctos] = useState([])
   const [cuotas, setCuotas] = useState(1)
-  const manana = new Date(Date.now() + 86400000).toISOString().slice(0, 10)
+  const manana = hoyLocal(1)
   const [vence, setVence] = useState(manana)
   const [error, setError] = useState(null)
   const subtotal = (programa?.modulos || []).filter((m) => modulos.includes(m.codigo)).reduce((s, m) => s + m.precio, 0)
@@ -346,7 +429,7 @@ function NuevaOrden({ t, onCerrar, onListo }) {
           </fieldset>
           <div className="grid gap-4 grid-cols-2 max-movil:grid-cols-1">
             <Campo etiqueta="Forma de pago" requerido><select value={cuotas} onChange={(e) => setCuotas(Number(e.target.value))}><option value={1}>Pago único</option>{[2, 3, 4, 5, 6, 8, 10, 12].map((n) => <option key={n} value={n}>Plan de {n} cuotas mensuales</option>)}</select></Campo>
-            <Campo etiqueta={cuotas === 1 ? 'Vencimiento' : 'Vencimiento de la 1.ª cuota'} requerido><input type="date" min={new Date().toISOString().slice(0, 10)} required value={vence} onChange={(e) => setVence(e.target.value)} /></Campo>
+            <Campo etiqueta={cuotas === 1 ? 'Vencimiento' : 'Vencimiento de la 1.ª cuota'} requerido><input type="date" min={hoyLocal()} required value={vence} onChange={(e) => setVence(e.target.value)} /></Campo>
           </div>
           <dl className="cifras"><div><dt>Subtotal</dt><dd>{bs(subtotal)}</dd></div><div><dt>Total</dt><dd>{bs(total)}</dd></div><div><dt>{cuotas === 1 ? 'Pago' : 'Cuota aprox.'}</dt><dd>{bs(total / cuotas)}</dd></div></dl>
           <Aviso tipo="error">{error}</Aviso>
@@ -387,22 +470,32 @@ function Comprobante({ orden, cuota, metodos, onCerrar, onListo }) {
   )
 }
 
-function CobroTarjeta({ orden, cuota, metodos, onCerrar, onListo }) {
-  const [metodo, setMetodo] = useState(metodos[0]?.nro_metodo || '')
+function AnularOrden({ orden, onCerrar, onListo }) {
+  const [motivo, setMotivo] = useState('')
   const [error, setError] = useState(null)
   const [enviando, setEnviando] = useState(false)
+  async function enviar(e) {
+    e.preventDefault()
+    setEnviando(true)
+    try {
+      onListo((await pagosApi.anularOrden(orden.nro_orden, motivo)).data.mensaje)
+    } catch (err) {
+      setError(apiErrorMessage(err))
+      setEnviando(false)
+    }
+  }
   return (
-    <Modal titulo="Cobrar con tarjeta (pasarela simulada)" descripcion={`Cuota ${cuota.nro_cuota} de la orden #${orden.nro_orden}: ${bs(cuota.monto)}`} onCerrar={onCerrar}
-      pie={<div className="acciones"><button type="button" className="btn btn-secundario" onClick={onCerrar}>Cancelar</button><Boton cargando={enviando} onClick={async () => {
-        setEnviando(true)
-        try {
-          const { data } = await pagosApi.pagarConTarjeta(orden.nro_orden, cuota.nro_cuota, metodo)
-          onListo(data.mensaje)
-        } catch (e) { setError(apiErrorMessage(e)); setEnviando(false) }
-      }}>Cobrar {bs(cuota.monto)}</Boton></div>}>
-      <Campo etiqueta="Tarjeta"><select value={metodo} onChange={(e) => setMetodo(e.target.value)}>{metodos.map((m) => <option key={m.nro_metodo} value={m.nro_metodo}>{m.marca} •••• {m.ultimos_digitos} · {m.titular}</option>)}</select></Campo>
-      <Aviso>Es una simulación: no se realiza ningún cargo real. La cuota queda en revisión hasta que coordinación la valide.</Aviso>
-      <Aviso tipo="error">{error}</Aviso>
+    <Modal titulo={`Anular orden #${orden.nro_orden}`} descripcion={`Monto: ${bs(orden.total)}. Si tiene sesiones Stripe abiertas se expirarán sin realizar cobros.`} onCerrar={onCerrar}>
+      <form className="grid gap-4" onSubmit={enviar}>
+        <Campo etiqueta="Motivo de anulación" requerido ayuda="Mínimo 5 caracteres. Queda registrado en el historial.">
+          <textarea required minLength={5} maxLength={500} value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+        </Campo>
+        <Aviso tipo="error">{error}</Aviso>
+        <div className="acciones">
+          <button type="button" className="btn btn-secundario" onClick={onCerrar}>Cancelar</button>
+          <Boton type="submit" className="btn-peligro-suave" cargando={enviando} disabled={motivo.trim().length < 5}>Confirmar anulación</Boton>
+        </div>
+      </form>
     </Modal>
   )
 }

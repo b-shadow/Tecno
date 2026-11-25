@@ -20,6 +20,8 @@ export const router = createBrowserRouter([{
   children: [
     { path: '/', element: <Navigate to="/anuncios" replace /> },
     ...Object.entries(PAGINAS).map(([path, nombre]) => ({ path, lazy: pagina(nombre) })),
+    { path: '/pagos/confirmacion', lazy: pagina('PPagoConfirmacion'), handle: { recurso: '/agenda' } },
+    { path: '/pagos/cancelado', lazy: pagina('PPagoCancelado'), handle: { recurso: '/agenda' } },
     // Ruta inexistente: página de error con el contador del recurso /error.
     { path: '*', lazy: pagina('PError404'), handle: { recurso: '/error' } },
   ],

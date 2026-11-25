@@ -3,7 +3,8 @@
 namespace App\Http\Requests\Pago;
 
 use App\Http\Requests\ApiRequest;
-use Illuminate\Validation\Rule;
+use Datos\DCatalogo;
+use Datos\DPago;
 
 /** CU6: orden de pago con pago único o plan de 2 a 12 cuotas. */
 class CrearOrdenRequest extends ApiRequest
@@ -12,9 +13,9 @@ class CrearOrdenRequest extends ApiRequest
     {
         return [
             'modulos' => ['required', 'array', 'min:1'],
-            'modulos.*' => ['required', 'string', 'distinct', Rule::exists('catalogo_cache', 'codigo')->where('estado', 'abierto')],
+            'modulos.*' => ['required', 'string', 'distinct', $this->segun(fn ($v) => app(DCatalogo::class)->esModuloAbierto($v))],
             'descuentos' => ['nullable', 'array'],
-            'descuentos.*' => ['string', Rule::exists('descuentos', 'codigo')->where('estado', 'activo')],
+            'descuentos.*' => ['string', $this->segun(fn ($v) => app(DPago::class)->esDescuentoActivo($v))],
             'cuotas' => ['required', 'integer', 'between:1,12'],
             'primer_vencimiento' => ['required', 'date', 'after_or_equal:today'],
         ];

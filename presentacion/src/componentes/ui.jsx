@@ -5,9 +5,25 @@ import { apiErrorMessage } from '../servicios/errors'
 import { TONO, colorEstado } from './tonos'
 
 export const bs = (n) => `${Number(n || 0).toLocaleString('es-BO', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} Bs`
-export const fecha = (v, conHora = false) => (v ? new Date(v).toLocaleString('es-BO', conHora
+
+function parsearFecha(v) {
+  // Las fechas de calendario sin hora (YYYY-MM-DD) se interpretan en hora local para no retroceder un día en UTC-4.
+  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
+    const [anio, mes, dia] = v.split('-').map(Number)
+    return new Date(anio, mes - 1, dia, 12, 0, 0)
+  }
+  return new Date(v)
+}
+
+export const fecha = (v, conHora = false) => (v ? parsearFecha(v).toLocaleString('es-BO', conHora
   ? { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }
   : { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—')
+export const hora = (v) => (v ? parsearFecha(v).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }) : '—')
+export const hoyLocal = (dias = 0) => {
+  const d = new Date()
+  d.setDate(d.getDate() + dias)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 export const iniciales = (u) => `${u?.nombre?.[0] || ''}${u?.apellido?.[0] || ''}`.toUpperCase()
 export const nombre = (u) => (u ? `${u.nombre} ${u.apellido}`.trim() : '')
 

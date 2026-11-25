@@ -34,10 +34,14 @@ class DProspecto
     {
         return DAlcance::prospectos(Prospecto::query(), $usuario)
             ->with(['intereses' => fn ($q) => DAlcance::intereses($q, $usuario)->with('vendedor:correo,nombre,apellido')])
-            ->when($texto !== '', fn ($q) => $q->where(fn ($s) => $s
-                ->where('nombre', 'ilike', "%{$texto}%")->orWhere('apellido', 'ilike', "%{$texto}%")
-                ->orWhere('correo', 'ilike', "%{$texto}%")->orWhere('documento', 'ilike', "%{$texto}%")
-                ->orWhere('telefono', 'ilike', "%{$texto}%")))
+            ->when(trim($texto) !== '', function ($q) use ($texto) {
+                $like = DAlcance::escaparLike($texto);
+
+                return $q->where(fn ($s) => $s
+                    ->where('nombre', 'ilike', $like)->orWhere('apellido', 'ilike', $like)
+                    ->orWhere('correo', 'ilike', $like)->orWhere('documento', 'ilike', $like)
+                    ->orWhere('telefono', 'ilike', $like));
+            })
             ->when($origen, fn ($q, $valor) => $q->where('origen', $valor))
             ->orderByDesc('fecha_registro')->get();
     }
@@ -105,5 +109,17 @@ class DProspecto
                 'fecha_asignacion' => $vendedor ? now() : null,
             ],
         );
+    }
+
+    public function existeDocumento(string $documento): bool
+    {
+        return Prospecto::query()->whereKey($documento)->exists();
+    }
+
+    /** ¿Otro prospecto (distinto de $exceptoDocumento) ya usa este correo? */
+    public function correoEnUso(string $correo, ?string $exceptoDocumento = null): bool
+    {
+        return Prospecto::query()->where('correo', $correo)
+            ->when($exceptoDocumento !== null, fn ($q) => $q->whereKeyNot($exceptoDocumento))->exists();
     }
 }

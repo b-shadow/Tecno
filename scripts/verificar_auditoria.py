@@ -1,164 +1,112 @@
-"""Auditoria funcional adicional. SOLO QA local poblado por las verificaciones anteriores.
-Crea datos ficticios y prueba permisos, archivos, CSV, sesiones, concurrencia y conversion.
-Uso: python scripts/verificar_auditoria.py http://localhost:18002/api
+"""Auditoría funcional de lo que no cubren verificar_p2.py ni verificar_fase_a.py: registro público, actividades
+(permisos, doble cierre, concurrencia y hora de Bolivia), seguimiento cerrado, CSV con formato difícil, sesiones al
+cambiar o restablecer la clave, notificaciones, órdenes simultáneas y límite de intentos de login.
+Solo contra una base QA local: crea datos ficticios. Deja el límite de login de esa IP lleno durante un minuto.
 """
-import base64
 import concurrent.futures
-import json
-import sys
-import time
-import urllib.error
-import urllib.parse
-import urllib.request
 
-BASE=sys.argv[1].rstrip('/')
-assert urllib.parse.urlparse(BASE).hostname in ('localhost','127.0.0.1'), 'Solo QA local'
-checks=0
-stamp=str(time.time_ns())
-PNG='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a01cAAAAASUVORK5CYII='
+from qa_comun import V1, api, caso, fin, login, nuevo_interes, unico
 
-def request(method,path,token=None,body=None):
-    headers={'Accept':'application/json','Content-Type':'application/json'}
-    if token: headers['Authorization']='Bearer '+token
-    req=urllib.request.Request(BASE+path,method=method,headers=headers,data=json.dumps(body).encode() if body is not None else None)
-    try:
-        with urllib.request.urlopen(req,timeout=30) as r: return r.status,json.loads(r.read() or '{}')
-    except urllib.error.HTTPError as e: return e.code,json.loads(e.read() or '{}')
+admin, coord, v1, v2 = login('admin'), login('coord'), login('v1'), login('v2')
 
-def call(method,path,token=None,body=None,status=200):
-    code,data=request(method,path,token,body)
-    check(code==status,f'{method} {path} -> {status} (recibido {code})')
-    return data
+# --- Registro público
+u = unico()
+persona = {'documento': f'AU{u}', 'nombre': 'Auditoria', 'apellido': 'Publica', 'correo': f'au.{u}@example.invalid', 'telefono': '71234567'}
+modulo = api('GET', '/catalogo')[1]['programas'][0]['modulos'][0]['codigo']
+s, r = api('POST', '/registro-interes', {**persona, 'modulo_codigo': modulo})
+caso('el registro público no expone datos internos', s == 201 and set(r) <= {'mensaje', 'detalle', 'nuevo_prospecto'}, r)
+api('POST', '/registro-interes', {**persona, 'nombre': 'Sobrescrito', 'modulo_codigo': modulo})
+_, r = api('GET', f'/intereses?buscar=AU{u}', token=admin)
+caso('un registro repetido no sobrescribe el contacto existente', r['intereses'] and r['intereses'][0]['prospecto']['nombre'] == 'Auditoria', r['intereses'][:1])
+s, r = api('POST', '/registro-interes', {**persona, 'correo': f'otro.{u}@example.invalid', 'modulo_codigo': modulo})
+caso('el mismo carnet con otro correo se rechaza (422)', s == 422, (s, r))
+for _ in range(25):  # cada página vista suma una visita: no debe gastar el límite propio del registro (20/min)
+    api('POST', '/visitas', {'ruta': '/anuncios'})
+v = unico()
+s, r = api('POST', '/registro-interes', {**persona, 'documento': f'AU{v}', 'correo': f'au.{v}@example.invalid', 'modulo_codigo': modulo})
+caso('navegar muchas páginas no bloquea el registro público (límites separados)', s == 201, (s, r))
 
-def check(condition,label):
-    global checks
-    if not condition: raise AssertionError(label)
-    checks+=1
-    print('OK',label,flush=True)
+# --- Actividades: dueño, hora de Bolivia, permisos, doble cierre y concurrencia
+doc, tarjeta, _ = nuevo_interes(admin, V1)
+s, r = api('POST', f'/intereses/{tarjeta}/recordatorios', {'fecha_programada': '2026-12-20T10:00', 'descripcion': 'Llamada de seguimiento'}, coord)
+rec = r['recordatorio']
+caso('10:00 de Bolivia se guarda como 14:00 UTC', rec['fecha_programada'].startswith('2026-12-20T14:00'), rec['fecha_programada'])
+caso('la actividad que crea coordinación es del vendedor de la tarjeta', rec['usuario_correo'] == V1, rec)
+s, _ = api('POST', f'/intereses/{tarjeta}/recordatorios', {'fecha_programada': '2026-12-21T10:00', 'descripcion': 'Ajena'}, v2)
+caso('otro vendedor no agenda sobre una tarjeta ajena (403)', s == 403, s)
+n = rec['nro_recordatorio']
+codigos = [api('PATCH', f'/recordatorios/{n}/completar', {'resultado': 'No autorizado'}, v2)[0], api('PATCH', f'/recordatorios/{n}/cancelar', {}, v2)[0]]
+caso('otro vendedor no completa ni cancela la actividad (403)', codigos == [403, 403], codigos)
+s, _ = api('PATCH', f'/recordatorios/{n}/completar', {'resultado': 'Realizada'}, v1)
+caso('el dueño la completa', s == 200, s)
+codigos = [api('PATCH', f'/recordatorios/{n}/completar', {'resultado': 'Otra vez'}, v1)[0], api('PATCH', f'/recordatorios/{n}/cancelar', {}, v1)[0]]
+caso('una actividad realizada no se completa ni cancela de nuevo (422)', codigos == [422, 422], codigos)
+n2 = api('POST', f'/intereses/{tarjeta}/recordatorios', {'fecha_programada': '2026-12-22T10:00', 'descripcion': 'Para cancelar'}, v1)[1]['recordatorio']['nro_recordatorio']
+api('PATCH', f'/recordatorios/{n2}/cancelar', {}, v1)
+s, _ = api('PATCH', f'/recordatorios/{n2}/completar', {'resultado': 'Reactivar'}, v1)
+caso('una actividad cancelada no se reactiva (422)', s == 422, s)
+n3 = api('POST', f'/intereses/{tarjeta}/recordatorios', {'fecha_programada': '2026-12-23T10:00', 'descripcion': 'Doble clic'}, v1)[1]['recordatorio']['nro_recordatorio']
+with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+    codigos = sorted(f.result()[0] for f in [pool.submit(api, 'PATCH', f'/recordatorios/{n3}/completar', {'resultado': 'Doble'}, v1) for _ in range(2)])
+caso('completar dos veces a la vez produce un solo cumplimiento', codigos == [200, 422], codigos)
 
-def login(email,password): return call('POST','/login',body={'correo':email,'password':password})
+# --- Seguimiento cerrado: un registro repetido no lo reabre
+motivo = next(m['nombre'] for m in api('GET', '/motivos', token=admin)[1]['motivos'] if m['nombre'] != 'Sin clasificar (web)')
+_, r = api('GET', f'/intereses/{tarjeta}', token=v1)
+p = r['interes']['prospecto']
+s, r = api('PATCH', f'/intereses/{tarjeta}/estado', {'estado': 'Perdido', 'motivo_perdida': motivo}, v1)
+caso('la tarjeta pasa a Perdido con motivo', s == 200, (s, r))
+api('POST', '/registro-interes', {'documento': p['documento'], 'nombre': p['nombre'], 'apellido': p['apellido'], 'correo': p['correo'],
+                                  'telefono': p['telefono'], 'modulo_codigo': r['interes']['modulo_codigo'] if 'interes' in r else modulo})
+caso('un registro repetido no reabre una tarjeta perdida', api('GET', f'/intereses/{tarjeta}', token=admin)[1]['interes']['estado'] == 'Perdido', tarjeta)
 
-admin=login('admin@crm-educativo.local','Admin12345')['token']
-coord=login('coord@test.local','Clave12345')['token']
-a=login('vendedor.demo@crm-educativo.local','Vendedor12345')
-b=login('vendedor.b@test.local','Clave12345')
-ta,tb=a['token'],b['token']
-aid,bid=a['usuario']['id'],b['usuario']['id']
-person={'nombre':'Auditoria','apellido':'Compartida '+stamp,'documento':'AUD-'+stamp,'correo':'audit.'+stamp+'@example.invalid',
-        'telefono':'00009999','profesion':'QA','ubicacion':'Base aislada','modulo_id':'ia-aplicada-m1'}
-public=call('POST','/registro-interes',body=person,status=201)
-check(not any(k in public for k in ['prospecto','interes','usuario','vendedor']),'registro publico no expone entidades internas')
-interests=call('GET','/intereses',admin)['intereses']
-i=next(i for i in interests if i['prospecto']['correo']==person['correo'])
-pid=i['prospecto_id']
-call('PATCH',f'/intereses/{i["id"]}/asignar',coord,{'vendedor_id':aid})
-j=call('POST','/intereses',admin,{'prospecto_id':pid,'modulo_id':'ia-aplicada-m2'},201)['interes']
-call('PATCH',f'/intereses/{j["id"]}/asignar',coord,{'vendedor_id':bid})
-call('POST','/registro-interes',body={**person,'nombre':'NO SOBRESCRIBIR'})
-saved=next(p for p in call('GET','/prospectos',admin)['prospectos'] if p['id']==pid)
-check(saved['nombre']=='Auditoria','registro anonimo no sobrescribe un contacto existente')
-call('POST','/registro-interes',body={**person,'correo':'otro.'+stamp+'@example.invalid'},status=422)
-owned=next(p for p in call('GET','/prospectos',ta)['prospectos'] if p['id']==pid)
-check([x['id'] for x in owned['intereses']]==[i['id']],'cartera no incluye intereses del otro vendedor')
-edited=call('PUT',f'/prospectos/{pid}',ta,{k:saved[k] for k in ['nombre','apellido','documento','correo','telefono','profesion','ubicacion','estado']})['prospecto']
-check([x['id'] for x in edited['intereses']]==[i['id']],'editar prospecto compartido no revela intereses ajenos')
-check([x['id'] for x in call('GET',f'/prospectos/{pid}/intereses',ta)['intereses']]==[i['id']],'detalle de prospecto mantiene el alcance por interes')
-allowed_docs={p['documento'] for p in call('GET','/prospectos',ta)['prospectos']}
-report=call('GET','/reportes/listado?tipo=prospectos',ta)
-check(all(row['ci'] in allowed_docs for row in report['rows']),'reporte de prospectos no revela otras carteras')
-check(next(row for row in report['rows'] if row['ci']==person['documento'])['intereses']==1,'reporte cuenta solo intereses autorizados del prospecto compartido')
-contact={'interes_id':j['id'],'tipo':'Nota comercial','descripcion':'Nota privada de cartera B'}
-call('POST','/interacciones',tb,contact,201)
-call('POST','/interacciones',ta,contact,403)
-history=call('GET',f'/prospectos/{pid}/interacciones',ta)['interacciones']
-check(not any(x['interes_id']==j['id'] for x in history),'historial compartido no filtra cartera ajena')
-reminder={'interes_id':j['id'],'fecha_programada':'2026-12-20T10:00','descripcion':'Agenda de cartera B'}
-r=call('POST','/recordatorios',coord,reminder,201)['recordatorio']
-check(r['fecha_programada'].startswith('2026-12-20T14:00'),'10:00 Bolivia se serializa como 14:00 UTC')
-check(r['usuario_id']==bid,'actividad creada por coordinacion pertenece al vendedor asignado')
-check(any(x['id']==r['id'] for x in call('GET','/recordatorios',tb)['recordatorios']),'vendedor recibe su actividad creada por coordinacion')
-call('POST','/recordatorios',ta,reminder,403)
-call('PATCH',f'/recordatorios/{r["id"]}/completar',ta,{'resultado':'No autorizado'},403)
-call('PATCH',f'/recordatorios/{r["id"]}/cancelar',ta,{},403)
-call('PATCH',f'/recordatorios/{r["id"]}/completar',tb,{'resultado':'Realizada QA'})
-call('PATCH',f'/recordatorios/{r["id"]}/completar',tb,{'resultado':'No duplicar'},422)
-call('PATCH',f'/recordatorios/{r["id"]}/cancelar',tb,{},422)
-r2=call('POST','/recordatorios',tb,reminder,201)['recordatorio']
-call('PATCH',f'/recordatorios/{r2["id"]}/cancelar',tb,{})
-call('PATCH',f'/recordatorios/{r2["id"]}/completar',tb,{'resultado':'No reactivar'},422)
-r3=call('POST','/recordatorios',tb,reminder,201)['recordatorio']
-with concurrent.futures.ThreadPoolExecutor(2) as pool:
-    codes=list(pool.map(lambda _:request('PATCH',f'/recordatorios/{r3["id"]}/completar',tb,{'resultado':'Carrera QA'})[0],range(2)))
-check(sorted(codes)==[200,422],'completar concurrentemente produce un solo cumplimiento')
-call('PATCH',f'/intereses/{i["id"]}/estado',ta,{'estado':'Convertido'},422)
-call('PATCH',f'/prospectos/{pid}/estado',ta,{'estado':'Convertido'},422)
-call('PATCH',f'/intereses/{i["id"]}/estado',ta,{'estado':'Perdido'},422)
-call('PATCH',f'/intereses/{i["id"]}/estado',ta,{'estado':'Perdido','observacion':'QA: horario incompatible'})
-call('POST','/registro-interes',body=person)
-check(call('GET',f'/intereses/{i["id"]}',admin)['interes']['estado']=='Perdido','registro repetido no reabre un seguimiento cerrado')
-call('PATCH',f'/intereses/{i["id"]}/estado',ta,{'estado':'Interesado'})
+# --- CSV exportado desde Excel: BOM, campos entre comillas con tildes y fin de línea CRLF
+c = unico()
+CRLF = chr(13) + chr(10)
+csv = chr(0xFEFF) + 'documento,nombre,apellido,telefono,correo,origen' + CRLF + f'CSV{c},"María José","Pérez Rojas",71234567,csv.{c}@example.invalid,Feria' + CRLF
+s, r = api('POST', '/prospectos/importar', {'csv': csv}, coord)
+caso('CSV con BOM, comillas, tildes y CRLF', s == 200 and r.get('creados') == 1, (s, r))
+_, r = api('GET', f'/prospectos?buscar=CSV{c}', token=admin)
+filas = r['prospectos']['data'] if isinstance(r.get('prospectos'), dict) else r.get('prospectos', [])
+caso('el CSV conserva las tildes y quita las comillas', any(x['nombre'] == 'María José' and x['apellido'] == 'Pérez Rojas' for x in filas), filas[:1])
 
-header='nombres,apellidos,ci,telefono,profesion,ubicacion,correo'
-csv='\ufeff'+header+'\r\n"Ana, QA",Auditoria,CSV-'+stamp+',00000000,"Docencia\nSuperior",Santa Cruz,csv.'+stamp+'@example.invalid'
-check(call('POST','/prospectos/importar',coord,{'csv':csv})['creados']==1,'CSV con BOM, comas y salto de linea entre comillas')
-for bad in [header, 'nombres,nombres\na,b', header+'\na,b,c,0,p,l,no-es-correo',
-            header+'\n'+('A'*121)+',b,c,0,p,l,qa@example.invalid',csv]:
-    call('POST','/prospectos/importar',coord,{'csv':bad},422)
-call('POST','/prospectos/importar',ta,{'csv':csv},403)
+# --- Sesiones: cambiar, restablecer y desactivar revocan los tokens
+correo = f'sesion.{unico()}@example.invalid'
+usuario = {'nombre': 'Temporal', 'apellido': 'Sesion', 'correo': correo, 'password': 'QaClave12345', 'rol': 'vendedor', 'estado': 'activo',
+           'fecha_inicio': '2026-01-01', 'fecha_fin': '2030-12-31'}
+api('POST', '/usuarios', usuario, admin)
+t1, t2 = login(correo, 'QaClave12345'), login(correo, 'QaClave12345')
+s, _ = api('PUT', '/perfil/password', {'password_actual': 'mala', 'password': 'OtraClave123', 'password_confirmation': 'OtraClave123'}, t1)
+caso('cambiar la clave con la actual errada -> 422', s == 422, s)
+s, _ = api('PUT', '/perfil/password', {'password_actual': 'QaClave12345', 'password': 'sololetras', 'password_confirmation': 'sololetras'}, t1)
+caso('clave nueva sin números -> 422', s == 422, s)
+s, _ = api('PUT', '/perfil/password', {'password_actual': 'QaClave12345', 'password': 'OtraClave123', 'password_confirmation': 'OtraClave123'}, t1)
+caso('cambiar la clave cierra las otras sesiones y conserva la actual', (s, api('GET', '/me', token=t1)[0], api('GET', '/me', token=t2)[0]) == (200, 200, 401))
+s, _ = api('PUT', f'/usuarios/{correo}', {**usuario, 'password': 'ResetAdmin123'}, admin)
+caso('si administración restablece la clave, la sesión se cierra', s == 200 and api('GET', '/me', token=t1)[0] == 401, s)
+t3 = login(correo, 'ResetAdmin123')
+api('PATCH', f'/usuarios/{correo}/estado', {'estado': 'inactivo'}, admin)
+caso('desactivar la cuenta cierra la sesión y bloquea el login (403)',
+     (api('GET', '/me', token=t3)[0], api('POST', '/login', {'correo': correo, 'password': 'ResetAdmin123'})[0]) == (401, 403))
 
-admin_id=call('GET','/me',admin)['usuario']['id']
-call('PATCH',f'/usuarios/{admin_id}/estado',admin,{'estado':'inactivo'},422)
-call('PUT',f'/usuarios/{admin_id}',admin,{'nombre':'Administrador','apellido':'General','correo':'admin@crm-educativo.local','rol':'vendedor','estado':'activo'},422)
-user={'nombre':'Temporal','apellido':'QA','correo':'cuenta.'+stamp+'@example.invalid','rol':'vendedor','estado':'activo','password':'QaClave12345'}
-u=call('POST','/usuarios',admin,user,201)['usuario']
-first=login(user['correo'].upper(),user['password'])['token']
-second=login(user['correo'],user['password'])['token']
-call('PUT','/perfil/password',first,{'password_actual':'mal','password':'OtraClave123','password_confirmation':'OtraClave123'},422)
-call('PUT','/perfil/password',first,{'password_actual':user['password'],'password':'sololetras','password_confirmation':'sololetras'},422)
-call('PUT','/perfil/password',first,{'password_actual':user['password'],'password':'OtraClave123','password_confirmation':'OtraClave123'})
-call('GET','/me',first)
-call('GET','/me',second,status=401)
-call('PUT',f'/usuarios/{u["id"]}',admin,{**user,'password':'ResetAdmin123'})
-call('GET','/me',first,status=401)
-third=login(user['correo'],'ResetAdmin123')['token']
-call('PUT',f'/usuarios/{u["id"]}',admin,{**user,'password':'','estado':'inactivo'})
-call('GET','/me',third,status=401)
-call('POST','/login',body={'correo':user['correo'],'password':'ResetAdmin123'},status=403)
+# --- Notificaciones
+s, _ = api('POST', '/notificaciones', {'destinatario': p['correo'], 'tipo': 'Seguimiento', 'mensaje': 'Mensaje de prueba'}, v2)
+caso('un vendedor no escribe a un prospecto ajeno (403)', s == 403, s)
+s, _ = api('POST', '/notificaciones', {'destinatario': p['correo'], 'tipo': 'Seguimiento', 'mensaje': 'Mensaje de prueba'}, v1)
+caso('el vendedor escribe a un prospecto de su cartera (201)', s == 201, s)
+s, r = api('POST', '/notificaciones', {'tipo': 'Sin destino', 'mensaje': 'Prueba'}, coord)
+caso('notificación sin destinatario -> 422 en español', s == 422 and 'destinatario' in r.get('errores', {}), (s, r))
 
-note={'usuario_id':bid,'tipo':'Auditoria','mensaje':'Notificacion ficticia, correo log'}
-call('POST','/notificaciones/enviar',ta,note,403)
-n=call('POST','/notificaciones/enviar',tb,note,201)['notificacion']
-call('PATCH',f'/notificaciones/{n["id"]}/leida',ta,{},403)
-call('PATCH',f'/notificaciones/{n["id"]}/leida',tb,{})
-call('POST','/notificaciones/enviar',ta,{'destinatario':person['correo'],'tipo':'Seguimiento QA','mensaje':'Ficticio, modo log'},201)
-call('POST','/notificaciones/enviar',coord,{'tipo':'Sin destino','mensaje':'QA'},422)
+# --- Dos órdenes a la vez sobre la misma tarjeta: solo una
+doc2, tarjeta2, modulo2 = nuevo_interes(admin, V1)
+cuerpo = {'modulos': [modulo2], 'cuotas': 1, 'primer_vencimiento': '2030-01-10'}
+with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+    codigos = sorted(f.result()[0] for f in [pool.submit(api, 'POST', f'/intereses/{tarjeta2}/ordenes-pago', cuerpo, v1) for _ in range(2)])
+caso('dos órdenes simultáneas no duplican la venta', codigos == [201, 422], codigos)
 
-call('PUT','/configuracion/comision',coord,{'porcentaje':2.75})
-orders=[]
-for _ in range(2):
-    o=call('POST',f'/intereses/{i["id"]}/ordenes-pago',ta,{'modulos':['ia-aplicada-m1'],'descuentos':[]},201)['orden']
-    payment=o['pago']['id']; orders.append(payment)
-    call('POST','/comprobantes',ta,{'pago_id':payment,'archivo':'data:text/html;base64,'+base64.b64encode(b'<script>alert(1)</script>').decode()},422)
-    call('POST','/comprobantes',ta,{'pago_id':payment,'archivo':'data:image/png;base64,iVBORw0KGgo='},422)
-    call('POST','/comprobantes',ta,{'pago_id':payment,'archivo':PNG,'nombre_archivo':'QA-valido.png'},201)
-    call('POST','/comprobantes',ta,{'pago_id':payment,'archivo':PNG},422)
-with concurrent.futures.ThreadPoolExecutor(2) as pool:
-    codes=list(pool.map(lambda p:request('PATCH',f'/pagos/{p}/aprobar',coord,{})[0],orders))
-check(sorted(codes)==[200,422],'dos ordenes simultaneas no duplican la misma matricula')
-commission=next(c for c in call('GET','/comisiones',admin)['comisiones'] if c['venta']['orden_pago']['prospecto']['id']==pid)
-check(float(commission['porcentaje'])==2.75 and float(commission['monto'])==16.5,'comision fraccionaria conserva porcentaje y monto')
-call('POST','/registro-interes',body=person)
-check(call('GET',f'/intereses/{i["id"]}',admin)['interes']['estado']=='Convertido','registro repetido no reinicia una matricula confirmada')
-call('PATCH',f'/comisiones/vendedores/{aid}/pagar',coord,{})
-check(all(c['estado']=='Pagada' for c in call('GET','/comisiones',ta)['comisiones']),'marcar comisiones recibidas actualiza la cartera correcta')
-for role,token in [('admin',admin),('coordinador',coord),('vendedor',ta)]:
-    for report in ['prospectos','intereses','pagos','alumnos','comisiones','vendedores']:
-        call('GET','/reportes/listado?tipo='+report,token)
-    call('GET','/dashboard/metricas',token)
-ready=call('GET','/exportaciones/preparar',coord)['total']
-export=call('POST','/exportaciones/academico',coord,{})
-check(len(export['filas'])==ready,'exportacion conserva la cantidad de inscripciones pendientes')
-check(call('POST','/exportaciones/academico',coord,{})['filas']==[],'exportacion repetida no duplica alumnos')
-for _ in range(10): call('POST','/login',body={'correo':'limite.'+stamp+'@example.invalid','password':'incorrecta'},status=422)
-call('POST','/login',body={'correo':'limite.'+stamp+'@example.invalid','password':'incorrecta'},status=429)
-print('TOTAL AUDITORIA:',checks,'comprobaciones aprobadas.')
+# --- Límite de intentos de login (al final: deja la ventana de esta IP ocupada un minuto)
+falso = f'limite.{unico()}@example.invalid'
+codigos = [api('POST', '/login', {'correo': falso, 'password': 'incorrecta'})[0] for _ in range(11)]
+caso('tras 10 intentos fallidos el login responde 429', codigos[:10] == [422] * 10 and codigos[10] == 429, codigos)
+
+fin('AUDITORÍA')

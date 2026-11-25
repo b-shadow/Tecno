@@ -1,182 +1,120 @@
-"""Prueba de punta a punta de las correcciones de la clienta (catalogo por programa, asignacion,
-reasignacion con historial, agenda, comision configurable y reportes por vendedor).
-
-ATENCION: crea usuarios, interesados, pagos y comisiones. Correr SOLO contra una base de prueba
-recien migrada con el seeder (php artisan migrate:fresh --seed), nunca contra la base de la demo.
-
-Uso: python scripts/verificar_correcciones.py URL_API   (ej. http://localhost:18001/api, entorno de prueba)
+"""Flujo de punta a punta de las correcciones de la clienta que no recorren verificar_p2.py ni verificar_fase_a.py:
+registro por programa (una tarjeta por módulo), reparto que mantiene juntas las tarjetas de un prospecto, reasignación
+con historial y actividades, comisión configurable, reporte por vendedor, matrícula y exportación sin duplicados.
+Solo contra una base QA local: crea prospectos, pagos y comisiones ficticios (restaura el porcentaje de comisión).
 """
-import json
-import sys
-import urllib.error
-import urllib.request
-from datetime import datetime, timedelta
+from qa_comun import PNG, V1, V2, api, caso, fin, login, unico
 
-if len(sys.argv) < 2:
-    sys.exit(__doc__)
-BASE = sys.argv[1].rstrip('/')
+admin, coord, v1, v2 = login('admin'), login('coord'), login('v1'), login('v2')
 
+# Un programa a cargo del coordinador, para que también él vea todo el recorrido.
+_, r = api('GET', '/intereses', token=coord)
+suyos = {i['programa_nombre'] for i in r['intereses']}
+_, cat = api('GET', '/catalogo')
+programa = next(p for p in cat['programas'] if p['nombre'] in suyos)
 
-def call(method, path, token=None, body=None):
-    req = urllib.request.Request(BASE + path, method=method, data=json.dumps(body).encode() if body is not None else None)
-    req.add_header('Accept', 'application/json')
-    req.add_header('Content-Type', 'application/json')
-    if token:
-        req.add_header('Authorization', f'Bearer {token}')
-    try:
-        with urllib.request.urlopen(req, timeout=30) as r:
-            return r.status, json.loads(r.read() or b'{}')
-    except urllib.error.HTTPError as e:
-        raw = e.read()
-        try:
-            return e.code, json.loads(raw)
-        except Exception:
-            return e.code, {'raw': raw[:200]}
+# --- Registro público: por programa completo, por módulo suelto y sin ninguno
+u = unico()
+persona = {'documento': f'CO{u}', 'nombre': 'Ana', 'apellido': 'Correcciones', 'correo': f'ana.{u}@example.invalid', 'telefono': '71234567'}
+s, r = api('POST', '/registro-interes', {**persona, 'programa_codigo': programa['codigo']})
+caso('registro por programa completo -> 201', s == 201, (s, r))
+_, r = api('GET', f'/intereses?buscar=CO{u}', token=admin)
+tarjetas = r['intereses']
+caso(f'el programa crea una tarjeta por módulo ({len(programa["modulos"])})', len(tarjetas) == len(programa['modulos']), len(tarjetas))
+caso('las tarjetas nuevas llegan sin vendedor', all(t['vendedor_correo'] is None for t in tarjetas), [t['vendedor_correo'] for t in tarjetas])
+u2 = unico()
+s, r = api('POST', '/registro-interes', {**persona, 'documento': f'CO{u2}', 'correo': f'beto.{u2}@example.invalid', 'nombre': 'Beto',
+                                         'modulo_codigo': programa['modulos'][0]['codigo']})
+caso('registro por módulo suelto -> 201', s == 201, (s, r))
+s, r = api('POST', '/registro-interes', {**persona, 'documento': f'CO{unico()}', 'correo': f'caro.{unico()}@example.invalid'})
+caso('registro sin módulo ni programa -> 422 en español', s == 422 and 'modulo_codigo' in r.get('errores', {}), (s, r))
 
+_, r = api('GET', f'/intereses?buscar=CO{u}', token=v1)
+caso('el vendedor no ve tarjetas sin asignar', r.get('intereses') == [], r)
 
-def ok(cond, label):
-    print(('OK   ' if cond else 'FAIL ') + label)
-    if not cond:
-        ok.failed += 1
+# --- Reparto (Round-Robin): solo coordinación; las tarjetas de un mismo prospecto van al mismo vendedor
+s, _ = api('POST', '/intereses/distribuir', {}, v1)
+caso('el vendedor no reparte (403)', s == 403, s)
+s, r = api('GET', '/vendedores', token=coord)
+caso('coordinación lista los vendedores', s == 200 and {V1, V2} <= {x['correo'] for x in r['vendedores']}, (s, r))
+s, _ = api('GET', '/usuarios', token=coord)
+caso('coordinación no lista todos los usuarios (403)', s == 403, s)
+s, r = api('POST', '/intereses/distribuir', {}, coord)
+caso('coordinación reparte las tarjetas sin vendedor', s == 200 and r.get('asignados', 0) >= len(tarjetas), (s, r))
+_, r = api('GET', f'/intereses?buscar=CO{u}', token=admin)
+duenos = {t['vendedor_correo'] for t in r['intereses']}
+caso('las tarjetas de un mismo prospecto quedan con un solo vendedor', len(duenos) == 1 and None not in duenos, duenos)
 
+# --- Reasignación con historial y actividades
+tarjeta = r['intereses'][0]['nro_tarjeta']
+dueno = duenos.pop()
+otro = V2 if dueno == V1 else V1
+t_dueno, t_otro = (v1, v2) if dueno == V1 else (v2, v1)
+s, r = api('POST', f'/intereses/{tarjeta}/interacciones', {'tipo': 'WhatsApp', 'descripcion': 'Primer contacto', 'fecha': '2020-01-01 10:00'}, t_dueno)
+caso('la fecha del contacto la pone el servidor (ignora la enviada)', s == 201 and not r['interaccion']['fecha'].startswith('2020'), (s, r))
+_, r = api('POST', f'/intereses/{tarjeta}/recordatorios', {'fecha_programada': '2030-01-10T10:00', 'descripcion': 'Llamar para cerrar'}, t_dueno)
+hecha = r['recordatorio']['nro_recordatorio']
+s, r = api('PATCH', f'/recordatorios/{hecha}/completar', {}, t_dueno)
+caso('completar una actividad sin nota -> 422', s == 422, (s, r))
+s, r = api('PATCH', f'/recordatorios/{hecha}/completar', {'resultado': 'Pidió la malla curricular'}, t_dueno)
+caso('completar con nota -> 200', s == 200, (s, r))
+_, r = api('POST', f'/intereses/{tarjeta}/recordatorios', {'fecha_programada': '2030-01-11T09:30', 'descripcion': 'Enviar la cotización'}, coord)
+pendiente = r['recordatorio']['nro_recordatorio']
+caso('una actividad creada por coordinación queda a nombre del vendedor de la tarjeta', r['recordatorio']['usuario_correo'] == dueno, r)
 
-ok.failed = 0
+s, _ = api('PATCH', f'/intereses/{tarjeta}/asignar', {'vendedor_correo': otro}, t_dueno)
+caso('el vendedor no reasigna (403)', s == 403, s)
+s, r = api('PATCH', f'/intereses/{tarjeta}/asignar', {'vendedor_correo': otro}, coord)
+caso('coordinación reasigna', s == 200 and r['interes']['vendedor_correo'] == otro, (s, r))
+s, r = api('GET', f'/intereses/{tarjeta}', token=t_otro)
+historial = r.get('interes', {}).get('interacciones', [])
+caso('el vendedor nuevo abre la tarjeta', s == 200, s)
+caso('ve el contacto del vendedor anterior', any(i['tipo'] == 'WhatsApp' and i['usuario_correo'] == dueno for i in historial), historial)
+caso('la actividad realizada quedó en el historial con su nota', any('Pidió la malla curricular' in (i['descripcion'] + (i['resultado'] or '')) for i in historial), historial)
+caso('queda constancia de la reasignación', any('Reasignado de' in i['descripcion'] for i in historial), historial)
+_, r = api('GET', '/recordatorios', token=t_otro)
+caso('la actividad pendiente pasa al calendario del vendedor nuevo', any(x['nro_recordatorio'] == pendiente for x in r['recordatorios']), r)
+s, _ = api('GET', f'/intereses/{tarjeta}', token=t_dueno)
+caso('el vendedor anterior ya no ve la tarjeta (403)', s == 403, s)
 
+# --- Comisión configurable (solo administración), venta y reporte por vendedor
+_, conf = api('GET', '/configuracion/comision', token=admin)
+original = conf['porcentaje']
+s, _ = api('PUT', '/configuracion/comision', {'porcentaje': 9}, t_otro)
+caso('el vendedor no cambia la comisión (403)', s == 403, s)
+s, _ = api('PUT', '/configuracion/comision', {'porcentaje': 9}, coord)
+caso('coordinación no cambia la comisión (403)', s == 403, s)
+s, r = api('PUT', '/configuracion/comision', {'porcentaje': 2.75}, admin)
+caso('administración fija 2,75 %', s == 200, (s, r))
 
-def login(correo, password):
-    st, d = call('POST', '/login', body={'correo': correo, 'password': password})
-    assert st == 200, (st, d)
-    return d['token']
+_, r = api('GET', f'/intereses/{tarjeta}', token=t_otro)
+p = r['interes']['prospecto']
+api('PUT', f"/prospectos/{p['documento']}", {k: p[k] for k in ('nombre', 'apellido', 'correo', 'telefono', 'origen')}
+    | {'profesion': 'Contadora', 'ubicacion': 'Santa Cruz'}, t_otro)
+_, r = api('POST', f"/prospectos/{p['documento']}/metodos-pago", {'tipo': 'QR', 'titular': 'Ana Correcciones'}, t_otro)
+metodo = r['metodo']['nro_metodo']
+modulo = next(t['modulo_codigo'] for t in tarjetas if t['nro_tarjeta'] == tarjeta)
+s, r = api('POST', f'/intereses/{tarjeta}/ordenes-pago', {'modulos': [modulo], 'cuotas': 1, 'primer_vencimiento': '2030-01-10'}, t_otro)
+caso('el vendedor nuevo genera la orden', s == 201, (s, r))
+orden, total = r['orden']['nro_orden'], float(r['orden']['total'])
+api('POST', f'/ordenes-pago/{orden}/cuotas/1/comprobante', {'nro_metodo': metodo, 'archivo': PNG}, t_otro)
+s, r = api('PATCH', f'/ordenes-pago/{orden}/cuotas/1/aprobar', {}, admin)
+caso('se aprueba el pago', s == 200, (s, r))
+_, r = api('GET', '/comisiones', token=admin)
+com = next((c for c in r['comisiones'] if c['vendedor_correo'] == otro and float(c['porcentaje']) == 2.75
+            and abs(float(c['monto']) - round(total * 0.0275, 2)) < 0.01), None)
+caso(f'la comisión del vendedor que cerró usa 2,75 % (Bs {round(total * 0.0275, 2)})', com is not None, r['comisiones'][:3])
+api('PUT', '/configuracion/comision', {'porcentaje': original}, admin)
 
+s, r = api('GET', '/reportes/listado?tipo=vendedores', token=coord)
+caso('reporte por vendedor con columnas de cartera', s == 200 and {'Tarjetas', 'Abiertas', 'Concretadas', 'Perdidas'} <= {c['label'] for c in r['columnas']}, r.get('columnas'))
+s, r = api('GET', '/inscripciones', token=coord)
+caso('la matrícula aparece en Alumnos', s == 200 and any(i['solicitud_compra']['nro_orden'] == orden for i in r['inscripciones']), s)
 
-admin = login('admin@crm-educativo.local', 'Admin12345')
-vend_a = login('vendedor.demo@crm-educativo.local', 'Vendedor12345')
-for correo, rol in [('vendedor.b@test.local', 'vendedor'), ('coord@test.local', 'coordinador')]:
-    call('POST', '/usuarios', admin, {'nombre': rol.title(), 'apellido': 'B' if rol == 'vendedor' else 'Coord', 'correo': correo,
-                                      'password': 'Clave12345', 'rol': rol, 'estado': 'activo'})
-vend_b = login('vendedor.b@test.local', 'Clave12345')
-coord = login('coord@test.local', 'Clave12345')
+# --- Exportación al sistema académico sin duplicados
+s, r = api('POST', '/exportaciones', {}, admin)
+caso('la exportación incluye al alumno nuevo', s == 200 and any(f['correo'] == p['correo'] for f in r['filas']), (s, r.get('mensaje')))
+s, r = api('POST', '/exportaciones', {}, admin)
+caso('repetir la exportación no duplica alumnos', s == 200 and r['filas'] == [], (s, r.get('mensaje')))
 
-# 1. Catalogo por programa: interes en programa completo crea un interes por modulo
-persona = {'apellido': 'Prueba', 'telefono': '70000001', 'profesion': 'Ing', 'ubicacion': 'SCZ'}
-st, d = call('POST', '/registro-interes', body={**persona, 'nombre': 'Ana', 'documento': '111', 'correo': 'ana@x.bo', 'programa_id': 'datos-bi'})
-ok(st == 201, f'registro por programa completo -> {st}')
-st, d = call('POST', '/registro-interes', body={**persona, 'nombre': 'Beto', 'documento': '222', 'correo': 'beto@x.bo', 'modulo_id': 'ia-aplicada-m1'})
-ok(st == 201, f'registro por modulo suelto -> {st}')
-call('POST', '/registro-interes', body={**persona, 'nombre': 'Caro', 'documento': '333', 'correo': 'caro@x.bo', 'modulo_id': 'ciberseguridad-m2'})
-st, d = call('POST', '/registro-interes', body={**persona, 'nombre': 'X', 'documento': '444', 'correo': 'x@x.bo'})
-ok(st == 422, f'registro sin modulo ni programa -> 422 ({st})')
-st, d = call('GET', '/intereses', admin)
-ana = [i for i in d['intereses'] if i['prospecto']['nombre'] == 'Ana']
-ok(len(ana) == 5, f'Ana tiene 5 intereses (uno por modulo de datos-bi): {len(ana)}')
-
-# 2. Sin autoasignacion
-st, d = call('GET', '/intereses', vend_a)
-ok(st == 200 and len(d['intereses']) == 0, f'vendedor no ve intereses sin asignar ({len(d.get("intereses", []))})')
-st, _ = call('PATCH', f'/intereses/{ana[0]["id"]}/tomar', vend_a)
-ok(st in (404, 405), f'ruta tomar eliminada -> {st}')
-st, _ = call('POST', '/intereses/distribuir', vend_a)
-ok(st == 403, f'vendedor no puede distribuir -> {st}')
-st, d = call('GET', '/usuarios?rol=vendedor&estado=activo', coord)
-ok(st == 200 and len(d['usuarios']) == 2, f'coordinador lista vendedores -> {st}')
-st, d = call('GET', '/usuarios', coord)
-ok(st == 403, f'coordinador no lista todos los usuarios -> {st}')
-
-st, d = call('POST', '/intereses/distribuir', coord)
-ok(st == 200 and d['asignados'] == 7, f'distribuir asigna 7 -> {st} {d}')
-st, d = call('GET', '/intereses', admin)
-todos = d['intereses']
-ok(all(i['vendedor_id'] for i in todos), 'todos quedaron asignados')
-ok(len({i['vendedor_id'] for i in todos if i['prospecto']['nombre'] == 'Ana'}) == 1, 'los 5 intereses de Ana con el mismo vendedor')
-otros = {i['prospecto']['nombre']: i['vendedor_id'] for i in todos if i['prospecto']['nombre'] != 'Ana'}
-ana_v = next(i['vendedor_id'] for i in todos if i['prospecto']['nombre'] == 'Ana')
-ok(otros['Beto'] != ana_v and otros['Caro'] != ana_v, f'reparto equitativo: Beto y Caro al otro vendedor ({otros}, Ana={ana_v})')
-
-# 3. Historial y reasignacion
-beto = next(i for i in todos if i['prospecto']['nombre'] == 'Beto')
-st, me_a = call('GET', '/me', vend_a)
-id_a = me_a['usuario']['id']
-token_de = lambda vid: vend_a if vid == id_a else vend_b
-dueno = token_de(beto['vendedor_id'])
-otro_id = next(i['vendedor_id'] for i in todos if i['vendedor_id'] != beto['vendedor_id'])
-st, d = call('POST', '/interacciones', dueno, {'interes_id': beto['id'], 'tipo': 'WhatsApp', 'descripcion': 'Primer contacto',
-                                              'resultado': 'Espera autorizacion del jefe', 'fecha': '2020-01-01T10:00:00'})
-ok(st == 201 and d['interaccion']['fecha'][:4] != '2020', f'fecha del contacto la pone el servidor ({d["interaccion"]["fecha"][:16]})')
-futuro = (datetime.now() + timedelta(days=7)).strftime('%Y-%m-%dT10:00')
-st, d = call('POST', '/recordatorios', dueno, {'interes_id': beto['id'], 'fecha_programada': futuro, 'descripcion': 'Llamar por pago de empresa'})
-rec1 = d['recordatorio']['id']
-st, d = call('POST', '/recordatorios', dueno, {'interes_id': beto['id'], 'fecha_programada': futuro, 'descripcion': 'Segundo seguimiento'})
-rec2 = d['recordatorio']['id']
-st, _ = call('PATCH', f'/recordatorios/{rec1}/completar', dueno, {})
-ok(st == 422, f'completar sin nota -> 422 ({st})')
-st, _ = call('PATCH', f'/recordatorios/{rec1}/completar', dueno, {'resultado': 'Dice que la empresa aprobo'})
-ok(st == 200, f'completar con nota -> {st}')
-
-st, _ = call('PATCH', f'/intereses/{beto["id"]}/asignar', dueno, {'vendedor_id': otro_id})
-ok(st == 403, f'vendedor no puede reasignar -> {st}')
-st, d = call('PATCH', f'/intereses/{beto["id"]}/asignar', coord, {'vendedor_id': otro_id})
-ok(st == 200 and d['interes']['vendedor_id'] == otro_id, f'coordinador reasigna -> {st}')
-nuevo = token_de(otro_id)
-st, d = call('GET', f'/intereses/{beto["id"]}', nuevo)
-ok(st == 200, f'nuevo vendedor abre el interes -> {st}')
-inter = d['interes']['interacciones']
-tipos = [(i['tipo'], i['usuario']['id']) for i in inter]
-ok(any(t == 'WhatsApp' and u == beto['vendedor_id'] for t, u in tipos), 'nuevo vendedor ve el contacto del vendedor anterior con su nombre')
-ok(any('Actividad agendada' in i['descripcion'] for i in inter), 'la actividad realizada quedo en el historial con su nota')
-ok(any('Reasignado de' in i['descripcion'] for i in inter), 'queda constancia de la reasignacion')
-st, d = call('GET', '/recordatorios', nuevo)
-ok(any(r['id'] == rec2 for r in d['recordatorios']), 'la actividad pendiente pasa al calendario del nuevo vendedor')
-st, d = call('GET', f'/intereses/{beto["id"]}', dueno)
-ok(st == 403, f'vendedor anterior ya no lo ve -> {st}')
-
-# 4. Comision configurable
-st, _ = call('PUT', '/configuracion/comision', nuevo, {'porcentaje': 9})
-ok(st == 403, f'vendedor no cambia la comision -> {st}')
-st, d = call('PUT', '/configuracion/comision', coord, {'porcentaje': 5})
-ok(st == 200 and d['porcentaje'] == 5, f'coordinador fija 5% -> {d}')
-st, d = call('POST', f'/intereses/{beto["id"]}/ordenes-pago', nuevo, {'modulos': ['ia-aplicada-m1'], 'descuentos': []})
-orden = d.get('orden') or d.get('orden_pago') or {}
-ok(st == 201 and orden.get('id'), f'orden creada -> {st}')
-st, d = call('POST', '/pagos/generar', nuevo, {'orden_pago_id': orden['id']})
-pago = d['pago']
-call('POST', '/comprobantes', nuevo, {'pago_id': pago['id'], 'archivo': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a01cAAAAASUVORK5CYII=', 'nombre_archivo': 'c.png', 'mime': 'image/png'})
-st, d = call('PATCH', f'/pagos/{pago["id"]}/aprobar', coord, {})
-ok(st == 200, f'pago aprobado -> {st}')
-st, d = call('GET', '/comisiones', admin)
-com = d['comisiones'][0]
-ok(float(com['porcentaje']) == 5 and float(com['monto']) == round(600 * 0.05, 2), f'comision al 5%: {com["porcentaje"]}% = {com["monto"]} Bs')
-
-# 5. Reporte por vendedor
-st, d = call('GET', '/reportes/listado?tipo=vendedores', coord)
-cols = [c['label'] for c in d['columns']]
-ok(all(c in cols for c in ['Asignados', 'Contactados', 'Concretados']), f'columnas por vendedor: {cols}')
-fila = next(r for r in d['rows'] if r['vendedor_id'] == otro_id)
-ok(fila['concretados'] == 1 and fila['contactados'] >= 1, f'vendedor actual de Beto: {fila}')
-st, d = call('GET', f'/reportes/listado?tipo=intereses&vendedor_id={otro_id}&estado=Convertido', coord)
-ok(d['total'] == 1 and d['rows'][0]['contactos'] >= 3, f'listado de concretados del vendedor con contactos: {d["rows"]}')
-
-# 6. Contratos usados por Alumnos, Validacion de pagos y Agenda tras normalizar ventas.
-st, d = call('GET', '/inscripciones', coord)
-inscrita = d['inscripciones'][0]
-venta = inscrita['solicitud_compra']
-ok(st == 200 and venta['orden_pago']['prospecto']['id'] == beto['prospecto']['id'],
-   'alumnos obtiene el prospecto por venta -> orden -> interes')
-ok(venta['orden_pago']['pago']['estado'] == 'Pago aprobado', 'alumnos obtiene el pago de la orden')
-st, d = call('GET', '/pagos?estado=Pago%20aprobado', coord)
-validado = next(p for p in d['pagos'] if p['id'] == pago['id'])
-ok(st == 200 and validado['orden_pago']['items'][0]['id'] == venta['id'],
-   'validacion usa la misma venta como detalle de orden')
-ok(float(validado['orden_pago']['items'][0]['precio_acordado']) == 600,
-   'agenda recibe precio_acordado en el detalle')
-st, d = call('GET', '/exportaciones/preparar', coord)
-ok(st == 200 and d['total'] == 1, 'preparacion academica encuentra la inscripcion normalizada')
-st, d = call('POST', '/exportaciones/academico', coord, {})
-ok(st == 200 and d['filas'][0]['correo'] == beto['prospecto']['correo'],
-   'exportacion CSV conserva alumno, modulo y pago')
-st, d = call('GET', '/exportaciones/preparar', coord)
-ok(st == 200 and d['total'] == 0, 'el alumno exportado deja de aparecer como pendiente')
-st, d = call('POST', '/exportaciones/academico', coord, {})
-ok(st == 200 and len(d['exportaciones']) == 0, 'repetir la exportacion no duplica envios')
-
-print('\nFALLAS:', ok.failed)
-sys.exit(1 if ok.failed else 0)
+fin('CORRECCIONES')

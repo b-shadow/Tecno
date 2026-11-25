@@ -17,7 +17,13 @@ class OrdenPago extends Model
 
     protected function casts(): array
     {
-        return ['subtotal' => 'decimal:2', 'descuento_total' => 'decimal:2', 'total' => 'decimal:2', 'fecha_generacion' => 'datetime'];
+        return [
+            'subtotal' => 'decimal:2',
+            'descuento_total' => 'decimal:2',
+            'total' => 'decimal:2',
+            'fecha_generacion' => 'datetime',
+            'fecha_anulacion' => 'datetime',
+        ];
     }
 
     public function interes(): BelongsTo
@@ -28,6 +34,11 @@ class OrdenPago extends Model
     public function vendedor(): BelongsTo
     {
         return $this->belongsTo(Usuario::class, 'vendedor_correo', 'correo');
+    }
+
+    public function anuladaPor(): BelongsTo
+    {
+        return $this->belongsTo(Usuario::class, 'anulada_por', 'correo');
     }
 
     public function items(): HasMany
@@ -48,5 +59,10 @@ class OrdenPago extends Model
     public function cuotas(): HasMany
     {
         return $this->hasMany(Cuota::class, 'nro_orden', 'nro_orden')->orderBy('nro_cuota');
+    }
+
+    public function transaccionesStripe(): HasMany
+    {
+        return $this->hasMany(TransaccionStripe::class, 'nro_orden', 'nro_orden')->orderByDesc('nro_transaccion');
     }
 }

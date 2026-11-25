@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Seguridad;
 
 use App\Http\Requests\ApiRequest;
+use Datos\DSeguridad;
 use Datos\Modelos\Permiso;
 use Illuminate\Validation\Rule;
 
@@ -12,8 +13,8 @@ class AsignarPermisoRequest extends ApiRequest
     public function rules(): array
     {
         return [
-            'rol' => ['required', 'exists:roles,nombre'],
-            'recurso_codigo' => ['required', Rule::exists('recursos', 'codigo')->where('publico', false)],
+            'rol' => ['required', $this->segun(fn ($v) => app(DSeguridad::class)->existeRol($v))],
+            'recurso_codigo' => ['required', $this->segun(fn ($v) => app(DSeguridad::class)->esRecursoPrivado($v))],
             'acceso' => ['nullable', Rule::in(array_keys(Permiso::NIVELES))],
         ];
     }
