@@ -110,4 +110,16 @@ class DProspecto
             ],
         );
     }
+
+    public function existeDocumento(string $documento): bool
+    {
+        return Prospecto::query()->whereKey($documento)->exists();
+    }
+
+    /** ¿Otro prospecto (distinto de $exceptoDocumento) ya usa este correo? */
+    public function correoEnUso(string $correo, ?string $exceptoDocumento = null): bool
+    {
+        return Prospecto::query()->where('correo', $correo)
+            ->when($exceptoDocumento !== null, fn ($q) => $q->whereKeyNot($exceptoDocumento))->exists();
+    }
 }

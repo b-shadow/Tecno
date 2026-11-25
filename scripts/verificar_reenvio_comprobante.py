@@ -1,56 +1,36 @@
-"""Regresion del rechazo y reenvio de comprobantes. SOLO instancia local de QA,
-previamente poblada por verificar_correcciones.py. Crea datos ficticios.
-Uso: python scripts/verificar_reenvio_comprobante.py http://localhost:18001/api
+"""Rechazo y reenvío de un comprobante manual (lo que verificar_p2.py no recorre): la cuota y el Pago quedan
+"Pago rechazado", el vendedor reenvía, vuelve a "En revision" con los dos comprobantes y al aprobar queda pagada.
+Solo contra una base QA local: crea un prospecto, una orden y dos comprobantes ficticios.
 """
-import base64
-import json
-import sys
-import time
-import urllib.error
-import urllib.parse
-import urllib.request
+from qa_comun import PNG, api, caso, fin, login, nuevo_interes, orden_con_comprobante, orden
 
-BASE = sys.argv[1].rstrip('/')
-assert urllib.parse.urlparse(BASE).hostname in ('localhost', '127.0.0.1'), 'Solo QA local'
-checks = 0
+admin, v1 = login('admin'), login('v1')
+doc, nro_tarjeta, modulo = nuevo_interes(admin)
+nro = orden_con_comprobante(v1, doc, nro_tarjeta, modulo)
 
-def call(method, path, body=None, token=None, expected=200):
-    global checks
-    headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}
-    if token: headers['Authorization'] = 'Bearer '+token
-    req = urllib.request.Request(BASE+path, method=method, headers=headers,
-                                 data=json.dumps(body).encode() if body is not None else None)
-    with urllib.request.urlopen(req, timeout=30) as response:
-        assert response.status == expected, path
-        data = json.loads(response.read())
-    checks += 1
-    return data
+s, r = api('PATCH', f'/ordenes-pago/{nro}/cuotas/1/rechazar', {}, admin)
+caso('rechazar exige observación (422 en español)', s == 422 and 'observacion' in r.get('errores', {}), (s, r))
+s, r = api('PATCH', f'/ordenes-pago/{nro}/cuotas/1/rechazar', {'observacion': 'El monto no coincide'}, admin)
+caso('administración rechaza el comprobante', s == 200, (s, r))
+o = orden(admin, nro_tarjeta, nro)
+caso('la 1.ª cuota y el Pago de la orden quedan "Pago rechazado"', o['cuotas'][0]['estado'] == 'Pago rechazado' and o['pago']['estado'] == 'Pago rechazado',
+     (o['cuotas'][0]['estado'], o['pago']['estado']))
+caso('la observación del rechazo queda en el Pago', o['pago']['observacion_validacion'] == 'El monto no coincide', o['pago'])
 
-def login(correo, password):
-    return call('POST', '/login', {'correo': correo, 'password': password})
+s, r = api('POST', f'/ordenes-pago/{nro}/cuotas/1/comprobante', {'archivo': PNG, 'remitente': 'Segundo intento'}, v1)
+caso('el vendedor reenvía un comprobante nuevo', s == 201, (s, r))
+o = orden(admin, nro_tarjeta, nro)
+comprobantes = o['pago']['comprobantes']
+caso('la cuota vuelve a "En revision" y conserva los dos comprobantes', o['cuotas'][0]['estado'] == 'En revision' and len(comprobantes) == 2,
+     (o['cuotas'][0]['estado'], len(comprobantes)))
+caso('el comprobante anterior queda rechazado y el nuevo en revisión',
+     sorted(c['estado_revision'] for c in comprobantes) == ['En revision', 'Pago rechazado'], [c['estado_revision'] for c in comprobantes])
+caso('el archivo nuevo tiene nombre legible ligado al dato', all(f'orden{nro}_cuota1' in c['nombre_archivo'] for c in comprobantes),
+     [c['nombre_archivo'] for c in comprobantes])
 
-admin = login('admin@crm-educativo.local', 'Admin12345')['token']
-suffix = str(int(time.time()))
-email = 'reenvio.'+suffix+'@example.invalid'
-call('POST', '/registro-interes', {'nombre': 'Reenvio', 'apellido': 'Comprobante QA', 'documento': 'QA-'+suffix,
-    'correo': email, 'telefono': '00008888', 'profesion': 'Pruebas', 'ubicacion': 'QA aislado', 'modulo_id': 'ia-aplicada-m1'}, expected=201)
-call('POST', '/intereses/distribuir', {}, admin)
-interest = next(i for i in call('GET', '/intereses', token=admin)['intereses'] if i['prospecto']['correo'] == email)
-seller = None
-for correo, clave in [('vendedor.demo@crm-educativo.local','Vendedor12345'), ('vendedor.b@test.local','Clave12345')]:
-    account = login(correo, clave)
-    if account['usuario']['id'] == interest['vendedor_id']: seller = account['token']
-assert seller
-order = call('POST', '/intereses/'+str(interest['id'])+'/ordenes-pago', {'modulos': ['ia-aplicada-m1'], 'descuentos': []}, seller, 201)['orden']
-payment = order['pago']['id']
-for n in [1,2]:
-    image = '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200"><rect width="400" height="200" fill="#e0f2fe"/><text x="20" y="80" font-size="22">COMPROBANTE QA '+str(n)+'</text><text x="20" y="120">Sin validez bancaria</text></svg>'
-    call('POST', '/comprobantes', {'pago_id': payment, 'archivo': 'data:image/svg+xml;base64,'+base64.b64encode(image.encode()).decode(),
-         'nombre_archivo': f'qa-intento-{n}.svg', 'mime':'image/svg+xml', 'remitente': 'QA ficticio', 'observacion': 'Intento '+str(n)}, seller, 201)
-    call('PATCH', '/pagos/'+str(payment)+'/rechazar', {'observacion': 'QA: enviar comprobante corregido, intento '+str(n)}, admin)
-data = call('GET', '/pagos/'+str(payment), token=admin)['pago']
-assert data['estado'] == 'Pago rechazado'
-assert len(data['comprobantes']) == 2
-assert max(data['comprobantes'], key=lambda c:c['id'])['nombre_archivo'] == 'qa-intento-2.svg'
-print(checks+3, 'comprobaciones de reenvio aprobadas; interes QA:',interest['id'],'pago:',payment)
-print('Abrir agenda?interes='+str(interest['id'])+' para verificar carga habilitada y ultimo comprobante.')
+s, r = api('PATCH', f'/ordenes-pago/{nro}/cuotas/1/aprobar', {}, admin)
+o = orden(admin, nro_tarjeta, nro)
+caso('al aprobar el reenvío la cuota y el Pago quedan "Pago aprobado"', s == 200 and o['cuotas'][0]['estado'] == o['pago']['estado'] == 'Pago aprobado',
+     (s, o['cuotas'][0]['estado'], o['pago']['estado']))
+
+fin('REENVÍO DE COMPROBANTE')

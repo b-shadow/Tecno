@@ -310,6 +310,9 @@ def errores_3capas():
         for m, d in x['metodos'].items():   # route-model binding: Laravel consultaría la BD antes del negocio
             if m in endpoints and (t := re.findall(r'\b([A-Z]\w+) \$', d['params'])) and set(t) & modelos:
                 errores.append(f'{n}::{m}() recibe {sorted(set(t) & modelos)} por la ruta (route-model binding): recibir el identificador')
+    for f in (NEG / 'app' / 'Http').rglob('*.php'):   # el exists/unique de Laravel consulta la BD desde negocio
+        if re.search(r"['|](?:exists|unique):|Rule::(?:exists|unique)\(", _leer(f)):
+            errores.append(f'{f.relative_to(CRM_WEB).as_posix()}: regla exists/unique va directo a la BD (usar $this->existe / $this->unico)')
     for f in (DAT / 'src').rglob('*.php'):
         if 'App\\Negocio' in _leer(f): errores.append(f'{f.relative_to(CRM_WEB).as_posix()}: la capa de datos usa la de negocio')
     for f in PRE.rglob('*.js*'):

@@ -39,6 +39,20 @@ class NPago
     ) {
     }
 
+    /**
+     * Cambia el estado de una cuota. La 1.ª cuota además fija el estado del Pago de la orden (modelo del P1: el Pago
+     * es la 1.ª cuota) y, al validarse, su fecha y observación. Lo usan el flujo manual y el de Stripe.
+     */
+    public static function estadoCuota(DPago $pagos, int $orden, int $numero, string $estado, array $cuota = [], ?string $observacionPago = null): void
+    {
+        if ($numero === 1) {
+            $validado = in_array($estado, ['Pago aprobado', 'Pago rechazado'], true);
+            $pagos->actualizarPago($orden, ['estado' => $estado]
+                + ($validado ? ['fecha_validacion' => now(), 'observacion_validacion' => $observacionPago] : []));
+        }
+        $pagos->actualizarCuota($orden, $numero, ['estado' => $estado] + ($estado === 'Pago aprobado' ? ['fecha_pago' => now()] : []) + $cuota);
+    }
+
     public function descuentos(): JsonResponse
     {
         return response()->json(['descuentos' => $this->pagos->descuentos()]);
@@ -110,7 +124,9 @@ class NPago
         ReglaNegocioException::si(in_array($tarjeta->estado, ['Convertido', 'Perdido'], true), 'La tarjeta ya está cerrada.');
 
         $orden = $this->pagos->transaccion(function () use ($tarjeta, $usuario, $datos) {
-            // Igual que el P1: una sola orden abierta por tarjeta (evita la venta duplicada).
+            // Igual que el P1: una sola orden abierta por tarjeta (evita la venta duplicada). El bloqueo de la tarjeta
+            // hace esperar a un segundo pedido simultáneo hasta que este confirme, y entonces ve la orden abierta.
+            $this->pagos->interesBloqueado($tarjeta->nro_tarjeta);
             $abierta = $this->pagos->ordenAbierta($tarjeta->nro_tarjeta);
             ReglaNegocioException::si((bool) $abierta, $abierta
                 ? "La tarjeta ya tiene la orden #{$abierta->nro_orden} ({$abierta->estado}). Registre su comprobante o espere su revisión."
@@ -213,7 +229,7 @@ class NPago
                 'remitente' => $datos['remitente'] ?? null, 'hora_pago' => $datos['hora_pago'] ?? null, 'observacion' => $datos['observacion'] ?? null,
                 'fecha_envio' => now(), 'estado_revision' => 'En revision',
             ]);
-            $this->pagos->cambiarEstadoCuota($registro->nro_orden, $cuota, 'En revision', ['nro_metodo' => $datos['nro_metodo'] ?? null]);
+            self::estadoCuota($this->pagos, $registro->nro_orden, $cuota, 'En revision', array_filter(['nro_metodo' => $datos['nro_metodo'] ?? null]));
             $this->pagos->registrarInteraccion($interes, [
                 'usuario_correo' => $usuario->correo, 'tipo' => 'Pago informado', 'fecha' => now(),
                 'descripcion' => "Comprobante de la cuota {$cuota} de la orden #{$registro->nro_orden} enviado a revisión.", 'resultado' => 'Pago en revisión',
@@ -275,7 +291,7 @@ class NPago
             ReglaNegocioException::si(($fila->proveedor ?? 'manual') === 'stripe', 'Las cuotas procesadas por Stripe solo se confirman mediante la pasarela oficial.', 422);
             ReglaNegocioException::si($fila->estado !== 'En revision', 'Solo se aprueba una cuota en revisión.');
 
-            $this->pagos->cambiarEstadoCuota($registro->nro_orden, $cuota, 'Pago aprobado', ['observacion' => $observacion]);
+            self::estadoCuota($this->pagos, $registro->nro_orden, $cuota, 'Pago aprobado', array_filter(['observacion' => $observacion]), $observacion);
             $this->pagos->actualizarComprobantes($registro->nro_orden, $cuota, 'Pago aprobado');
 
             return $this->trasAprobar($registro, $cuota, $usuario, "Cuota {$cuota} de la orden #{$registro->nro_orden} aprobada por coordinación.");
@@ -296,7 +312,7 @@ class NPago
             $fila = $this->cuotaBloqueada($registro->nro_orden, $cuota);
             ReglaNegocioException::si(($fila->proveedor ?? 'manual') === 'stripe', 'Las cuotas procesadas por Stripe reflejan directamente el resultado de la pasarela.');
             ReglaNegocioException::si($fila->estado !== 'En revision', 'Solo se rechaza una cuota en revisión.');
-            $this->pagos->cambiarEstadoCuota($registro->nro_orden, $cuota, 'Pago rechazado', ['observacion' => $observacion]);
+            self::estadoCuota($this->pagos, $registro->nro_orden, $cuota, 'Pago rechazado', array_filter(['observacion' => $observacion]), $observacion);
             $this->pagos->actualizarComprobantes($registro->nro_orden, $cuota, 'Pago rechazado', $observacion);
         });
 

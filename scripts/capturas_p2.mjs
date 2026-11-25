@@ -1,11 +1,11 @@
 // Capturas y errores de consola de cada página por rol (base local de desarrollo sembrada).
-// Uso: node scripts/capturas_p2.mjs [http://localhost:8001] [carpeta]
+// Uso: node scripts/capturas_p2.mjs [http://localhost:5173] [carpeta]   (el frontend; Vite reenvía /api)
 import { createRequire } from 'node:module'
 import fs from 'node:fs/promises'
 const require = createRequire(new URL('../presentacion/package.json', import.meta.url))
 const { chromium } = require('playwright')
 
-const base = process.argv[2] || 'http://localhost:8001'
+const base = process.argv[2] || 'http://localhost:5173'
 const out = process.argv[3] || '.impeccable/review/p2'
 await fs.mkdir(out, { recursive: true })
 const roles = {

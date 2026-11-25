@@ -2,10 +2,8 @@
 
 namespace Datos;
 
-use Datos\Modelos\Cuota;
 use Datos\Modelos\MetodoPago;
 use Datos\Modelos\OrdenPago;
-use Datos\Modelos\Pago;
 use Datos\Modelos\Prospecto;
 use Datos\Modelos\TransaccionStripe;
 use Datos\Modelos\WebhookEventoStripe;
@@ -35,14 +33,6 @@ class DStripe
     public function cuotaBloqueada(int $nroOrden, int $nroCuota): ?object
     {
         return DB::table('cuotas')->where('nro_orden', $nroOrden)->where('nro_cuota', $nroCuota)->lockForUpdate()->first();
-    }
-
-    public function cuotaConSaldoOrden(int $nroOrden): float
-    {
-        $total = (float) OrdenPago::query()->whereKey($nroOrden)->value('total');
-        $pagado = (float) Cuota::query()->where('nro_orden', $nroOrden)->where('estado', 'Pago aprobado')->sum('monto');
-
-        return max(round($total - $pagado, 2), 0.0);
     }
 
     public function prospectoBloqueado(string $documento): Prospecto
@@ -123,39 +113,9 @@ class DStripe
         );
     }
 
-    public function marcarCuotaPagadaStripe(int $nroOrden, int $nroCuota, array $datosCuota, string $observacionOrden): void
+    public function hayTransaccionesEnEstado(int $nroOrden, string $estado): bool
     {
-        if ($nroCuota === 1) {
-            Pago::query()->whereKey($nroOrden)->update([
-                'estado' => 'Pago aprobado',
-                'fecha_validacion' => now(),
-                'observacion_validacion' => $observacionOrden,
-                'updated_at' => now(),
-            ]);
-        }
-
-        Cuota::query()->where('nro_orden', $nroOrden)->where('nro_cuota', $nroCuota)->update([
-            'estado' => 'Pago aprobado',
-            'proveedor' => 'stripe',
-            'moneda' => 'BOB',
-            'fecha_pago' => now(),
-            'updated_at' => now(),
-        ] + $datosCuota);
-    }
-
-    public function tienePagosNoAnulables(int $nroOrden): bool
-    {
-        $cuotasBloqueantes = Cuota::query()
-            ->where('nro_orden', $nroOrden)
-            ->whereIn('estado', ['Pago aprobado', 'En revision'])
-            ->exists();
-
-        $txConfirmadas = TransaccionStripe::query()
-            ->where('nro_orden', $nroOrden)
-            ->where('estado_interno', 'confirmado')
-            ->exists();
-
-        return $cuotasBloqueantes || $txConfirmadas;
+        return TransaccionStripe::query()->where('nro_orden', $nroOrden)->where('estado_interno', $estado)->exists();
     }
 
     public function eventoWebhook(string $stripeEvento): ?WebhookEventoStripe

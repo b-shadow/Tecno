@@ -25,9 +25,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/salud', [NSitio::class, 'salud']);
 Route::post('/login', [NAuth::class, 'login'])->middleware('throttle:crm-login');
 Route::get('/catalogo', [NCatalogo::class, 'programas']);
-Route::post('/registro-interes', [NProspecto::class, 'registrarInteres'])->middleware('throttle:20,1');
-Route::post('/visitas', [NSitio::class, 'visita'])->middleware('throttle:120,1');
-Route::get('/buscar', [NSitio::class, 'buscar'])->middleware('throttle:90,1');
+Route::post('/registro-interes', [NProspecto::class, 'registrarInteres'])->middleware('throttle:20,1,registro');
+Route::post('/visitas', [NSitio::class, 'visita'])->middleware('throttle:120,1,visitas');
+Route::get('/buscar', [NSitio::class, 'buscar'])->middleware('throttle:90,1,buscar');
 Route::get('/fotos/{archivo}', [NSitio::class, 'foto']);
 
 // CU6 — webhook oficial de Stripe (autenticado por firma HMAC Stripe-Signature)

@@ -95,4 +95,15 @@ class DUsuario
     {
         return $usuario->fresh($conProgramas ? ['programasACargo'] : []) ?? $usuario;
     }
+
+    /** Regla del formulario de asignación: el correo es de un vendedor activo. */
+    public function esVendedorActivo(string $correo): bool
+    {
+        return Usuario::query()->whereKey($correo)->where('rol', 'vendedor')->where('estado', 'activo')->exists();
+    }
+
+    public function existeCorreo(string $correo): bool
+    {
+        return Usuario::query()->whereKey($correo)->exists();
+    }
 }
