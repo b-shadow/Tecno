@@ -18,8 +18,10 @@ Estereotipos (Conallen, REGLAS_DOCUMENTO_P2.md §5): client page → client page
 con la URL y sus parámetros; «Formulario» → server page «submit» (uno por formulario); server page → client page
 «build»; server page → server page «include»; server page → BD «access»; página ◇— formulario (agregación).
 
-Cada diagrama se arma por SECCIONES en el orden de implementación (login → menú → CU1 … CU8 → partes compartidas):
-cada elemento se ubica en la primera sección donde actúa. ea/navegacion_hojas.py dibuja un diagrama por actor en EA
+Cada diagrama se arma por SECCIONES en el orden de navegación del menú de la base de datos: la entrada del actor,
+su primera vista y las opciones que su rol puede usar. Una vista cliente aparece una sola vez; los procesos y tablas
+se pueden repetir cerca de la acción para conservar la lectura al cortar el diagrama en franjas.
+ea/navegacion_hojas.py dibuja un diagrama por actor en EA
 y insertar_navegacion.py lo corta en franjas apaisadas en 7.5, como G07.
 """
 import re
@@ -27,13 +29,15 @@ import re
 from contenido import PERMISOS, RECURSOS
 
 NIVEL = {'lectura': 1, 'modificacion': 2, 'eliminacion': 3}
-CERCANA = 0   # secciones de distancia hasta las que un server page o una tabla se reutiliza en vez de repetirse
+CERCANA = 1000   # cada proceso y tabla se dibuja una sola vez por actor, como en G07
 OPS = {'S': 'SELECT', 'I': 'INSERT', 'U': 'UPDATE', 'D': 'DELETE'}
 
 
 class Diagrama:
     def __init__(self, permisos, actor):
         self.permisos, self.actor, self.paginas, self.enlaces, self.hojas = permisos, actor, {}, [], []
+        self.grupo = 'entrada' if actor != 'Visitante' else 'catalogo'
+        self.grupo_nodo = {}
         self.incluidas = []   # server pages incluidos que usa el diagrama (sus «access» van en su propia hoja)
         # Lo que se usa en varias secciones (páginas, server pages, tablas) se dibuja una vez en cada sección (clave#n):
         # cada sección queda junta y sus relaciones son cortas. Solo el menú es una caja única: sus enlaces a cada
@@ -52,7 +56,7 @@ class Diagrama:
             if self.hojas and c not in self.hojas[-1][1]: self.hojas[-1][1].append(c)
 
     def p(self, clave, tipo, nombre, atributos='', operaciones=''):
-        if tipo in ('ps', 'bd', 'cliente', 'externo') and clave not in INCLUIDAS and clave != 'menu':
+        if tipo in ('ps', 'bd') and clave not in INCLUIDAS:
             if clave not in self.local:
                 previa = self.ultima.get(clave)   # la de una sección cercana sirve (su línea no pasa de una página)
                 if previa and len(self.hojas) - previa[1] <= CERCANA: self.local[clave] = previa[0]
@@ -63,6 +67,7 @@ class Diagrama:
         else:
             instancia = clave   # páginas, formularios y partes compartidas: una sola vez por diagrama
         self.paginas.setdefault(instancia, (tipo, nombre, atributos, operaciones))
+        self.grupo_nodo.setdefault(instancia, self.grupo)
         self._en_hoja(instancia)
         return instancia
 
@@ -225,7 +230,7 @@ def url(funcion, consulta=''):
 def inicio_sesion(d):
     d.hoja('CU1 Inicio de sesión')
     d.p('actor', 'actor', d.actor)
-    d.p('login', 'cliente', 'Login', 'form, recordar, ver, error, enviando', 'entrar()')
+    d.p('login', 'cliente', 'Login', 'form, recordar, ver, error, ayuda, enviando', 'entrar()')
     d.p('f_login', 'form', 'Iniciar Sesion', 'correo, password, recordar', 'entrar()')
     d.e('actor', 'login', 'link', '/login')
     d.e('login', 'f_login', 'contiene')
@@ -233,33 +238,36 @@ def inicio_sesion(d):
     d.e('f_login', 'ps_login', 'submit', url('auth.login'))
     d.p('error', 'cliente', 'PC Message', 'tipo, children', 'Aviso()')
     menu(d)
-    d.e('ps_login', 'menu', 'build', '200: token, usuario, menu')
+    d.e('ps_login', 'menu', 'build', '200: sesión y menú según rol')
     d.e('ps_login', 'error', 'build', '422: mensaje')
     d.e('error', 'login', 'link', 'volver a intentar')
 
 
 def menu(d):
-    d.p('menu', 'cliente', f'Menu {d.actor}', 'menu, cerrado, movil, visitas', 'alternar(), elegir()')
+    d.p('menu', 'cliente', f'Menú y cabecera de {d.actor}', 'menu, cerrado, movil', 'alternar(), elegir()')
 
 
 def sesion_y_perfil(d):
+    d.grupo = 'sesion'
     d.hoja('CU1 Menú, búsqueda y perfil')
     menu(d)
     d.ps('ps_me', 'ps Sesion Actual', 'token', 'me()')
     d.e('menu', 'ps_me', 'link', url('auth.me'))
     d.e('ps_me', 'menu', 'build', 'usuario, menu, permisos')
     d.ps('ps_visita', 'ps Registrar Visita', 'ruta', 'visita()')
-    d.e('menu', 'ps_visita', 'link', url('sitio.visita', ' ruta'))
+    d.e('menu', 'ps_visita', 'link', url('sitio.visita', ' ruta (pie de cada vista)'))
     d.e('ps_visita', 'menu', 'build', 'visitas')
     d.p('error404', 'cliente', 'Pagina no Encontrada', 'titulo, icono', 'PError404()')
-    d.e('menu', 'error404', 'link', '/error (ruta inexistente)')
+    d.p('actor', 'actor', d.actor)
+    d.e('actor', 'error404', 'link', 'URL inexistente (*)')
+    d.grupo = 'busqueda'
     d.hoja('CU1 Búsqueda global')
     menu(d)
-    d.p('f_buscar', 'form', 'Buscador', 'q', 'tecla()')
-    d.e('menu', 'f_buscar', 'contiene')
     d.ps('ps_buscar', 'ps Busqueda Global', 'q', 'buscar()')
-    d.e('f_buscar', 'ps_buscar', 'submit', url('sitio.buscar', '?q'))
-    d.e('ps_buscar', 'menu', 'build', 'resultados')
+    d.e('menu', 'ps_buscar', 'link', url('sitio.buscar', '?q (tras escribir 2 caracteres)'))
+    d.p('resultados_busqueda', 'cliente', 'Resultados de búsqueda', 'resultados, activo, abierto', 'elegir(), tecla()')
+    d.e('ps_buscar', 'resultados_busqueda', 'build', 'resultados filtrados por acceso')
+    d.grupo = 'perfil'
     d.hoja('CU1 Perfil y cierre de sesión')
     menu(d)
     d.p('f_perfil', 'form', 'Mi Perfil', 'nombre, apellido, telefono, foto', 'guardar()')
@@ -273,20 +281,38 @@ def sesion_y_perfil(d):
     d.e('f_clave', 'ps_clave', 'submit', url('auth.cambiarPassword'))
     d.e('ps_clave', 'menu', 'build', 'mensaje')
     d.ps('ps_logout', 'ps Cerrar Sesion', 'token', 'logout()')
-    d.e('menu', 'ps_logout', 'link', url('auth.logout'))
-    d.p('login', 'cliente', 'Login', 'form, recordar, ver, error, enviando', 'entrar()')
+    d.e('menu', 'ps_logout', 'link', url('auth.logout', ' (Perfil > Cerrar sesión > Confirmar)'))
+    d.p('login', 'cliente', 'Login', 'form, recordar, ver, error, ayuda, enviando', 'entrar()')
     d.e('ps_logout', 'login', 'build', 'go("/login")')
 
 
 def entrada(d, codigo):
     """Hoja de un recurso del menú: Menu → página (el enlace del menú dinámico)."""
     menu(d)
-    d.e('menu', codigo, 'link', RECURSOS[codigo]['ruta'])
+    inicio = 'inicio-vendedor' if d.puede('inicio-vendedor') else 'dashboard'
+    if codigo != inicio:
+        d.e('menu', codigo, 'link', RECURSOS[codigo]['ruta'])
+
+
+def destinos_busqueda(d):
+    """Destinos que NSitio::buscar realmente devuelve; la lista respeta el acceso del rol."""
+    d.hoja('CU1 Selección de resultado de búsqueda')
+    d.p('resultados_busqueda', 'cliente', 'Resultados de búsqueda', 'resultados, activo, abierto', 'elegir(), tecla()')
+    d.p('catalogo', 'cliente', 'Catalogo de Programas', 'datos, area, eleccion, registrando', 'coloresDeAreas(), recargar()')
+    d.e('resultados_busqueda', 'catalogo', 'link', '/anuncios?modulo={codigo}')
+    if d.puede('agenda'):
+        d.p('agenda', 'cliente', 'Seguimiento y Agenda', 'buscar, estado, sel, enfocar, lista', 'recargar()')
+        d.e('resultados_busqueda', 'agenda', 'link', '/agenda?interes={nro_tarjeta}')
+    if d.puede('usuarios'):
+        d.p('usuarios', 'cliente', 'Usuarios', 'filtro, datos, editando', 'cambiarEstado(), recargar()')
+        d.e('resultados_busqueda', 'usuarios', 'link', '/usuarios?buscar={correo}')
+    d.e('resultados_busqueda', 'menu', 'link', 'elegir una página permitida: resultado.ruta')
 
 
 def ficha(d, desde):
     d.p('ficha', 'cliente', 'Ficha del Prospecto', 'datos, pestana, editar', 'actualizar()')
-    d.e(desde, 'ficha', 'link', '/agenda?interes={nro_tarjeta}')
+    alcance = ' (tarjeta asignada)' if d.actor == 'Vendedor' else ' (según alcance del rol)'
+    d.e(desde, 'ficha', 'link', '/agenda?interes={nro_tarjeta}' + alcance)
 
 
 def vendedores(d, desde):
@@ -325,10 +351,8 @@ def matriz(d):   # CU1
     d.e('matriz', 'ps_matriz', 'link', url('seguridad.matriz'))
     d.e('ps_matriz', 'matriz', 'build', 'roles, recursos, permisos')
     if d.puede('matriz', 'modificacion'):
-        d.p('f_permiso', 'form', 'Permiso del Rol', 'rol, recurso, acceso', 'cambiar()')
-        d.e('matriz', 'f_permiso', 'contiene')
         d.ps('ps_asig_perm', 'ps Asignar Permiso', 'rol, recurso_codigo, acceso', 'asignar()')
-        d.e('f_permiso', 'ps_asig_perm', 'submit', url('seguridad.asignar'))
+        d.e('matriz', 'ps_asig_perm', 'link', url('seguridad.asignar', ' (cambiar selector de permiso)'))
         d.e('ps_asig_perm', 'matriz', 'build', 'mensaje')
 
 
@@ -377,6 +401,8 @@ def prospectos(d):
         d.ps('ps_csv', 'ps Importar CSV', 'csv', 'importarCSV()')
         d.e('f_csv', 'ps_csv', 'submit', url('prospectos.importarCSV'))
         d.e('ps_csv', 'prospectos', 'build', 'creados, errores')
+        d.p('plantilla_csv', 'externo', 'Plantilla CSV descargada')
+        d.e('prospectos', 'plantilla_csv', 'link', 'Importar CSV > Plantilla')
     if d.puede('prospectos', 'modificacion') or d.puede('embudo', 'modificacion'):   # puedeAgregarInteres
         d.hoja('CU3 Prospectos: nuevo interés')
         entrada(d, 'prospectos')
@@ -404,13 +430,11 @@ def interesados(d):   # CU3: asignación manual y Round-Robin
     vendedores(d, 'interesados')
     ficha(d, 'interesados')
     if d.puede('interesados', 'modificacion'):
-        d.p('f_asignar', 'form', 'Asignar Vendedor', 'vendedor_correo', 'asignar()')
-        d.e('interesados', 'f_asignar', 'contiene')
         d.ps('ps_asignar', 'ps Asignar Interes', 'interes, vendedor_correo', 'asignar()')
-        d.e('f_asignar', 'ps_asignar', 'submit', url('intereses.asignar'))
+        d.e('interesados', 'ps_asignar', 'link', url('intereses.asignar', ' (elegir vendedor en la fila)'))
         d.e('ps_asignar', 'interesados', 'build', 'mensaje, interes')
         d.ps('ps_repartir', 'ps Distribuir Round-Robin', 'usuario', 'distribuir()')
-        d.e('interesados', 'ps_repartir', 'link', url('intereses.distribuir'))
+        d.e('interesados', 'ps_repartir', 'link', url('intereses.distribuir', ' (clic Distribuir Round Robin)'))
         d.e('ps_repartir', 'interesados', 'build', 'mensaje')
 
 
@@ -462,7 +486,7 @@ def validacion_pagos(d):
     d.e('validacion-pagos', 'ps_cuotas', 'link', url('pagos.cuotas', '?estado'))
     d.e('ps_cuotas', 'validacion-pagos', 'build', 'cuotas, comprobantes')
     ficha(d, 'validacion-pagos')
-    d.p('f_revisar', 'form', 'Revisar Comprobante', 'observacion', 'decidir()')
+    d.p('f_revisar', 'form', 'Modal de revisión', 'observacion', 'decidir()')
     d.e('validacion-pagos', 'f_revisar', 'contiene')
     d.ps('ps_comp', 'ps Ver Comprobante', 'comprobante', 'comprobante()')
     d.e('validacion-pagos', 'ps_comp', 'link', url('pagos.comprobante'))
@@ -470,12 +494,12 @@ def validacion_pagos(d):
     if d.puede('validacion-pagos', 'modificacion'):
         d.hoja('CU6 Aprobar o rechazar cuota')
         entrada(d, 'validacion-pagos')
-        d.p('f_revisar', 'form', 'Revisar Comprobante', 'observacion', 'decidir()')
+        d.p('f_revisar', 'form', 'Modal de revisión', 'observacion', 'decidir()')
         d.e('validacion-pagos', 'f_revisar', 'contiene')
         for k, fn, nombre, op in (('ps_aprobar', 'pagos.aprobar', 'ps Aprobar Cuota', 'aprobar()'),
                                   ('ps_rechazar', 'pagos.rechazar', 'ps Rechazar Cuota', 'rechazar()')):
             d.ps(k, nombre, 'orden, cuota, observacion', op)
-            d.e('f_revisar', k, 'submit', url(fn))
+            d.e('f_revisar', k, 'submit', url(fn, ' (solo cuota En revisión y no Stripe)'))
             d.e(k, 'validacion-pagos', 'build', 'mensaje')
 
 
@@ -491,31 +515,32 @@ def alumnos(d):   # CU6: matrículas y exportación al SIS
     d.e('ps_pend', 'alumnos', 'build', 'total, filas')
     if d.puede('alumnos', 'modificacion'):   # PMatriculas.jsx: editable
         d.ps('ps_exportar', 'ps Exportar al SIS', 'usuario', 'exportar()')
-        d.e('alumnos', 'ps_exportar', 'link', url('exportaciones.exportar'))
-        d.e('ps_exportar', 'alumnos', 'build', 'filas CSV')
+        d.e('alumnos', 'ps_exportar', 'link', url('exportaciones.exportar', ' (clic Exportar pendientes)'))
+        d.e('ps_exportar', 'alumnos', 'build', 'descarga CSV; registrar resultado después')
         d.ps('ps_resultado', 'ps Registrar Resultado', 'exportacion, estado, respuesta', 'registrarResultado()')
         d.e('alumnos', 'ps_resultado', 'link', url('exportaciones.registrarResultado'))
         d.e('ps_resultado', 'alumnos', 'build', 'mensaje')
 
 
 def pagos_ficha(d):   # CU6 dentro de la ficha (componentes/pagos)
-    d.hoja('CU6 Orden de pago y métodos')
+    d.hoja('CU6 Plan de pagos y métodos en la ficha')
     ficha(d, 'agenda')
-    d.p('f_orden', 'form', 'Generar Orden de Pago', 'modulos, dctos, formaPago, cuotas, vence', 'generarOrden(), seleccionarModulo(), alternarDescuento()')
-    d.e('ficha', 'f_orden', 'contiene')
-    d.ps('ps_catalogo', 'ps Catalogo', 'buscar', 'programas()')
-    d.e('ficha', 'ps_catalogo', 'link', url('catalogo.programas'))
-    d.e('ps_catalogo', 'ficha', 'build', 'programas')
-    d.ps('ps_desc', 'ps Listar Descuentos', 'token', 'descuentos()')
-    d.e('ficha', 'ps_desc', 'link', url('pagos.descuentos'))
-    d.e('ps_desc', 'ficha', 'build', 'descuentos')
-    d.ps('ps_orden', 'ps Crear Orden', 'interes, modulos, descuentos, cuotas, primer_vencimiento', 'crearOrden()')
-    d.e('f_orden', 'ps_orden', 'submit', url('pagos.crearOrden'))
-    d.e('ps_orden', 'ficha', 'build', 'orden')
+    if d.actor == 'Vendedor':
+        d.p('f_orden', 'form', 'Generar Orden de Pago', 'modulos, dctos, formaPago, cuotas, vence', 'generarOrden(), seleccionarModulo(), alternarDescuento()')
+        d.e('ficha', 'f_orden', 'contiene')
+        d.ps('ps_catalogo', 'ps Catalogo', 'buscar', 'programas()')
+        d.e('ficha', 'ps_catalogo', 'link', url('catalogo.programas'))
+        d.e('ps_catalogo', 'ficha', 'build', 'programas')
+        d.ps('ps_desc', 'ps Listar Descuentos', 'token', 'descuentos()')
+        d.e('ficha', 'ps_desc', 'link', url('pagos.descuentos'))
+        d.e('ps_desc', 'ficha', 'build', 'descuentos')
+        d.ps('ps_orden', 'ps Crear Orden', 'interes, modulos, descuentos, cuotas, primer_vencimiento', 'crearOrden()')
+        d.e('f_orden', 'ps_orden', 'submit', url('pagos.crearOrden', ' (vendedor asignado; tarjeta abierta; sin orden activa)'))
+        d.e('ps_orden', 'ficha', 'build', 'orden')
     d.hoja('CU6 Métodos de pago')
     ficha(d, 'agenda')
     d.ps('ps_estmetodo', 'ps Cambiar Estado Metodo', 'metodo, estado', 'cambiarEstadoMetodo()')
-    d.e('ficha', 'ps_estmetodo', 'link', url('pagos.cambiarEstadoMetodo'))
+    d.e('ficha', 'ps_estmetodo', 'link', url('pagos.cambiarEstadoMetodo', ' (clic activar/desactivar método)'))
     d.e('ps_estmetodo', 'ficha', 'build', 'metodo')
     d.hoja('CU6 Anular orden')
     ficha(d, 'agenda')
@@ -527,14 +552,14 @@ def pagos_ficha(d):   # CU6 dentro de la ficha (componentes/pagos)
     d.hoja('CU6 Registrar tarjeta con Stripe')
     ficha(d, 'agenda')
     d.p('compartir', 'cliente', 'Compartir Enlace de Pago', 'sesion, vistaCorreo, copiado', 'compartirPorWhatsApp(), copiarEnlace()')
-    d.e('ficha', 'compartir', 'link', 'enviar cuota | registrar tarjeta')
+    d.e('ficha', 'compartir', 'link', 'Pagos > Solicitar registro de tarjeta')
     d.ps('ps_setup_stripe', 'ps Preparar Tarjeta Stripe', 'prospecto, nro_tarjeta', 'crearSetupTarjeta()')
     d.e('compartir', 'ps_setup_stripe', 'link', url('pagos.crearSetupTarjeta'))
     d.e('ps_setup_stripe', 'compartir', 'build', 'url')
     d.hoja('CU6 Enlace de pago de una cuota')
     ficha(d, 'agenda')
     d.p('compartir', 'cliente', 'Compartir Enlace de Pago', 'sesion, vistaCorreo, copiado', 'compartirPorWhatsApp(), copiarEnlace()')
-    d.e('ficha', 'compartir', 'link', 'enviar cuota | registrar tarjeta')
+    d.e('ficha', 'compartir', 'link', 'Pagos > Enviar solicitud de pago')
     d.ps('ps_checkout', 'ps Iniciar Checkout Stripe', 'orden, cuota', 'crearCheckout()')
     d.e('compartir', 'ps_checkout', 'link', url('pagos.crearCheckout'))
     d.e('ps_checkout', 'compartir', 'build', 'url, url_cuota')
@@ -592,6 +617,8 @@ def agenda(d):
     entrada(d, 'agenda')
     listar_intereses(d, 'agenda', '?buscar&estado')
     ficha(d, 'agenda')
+    d.p('whatsapp', 'externo', 'WhatsApp (externo)')
+    d.e('ficha', 'whatsapp', 'link', 'clic WhatsApp si hay teléfono')
     d.ps('ps_show', 'ps Ver Interes', 'interes', 'show()')
     d.e('ficha', 'ps_show', 'link', url('intereses.show'))
     d.e('ps_show', 'ficha', 'build', 'interes, faltantes_conversion')
@@ -690,6 +717,8 @@ def reportes(d):
     d.ps('ps_listado', 'ps Listado', 'tipo, desde, hasta, vendedor, programa, estado, buscar', 'listado()')
     d.e('reportes', 'ps_listado', 'link', url('reportes.listado', '?tipo&desde&hasta&vendedor&estado&buscar'))
     d.e('ps_listado', 'reportes', 'build', 'titulo, columnas, filas')
+    d.p('reporte_csv', 'externo', 'Reporte CSV descargado')
+    d.e('reportes', 'reporte_csv', 'link', 'clic Exportar CSV con filas del listado')
     if 'inicio-vendedor' not in d.permisos: vendedores(d, 'reportes')   # PReportes.jsx: el vendedor no filtra
 
 
@@ -716,25 +745,36 @@ def seguimiento(d):   # CU8: ventas y comisiones
 
 
 # ------------------------------------------------------------------ diagramas por actor
-# Orden de implementación (REGLAS §5): login → menú → CU1 … CU8; dentro de cada CU, el orden de la tabla recursos.
-BLOQUES = [('usuarios', usuarios), ('matriz', matriz), ('bitacora', bitacora), ('gestion-anuncios', gestion_anuncios),
-           ('prospectos', prospectos), ('interesados', interesados), ('embudo', embudo), ('motivos', motivos),
-           ('validacion-pagos', validacion_pagos), ('alumnos', alumnos), ('agenda-pagos', pagos_ficha),
-           ('agenda', agenda), ('inicio-vendedor', inicio_vendedor), ('notificaciones', notificaciones),
-           ('dashboard', dashboard), ('reportes', reportes), ('seguimiento', seguimiento)]
+# El menú real se ordena por recursos.orden; CU6 dentro de agenda va inmediatamente después de la ficha.
+BLOQUES = [('dashboard', dashboard), ('inicio-vendedor', inicio_vendedor), ('embudo', embudo),
+           ('prospectos', prospectos), ('interesados', interesados), ('agenda', agenda),
+           ('agenda-pagos', pagos_ficha), ('motivos', motivos), ('validacion-pagos', validacion_pagos),
+           ('alumnos', alumnos), ('gestion-anuncios', gestion_anuncios), ('seguimiento', seguimiento),
+           ('reportes', reportes), ('notificaciones', notificaciones), ('usuarios', usuarios),
+           ('matriz', matriz), ('bitacora', bitacora)]
 
 
 def rol(nombre_rol, actor):
     d = Diagrama(PERMISOS[nombre_rol], actor)
     inicio_sesion(d)
+    inicio = 'inicio-vendedor' if d.puede('inicio-vendedor') else 'dashboard'
+    d.grupo = inicio
+    d.p(inicio, 'cliente', 'Mi Dia' if inicio == 'inicio-vendedor' else 'Dashboard',
+        'mes, dia, completar, stats, agenda' if inicio == 'inicio-vendedor' else 'datos, cargando, error',
+        'clave()' if inicio == 'inicio-vendedor' else 'moneda(), miles(), dia(), recargar()')
+    d.e('menu', inicio, 'link', RECURSOS[inicio]['ruta'] + ' (primera vista tras iniciar sesión)')
     sesion_y_perfil(d)
     for codigo, bloque in BLOQUES:
+        d.grupo = codigo
         if codigo == 'bitacora' and d.permisos.get('bitacora'):
             d.hoja('CU1 Bitácora de accesos'); bloque(d)
         elif codigo == 'agenda-pagos':
             if d.puede('agenda', 'modificacion'): bloque(d)
         elif codigo in d.permisos and codigo != 'bitacora':
             bloque(d)
+    d.grupo = 'busqueda'
+    destinos_busqueda(d)
+    d.grupo = 'compartidas'
     compartidas(d)
     return d
 
@@ -760,30 +800,33 @@ def visitante():
     d.ps('ps_catalogo', 'ps Catalogo', 'buscar', 'programas()')
     d.e('catalogo', 'ps_catalogo', 'link', url('catalogo.programas'))
     d.e('ps_catalogo', 'catalogo', 'build', 'programas')
-    d.p('f_interes', 'form', 'Me Interesa', 'nombre, apellido, documento, telefono, correo, profesion, ubicacion, modulosSeleccionados',
+    d.p('registro_interes', 'cliente', 'Registro de interés', 'form, modulosSeleccionados, estado, enviando', 'alternarModulo(), enviar()')
+    d.e('catalogo', 'registro_interes', 'link', 'elegir programa o módulo > Me interesa')
+    d.e('registro_interes', 'catalogo', 'link', 'Volver a la malla')
+    d.p('f_interes', 'form', 'Formulario de interés', 'nombre, apellido, documento, telefono, correo, profesion, ubicacion, modulosSeleccionados',
         'enviar(), alternarModulo()')
-    d.e('catalogo', 'f_interes', 'contiene')
+    d.e('registro_interes', 'f_interes', 'contiene')
     d.ps('ps_registro', 'ps Registrar Interes', 'nombre, apellido, documento, telefono, correo, profesion, ubicacion, modulo_codigos',
          'registrarInteres()')
     d.e('f_interes', 'ps_registro', 'submit', url('catalogo.registrarInteres'))
-    d.p('exito', 'cliente', 'PC Message', 'tipo, children', 'Aviso()')
-    d.e('ps_registro', 'exito', 'build', '201: mensaje, detalle | 422')
-    d.e('exito', 'catalogo', 'link', 'volver al catálogo')
+    d.e('ps_registro', 'registro_interes', 'build', 'aviso de éxito o errores en el formulario')
     d.p('login', 'cliente', 'Login', 'form, recordar, ver, error, enviando', 'entrar()')
     d.e('catalogo', 'login', 'link', '/login')
+    d.grupo = 'publico'
     d.hoja('CU2 Búsqueda, visitas y página no encontrada')
     d.p('catalogo', 'cliente', 'Catalogo de Programas', 'datos, area, eleccion, registrando', 'coloresDeAreas(), recargar()')
-    d.p('f_buscar', 'form', 'Buscador', 'q', 'tecla()')
-    d.e('catalogo', 'f_buscar', 'contiene')
     d.ps('ps_buscar', 'ps Busqueda Global', 'q', 'buscar()')
-    d.e('f_buscar', 'ps_buscar', 'submit', url('sitio.buscar', '?q'))
-    d.e('ps_buscar', 'catalogo', 'build', 'resultados')
+    d.e('catalogo', 'ps_buscar', 'link', url('sitio.buscar', '?q (tras escribir 2 caracteres)'))
+    d.p('resultados_busqueda', 'cliente', 'Resultados de búsqueda', 'resultados, activo, abierto', 'elegir(), tecla()')
+    d.e('ps_buscar', 'resultados_busqueda', 'build', 'resultados del catálogo')
+    d.e('resultados_busqueda', 'catalogo', 'link', '/anuncios?modulo={codigo}')
     d.ps('ps_visita', 'ps Registrar Visita', 'ruta', 'visita()')
-    d.e('catalogo', 'ps_visita', 'link', url('sitio.visita', ' ruta'))
+    d.e('catalogo', 'ps_visita', 'link', url('sitio.visita', ' ruta (pie de cada vista)'))
     d.e('ps_visita', 'catalogo', 'build', 'visitas')
     d.p('error404', 'cliente', 'Pagina no Encontrada', 'titulo, icono', 'PError404()')
-    d.e('catalogo', 'error404', 'link', '/error (ruta inexistente)')
+    d.e('actor', 'error404', 'link', 'URL inexistente (*)')
     d.e('error404', 'catalogo', 'link', '/anuncios (Ir al catálogo)')
+    d.grupo = 'pago'
     d.hoja('CU6 Pago público de una cuota')
     d.p('actor', 'actor', 'Visitante')
     d.p('pago_cuota', 'cliente', 'Pago Publico de Cuota', 'token, estado', 'PPagoCuota()')
@@ -792,7 +835,11 @@ def visitante():
     d.e('pago_cuota', 'ps_cuota_publica', 'link', url('pagos.abrirEnlaceCuotaPublico'))
     d.e('ps_cuota_publica', 'pago_cuota', 'build', 'estado_link, url_checkout')
     d.p('stripe', 'externo', 'Stripe Checkout (externo)', 'url, session_id', 'pagar(), cancelar()')
-    d.e('pago_cuota', 'stripe', 'link', 'url_checkout')
+    d.e('pago_cuota', 'stripe', 'link', 'redirección automática; botón Ir a pagar')
+    d.hoja('CU6 Enlace público para registrar tarjeta')
+    d.p('actor', 'actor', 'Visitante')
+    d.p('stripe', 'externo', 'Stripe Checkout (externo)', 'url, session_id', 'pagar(), cancelar()')
+    d.e('actor', 'stripe', 'link', 'enlace Stripe Setup compartido por el vendedor')
     d.hoja('CU6 Retorno de Stripe al visitante')
     retorno_stripe(d, publico=True)
     compartidas(d)
@@ -811,6 +858,143 @@ def hojas(actor):
     """(paginas, enlaces, [(título, [claves], [relaciones])]) del actor: cada sección con lo que se dibuja en ella."""
     d = DIAGRAMAS[actor]()
     return d.paginas, d.enlaces, d.hojas
+
+
+def hojas_visuales(actor):
+    """Vista de navegación: pantallas, formularios, acciones y una tabla representativa por recurso.
+
+    El modelo exhaustivo de rutas y tablas sigue disponible en hojas() y verificar(); el dibujo de 7.5
+    prioriza lo que el actor puede recorrer, como los diagramas del documento G07.
+    """
+    d = DIAGRAMAS[actor]()
+    paginas, enlaces = d.paginas, d.enlaces
+    conservar = {k for k, (tipo, *_resto) in paginas.items() if tipo in ('actor', 'cliente', 'form', 'externo')}
+    acciones_clave = {
+        'ps_login', 'ps_me', 'ps_logout', 'ps_buscar', 'ps_visita', 'ps_dash', 'ps_estvend',
+        'ps_usuarios', 'ps_matriz', 'ps_catalogo', 'ps_prosp', 'ps_intereses', 'ps_show',
+        'ps_repartir', 'ps_mover', 'ps_sinc', 'ps_cuotas', 'ps_exportar', 'ps_resultado',
+        'ps_estmetodo', 'ps_setup_stripe', 'ps_checkout', 'ps_cuota_publica',
+        'ps_retorno_publico', 'ps_cancelar_publico', 'ps_confirmar_checkout', 'ps_cancelar_checkout',
+        'ps_comp', 'ps_leida', 'ps_pagar', 'ps_est', 'ps_listado', 'ps_comis',
+    }
+    for a, b, st, texto in enlaces:
+        if paginas[b][0] != 'ps' or a not in conservar or st not in ('link', 'submit'):
+            continue
+        if st == 'submit' or b in acciones_clave:
+            conservar.add(b)
+    tablas_clave = {'bd_usuarios', 'bd_programas', 'bd_cuotas'}
+    acceso_representativo = {}
+    for a, b, st, _ in enlaces:
+        if st == 'access' and a in conservar and b in tablas_clave and b not in acceso_representativo:
+            conservar.add(b); acceso_representativo[b] = (a, b)
+    claves = [k for k in paginas if k in conservar]
+    # Los atributos siguen siendo del código, con el detalle adecuado para una figura de navegación.
+    visual = {k: (tipo, nombre, ', '.join(atributos.split(', ')[:3]), ', '.join(operaciones.split(', ')[:2]))
+              for k in claves for tipo, nombre, atributos, operaciones in (paginas[k],)}
+    relaciones = [e for e in enlaces if e[0] in visual and e[1] in visual and
+                  (e[2] != 'access' or (e[0], e[1]) == acceso_representativo.get(e[1]))]
+    acciones_agenda = {'f_realizada', 'ps_completar', 'ps_cancelar', 'f_editar', 'ps_update'}
+    enlaces_pago = {'compartir', 'ps_setup_stripe', 'ps_checkout', 'f_correo', 'ps_enviar',
+                    'stripe', 'pago_confirmacion', 'ps_confirmar_checkout', 'pago_cancelado', 'ps_cancelar_checkout'}
+    grupos = {k: ('agenda' if k == 'ficha' else
+                  'agenda-acciones' if d.grupo_nodo[k] == 'agenda' and k in acciones_agenda else
+                  'pagos-enlaces' if d.grupo_nodo[k] == 'agenda-pagos' and k in enlaces_pago else d.grupo_nodo[k])
+              for k in claves}
+    return visual, relaciones, grupos
+
+
+def hojas_ejemplo(actor):
+    """Proyección de navegación al nivel de detalle del ejemplo G07.
+
+    Deja cada operación principal en su propia server page, elimina las llamadas
+    internas «include» y resume los accesos a tablas con una relación por área.
+    El grafo exhaustivo permanece disponible en hojas() y verificar().
+    """
+    if actor != 'Administrador':
+        return hojas(actor)
+
+    paginas, enlaces, secciones = hojas(actor)
+    visuales, relaciones_visuales, _ = hojas_visuales(actor)
+    visuales = {k: v for k, v in visuales.items() if v[0] != 'bd'}
+    enlaces_resumidos = [
+        (a, b, st, 'consultar' if st == 'link' and paginas[a][0] in ('cliente', 'form')
+         and paginas[b][0] == 'ps' else
+         'enviar' if st == 'submit' else
+         'mostrar resultado' if st == 'build' else texto)
+        for a, b, st, texto in relaciones_visuales if st != 'access'
+    ]
+    claves = set(visuales)
+
+    dominios = {
+        'usuarios': 'Acceso y usuarios', 'api_tokens': 'Acceso y usuarios',
+        'bitacora': 'Acceso y usuarios', 'recursos': 'Acceso y usuarios',
+        'permisos': 'Acceso y usuarios', 'roles': 'Acceso y usuarios',
+        'programas': 'Oferta académica', 'catalogo_cache': 'Oferta académica',
+        'programas_responsables': 'Oferta académica',
+        'prospectos': 'Gestión comercial', 'intereses': 'Gestión comercial',
+        'motivos_perdida': 'Gestión comercial', 'recordatorios': 'Gestión comercial',
+        'interacciones': 'Gestión comercial',
+        'metodos_pago': 'Pagos', 'ordenes_pago': 'Pagos', 'cuotas': 'Pagos',
+        'transacciones_stripe': 'Pagos', 'orden_pago_descuentos': 'Pagos',
+        'pagos': 'Pagos', 'descuentos': 'Pagos', 'solicitudes_compra': 'Pagos',
+        'comprobantes_pago': 'Pagos',
+        'inscripciones_comerciales': 'Seguimiento y resultados',
+        'comisiones': 'Seguimiento y resultados', 'exportaciones': 'Seguimiento y resultados',
+        'configuraciones': 'Seguimiento y resultados', 'notificaciones': 'Seguimiento y resultados',
+    }
+    por_dominio = {}
+    for a, b, st, texto in enlaces:
+        if st != 'access' or a not in claves or paginas[a][0] != 'ps':
+            continue
+        tabla = paginas[b][1].removeprefix('BD: ')
+        dominio = dominios.get(tabla, 'Datos del sistema')
+        cantidad, tablas = por_dominio.get(dominio, (0, {}))
+        n, operaciones = tablas.get(tabla, (0, set()))
+        operaciones.update(x.strip() for x in texto.split('/') if x.strip())
+        tablas[tabla] = (n + 1, operaciones)
+        por_dominio[dominio] = (cantidad + 1, tablas)
+
+    accesos_resumidos = []
+    for dominio, (_, tablas) in por_dominio.items():
+        tabla = max(tablas, key=lambda x: tablas[x][0])
+        proceso = next(a for a, b, st, _ in enlaces
+                       if st == 'access' and a in claves
+                       and paginas[b][1].removeprefix('BD: ') == tabla)
+        bd = 'bd_resumen_' + re.sub(r'[^a-z0-9]+', '_', dominio.lower()).strip('_')
+        visuales[bd] = ('bd', f'BD: {dominio}', tabla, '')
+        claves.add(bd)
+        edge = (proceso, bd, 'access', ' / '.join(sorted(tablas[tabla][1])))
+        accesos_resumidos.append(edge)
+        enlaces_resumidos.append(edge)
+
+    enlaces_resumidos = list(dict.fromkeys(enlaces_resumidos))
+    por_caso = {}
+    for titulo, nodos, _ in secciones:
+        nodos = [k for k in nodos if k in visuales]
+        if not nodos:
+            continue
+        codigo_cu = titulo.split(' ', 1)[0]
+        grupo = codigo_cu if codigo_cu.startswith('CU') else titulo
+        fila = por_caso.setdefault(grupo, [titulo, [], []])
+        fila[1].extend(k for k in nodos if k not in fila[1])
+        fila[2].extend(e for e in enlaces_resumidos
+                       if e[0] in nodos and e[1] in nodos and e not in fila[2])
+
+    for proceso, bd, *_ in accesos_resumidos:
+        for _, nodos, relaciones in por_caso.values():
+            if proceso in nodos:
+                if bd not in nodos:
+                    nodos.append(bd)
+                edge = next(e for e in enlaces_resumidos if e[0] == proceso and e[1] == bd)
+                if edge not in relaciones:
+                    relaciones.append(edge)
+                break
+
+    secciones_ejemplo = [
+        (f'{codigo_cu} — {titulo}', nodos, relaciones)
+        for codigo_cu, (titulo, nodos, relaciones) in por_caso.items()
+    ]
+    return visuales, enlaces_resumidos, secciones_ejemplo
 
 
 # ------------------------------------------------------------------ coherencia con el código (documento_p2.py la exige)
@@ -857,9 +1041,10 @@ CORTES = {f'{c}.{m}' for c, ms, *_ in INCLUIDAS.values() for m in ms.split()}
 # client page / formulario -> archivos de presentacion/src donde están sus atributos y operaciones (verificar() los busca)
 FUENTE = {
     'login': 'paginas/PLogin.jsx', 'f_login': 'paginas/PLogin.jsx', 'error': 'componentes/ui.jsx', 'exito': 'componentes/ui.jsx',
-    'menu': 'plantilla/AppShell.jsx componentes/Shell.jsx', 'f_buscar': 'componentes/Shell.jsx',
+    'menu': 'plantilla/AppShell.jsx componentes/Shell.jsx', 'resultados_busqueda': 'componentes/Shell.jsx',
     'f_perfil': 'componentes/Shell.jsx', 'f_clave': 'componentes/Shell.jsx', 'error404': 'paginas/PError404.jsx componentes/ui.jsx',
-    'catalogo': 'paginas/PCatalogo.jsx componentes/ui.jsx', 'gestion-anuncios': 'paginas/PCatalogo.jsx componentes/ui.jsx',
+    'catalogo': 'paginas/PCatalogo.jsx componentes/ui.jsx', 'registro_interes': 'paginas/PCatalogo.jsx',
+    'gestion-anuncios': 'paginas/PCatalogo.jsx componentes/ui.jsx',
     'f_interes': 'paginas/PCatalogo.jsx',
     'usuarios': 'paginas/PUsuarios.jsx componentes/ui.jsx', 'f_usuario': 'paginas/PUsuarios.jsx',
     'matriz': 'paginas/PMatriz.jsx', 'f_permiso': 'paginas/PMatriz.jsx', 'bitacora': 'paginas/PBitacora.jsx',
@@ -883,7 +1068,8 @@ FUENTE = {
 }
 SHELL = ('plantilla/AppShell.jsx', 'componentes/Shell.jsx')   # envuelven toda página: contador, búsqueda, perfil
 ESTEREOTIPO_VALIDO = {   # (tipo origen, tipo destino) admitidos por cada estereotipo (Conallen; REGLAS §5)
-    'link': {('actor', 'cliente'), ('cliente', 'cliente'), ('cliente', 'ps'), ('cliente', 'externo'), ('externo', 'cliente')},
+    'link': {('actor', 'cliente'), ('actor', 'externo'), ('cliente', 'cliente'), ('cliente', 'ps'),
+             ('cliente', 'externo'), ('externo', 'cliente')},
     'submit': {('form', 'ps')}, 'build': {('ps', 'cliente')}, 'include': {('ps', 'ps')}, 'access': {('ps', 'bd')},
     'contiene': {('cliente', 'form')},
 }
@@ -904,6 +1090,31 @@ def verificar():
     _, con_auth = codigo.usos_servicio_auth()
     archivo = {k: f'paginas/{router[r["ruta"]]}.jsx' for k, r in RECURSOS.items() if r['ruta'] in router}
     errores, usadas, archivos_vistos = [], set(), set()
+
+    # Los controles anteriores cotejan nombres de API. Estos cotejan el recorrido del actor y el menú real.
+    for actor, construir in DIAGRAMAS.items():
+        d = construir()
+        relaciones = {(a.split('#')[0], b.split('#')[0], st) for a, b, st, _ in d.enlaces}
+        if actor == 'Visitante':
+            for destino in ('catalogo', 'pago_cuota', 'stripe'):
+                if ('actor', destino, 'link') not in relaciones:
+                    errores.append(f'Visitante: falta la entrada pública a {destino}')
+        else:
+            inicio = 'inicio-vendedor' if actor == 'Vendedor' else 'dashboard'
+            if ('actor', 'login', 'link') not in relaciones:
+                errores.append(f'{actor}: la navegación no comienza en Login')
+            if ('menu', inicio, 'link') not in relaciones:
+                errores.append(f'{actor}: falta la primera vista {inicio} tras iniciar sesión')
+            permisos = PERMISOS[actor.lower()]
+            for recurso in permisos:
+                if recurso not in ('catalogo', 'login') and ('menu', recurso, 'link') not in relaciones:
+                    errores.append(f'{actor}: {recurso} tiene permiso pero no aparece en el menú')
+            ajenos = [k for k, (tipo, *_resto) in d.paginas.items()
+                      if tipo == 'cliente' and k in RECURSOS and not RECURSOS[k].get('publico') and k not in permisos]
+            if ajenos:
+                errores.append(f'{actor}: páginas sin permiso en el diagrama: {ajenos}')
+        if any(a == 'menu' and b == 'error404' for a, b, *_ in d.enlaces):
+            errores.append(f'{actor}: la página 404 no es un enlace del menú')
 
     def usos(arch):
         # Las llamadas de pagos viven en componentes importados por PAgenda: se siguen los imports locales.

@@ -12,12 +12,12 @@ PAGINA = ('actor', 'cliente', 'form', 'externo')   # tipos de la columna de pág
 CON_ESTEREOTIPO = {'form', 'bd'}   # EA escribe «Formulario» / «database»; client page y server page llevan ícono
 
 MARGEN = 40
-SEP_CAJAS = 30          # entre cajas de una misma columna
-SEP_BANDA = 60          # entre secciones (hueco seguro para cortar)
+SEP_CAJAS = 15          # entre cajas de una misma columna
+SEP_BANDA = 30          # entre secciones (hueco seguro para cortar)
 PASO_CARRIL = 7         # distancia entre carriles verticales
 TEXTO_EA = 5.0          # ancho real por carácter de los rótulos de EA a 9 pt
-ALTO_FILA = 14          # alto de un renglón de rótulo (letra 9 de EA)
-LARGO_NOMBRE = 16       # caracteres por renglón del texto de una relación
+ALTO_FILA = 11          # alto de un renglón de rótulo (letra 9 de EA)
+LARGO_NOMBRE = 20       # caracteres por renglón del texto de una relación
 HUECO_AGREGACION = 22   # franja junto a la izquierda de las páginas para las agregaciones con su formulario
 
 

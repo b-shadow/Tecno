@@ -6,7 +6,7 @@
   python ea/navegacion_hojas.py --simular       # sin EA: tamaño, franjas y letra impresa de cada actor
 
 Sincroniza los elementos del paquete con navegacion.py (el modelo es el del código: crea, actualiza y borra lo que
-sobra), los ubica con ea/franjas_navegacion.py y escribe cada relación con sus quiebres por COM; la posición de sus
+sobra), los ubica con ea/mosaico_navegacion.py y escribe cada relación con sus quiebres por COM; la posición de sus
 rótulos («estereotipo» arriba, texto abajo, junto a la caja) va directo en t_diagramlinks.Geometry porque la API no
 la expone. Salida: diagramas/nav-<actor>.emf/.png y diagramas/nav-franjas.json (alturas de corte y referencias para
 ubicar el diagrama dentro del EMF; lo lee insertar_navegacion.py). Cerrar EA antes de correrlo; respaldar el EAPX.
@@ -14,6 +14,7 @@ ubicar el diagrama dentro del EMF; lo lee insertar_navegacion.py). Cerrar EA ant
 import json
 import sys
 import winreg
+from collections import Counter
 from pathlib import Path
 
 AQUI = Path(__file__).resolve().parent
@@ -53,11 +54,13 @@ def sincronizar(r, pkg, actor, paginas, enlaces):
     actores = [e for e in pkg.Elements if e.Type == 'Actor']
     el = {}
     for k, (tipo, nombre, at, op) in paginas.items():
-        e = existentes.get(k) or (actores[0] if tipo == 'actor' and actores else None)
+        e = existentes.get(k) or (actores[0] if tipo == 'actor' and actores and
+                                   all(x.ElementID != actores[0].ElementID for x in el.values()) else None)
         if e is None:
-            e = pkg.Elements.AddNew(nombre, 'Actor' if tipo == 'actor' else 'Class'); e.Update()
+            e = pkg.Elements.AddNew(nombre, 'Actor' if tipo == 'actor' else 'Note' if tipo == 'nota' else 'Class'); e.Update()
         e.Name, e.Alias = nombre, k; e.Update()
-        if tipo != 'actor':
+        if tipo == 'nota': e.Notes = at; e.Update()
+        if tipo not in ('actor', 'nota'):
             base = k.split('#')[0]
             e.Stereotype = ESTEREOTIPO[tipo]
             e.Notes = ('Server page: ' + (N.API.get(base) or N.INCLUIDAS.get(base, ('',))[0] + ' (parte compartida, «include»)')
@@ -84,7 +87,9 @@ def sincronizar(r, pkg, actor, paginas, enlaces):
         else:   # el texto en renglones cortos: su rótulo va junto a la caja (franjas_navegacion)
             import franjas_navegacion as F
             entre_paginas = paginas[a][0] in F.PAGINA and paginas[b][0] in F.PAGINA   # pasillo izquierdo: un renglón
-            clave = (el[a].ElementID, el[b].ElementID, 'Association', st, texto if entre_paginas else '\r\n'.join(F.renglones(texto)))
+            tipo_relacion = 'Dependency' if st == 'link' else 'Association'
+            clave = (el[a].ElementID, el[b].ElementID, tipo_relacion, st,
+                     texto if entre_paginas else '\r\n'.join(F.renglones(texto)))
         deseadas[clave] = (a, b, st, texto)
     conector = {}
     for e in el.values():
@@ -100,7 +105,7 @@ def sincronizar(r, pkg, actor, paginas, enlaces):
         cliente = next(e for e in el.values() if e.ElementID == clave[0])
         c = cliente.Connectors.AddNew(clave[4], clave[2]); c.SupplierID = clave[1]
         if clave[3]: c.Stereotype = clave[3]
-        c.Direction = 'Source -> Destination' if clave[2] == 'Association' else 'Unspecified'
+        c.Direction = 'Source -> Destination'
         c.Update(); conector[enlace] = c.ConnectorID
     return el, conector
 
@@ -194,8 +199,12 @@ def correr(actores, simular):
     manifiesto = json.loads(ruta_m.read_text(encoding='utf-8')) if ruta_m.exists() else {}
     planes = {}
     for actor in actores:
-        paginas, enlaces, secciones = N.hojas(actor)
-        ac, cortes, escala = F.armar_en_franjas(paginas, enlaces, secciones, con_titulo_75=(actor == list(N.DIAGRAMAS)[0]))
+        # Administrador se presenta a nivel de navegación, como G07. El modelo
+        # exhaustivo sigue en N.hojas()/N.verificar(); los demás roles no cambian.
+        paginas, enlaces, secciones = (N.hojas_ejemplo(actor) if actor == 'Administrador'
+                                       else N.hojas(actor))
+        ac, cortes, escala = F.armar_en_franjas(paginas, enlaces, secciones,
+                                                 con_titulo_75=(actor == list(N.DIAGRAMAS)[0]))
         planes[actor] = (paginas, enlaces, ac, cortes, escala)
         print(f'{actor}: {round(ac["ancho"])} x {round(ac["alto"])}, {len(cortes) - 1} franjas, letra impresa {10 * escala:.1f} pt')
     if simular: return
@@ -226,12 +235,13 @@ def correr(actores, simular):
             stem = f'nav-{actor.lower()}'
             exportar(r, d, stem)
             xs = [x for x, _, _, _ in ac['cajas'].values()] + [p[0] for l in ac['lineas'] for p in l['puntos']]
+            nombres = Counter(paginas[k][1] for k in ac['cajas'] if paginas[k][0] in ('cliente', 'ps', 'nota'))
             manifiesto[actor] = dict(stem=stem, cortes=[round(c + DESPLAZA, 1) for c in cortes],
                                      arriba=round(min(y for _, y, _, _ in ac['cajas'].values()) + DESPLAZA, 1),
                                      abajo=round(max(y + h for _, y, _, h in ac['cajas'].values()) + DESPLAZA, 1),
                                      izquierda=round(min(xs) + DESPLAZA, 1), ancho=round(ac['ancho']), letra_pt=round(10 * escala, 1),
                                      referencias={paginas[k][1]: round(y + DESPLAZA, 1) for k, (_, y, _, _) in ac['cajas'].items()
-                                                  if paginas[k][0] in ('cliente', 'ps')})
+                                                  if paginas[k][0] in ('cliente', 'ps', 'nota') and nombres[paginas[k][1]] == 1})
             ruta_m.write_text(json.dumps(manifiesto, ensure_ascii=False, indent=1), encoding='utf-8')
     finally:
         r.CloseFile(); r.Exit()
