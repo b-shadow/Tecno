@@ -1,6 +1,6 @@
 """Base genérica de Enterprise Architect 15 Trial (COM, EA.Repository) para los diagramas del documento P2:
 clase EA (paquetes, elementos, conectores, exportación PNG + EMF) y acomodo automático de cajas.
-Extraída de p1/doc/ea/ea_p1.py para que este generador no dependa del P1. ea_p2.py fija EAPX y SALIDA."""
+Adaptada del generador del P1 (carpeta del curso); aquí no depende de nada fuera de esta carpeta. ea_p2.py fija EAPX y SALIDA."""
 import math, pathlib, random, shutil
 import win32com.client
 

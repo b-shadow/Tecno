@@ -1,7 +1,7 @@
 """Construye en Enterprise Architect 15 Trial (COM) los diagramas del documento P2 y los exporta a ../diagramas/.
 
   python ea/ea_p2.py                     todos los diagramas (repositorio nuevo: ea/crm-p2.eapx)
-  python ea/ea_p2.py --solo datos|nav    solo esos (los PNG de los demás quedan como estaban)
+  python ea/ea_p2.py --solo datos|nav|clases|org    solo esos (los PNG de los demás quedan como estaban)
   python ea/ea_p2.py --guardar-posiciones
         después de acomodar cajas a mano en EA (abrir crm-p2.eapx, mover, guardar y cerrar EA): copia las posiciones a
         posiciones.json; las próximas regeneraciones las respetan. Para volver al acomodo automático de un diagrama,
@@ -9,7 +9,7 @@
 
 Notación y reglas: REGLAS_DOCUMENTO_P2.md §4–§6. Datos: ../esquema.py (BD real) y ../navegacion.py.
 La clase EA y el acomodo de cajas están en ea_base.py (extraídos del P1; este generador no depende de otra carpeta)."""
-import json, pathlib, sys
+import json, pathlib, re, sys
 import win32com.client
 
 AQUI = pathlib.Path(__file__).resolve().parent
@@ -18,7 +18,7 @@ SALIDA = DOC / 'diagramas'
 EAPX = AQUI / 'crm-p2.eapx'
 POSICIONES = AQUI / 'posiciones.json'
 sys.path[:0] = [str(DOC), str(AQUI)]
-import esquema, navegacion  # noqa: E402
+import codigo, contenido, esquema, navegacion  # noqa: E402
 import ea_base  # noqa: E402
 
 ea_base.EAPX, ea_base.SALIDA = EAPX, SALIDA   # la clase EA escribe donde le indica su módulo
@@ -197,6 +197,91 @@ def diagramas_navegacion(ea, raiz):
         navegacion_actor(ea, raiz, actor, *datos())
 
 
+# ------------------------------------------------------------------------------------------------ 5.3.2 Clases (3 capas)
+CAPAS = {'Presentacion': 'Presentación', 'Negocio': 'Negocio', 'Datos': 'Datos'}
+# filas de cada capa, de arriba abajo: página → módulo api/ | controller → request y service | repository → model
+FILAS = [('Presentacion', ('client page',)), ('Presentacion', ('module',)), ('Negocio', ('controller',)),
+         ('Negocio', ('service', 'request')), ('Datos', ('repository',)), ('Datos', ('model',))]
+ANCHO_MAX = 1500   # ancho de una fila antes de partirla (que el diagrama quepa en una página vertical)
+
+
+def _miembro(texto):
+    """'+store(r: MotivoRequest): JsonResponse' -> ('Public', 'store', [('r', 'MotivoRequest', '')], 'JsonResponse')."""
+    vis = {'+': 'Public', '-': 'Private', '#': 'Protected'}.get(texto[0], 'Public')
+    m = re.match(r'[+#-]?(\w+)\((.*)\)(?::\s*(.+))?$', texto)
+    params = []
+    for p in [x.strip() for x in m.group(2).split(',') if x.strip()]:
+        nombre, _, defecto = p.partition('=')
+        nombre, _, tipo = nombre.partition(':')
+        params.append((nombre.strip(), tipo.strip(), defecto.strip()))
+    return vis, m.group(1), params, (m.group(3) or '').strip()
+
+
+def clases_cu(ea, raiz):
+    """Un diagrama de clases por CU con las 3 capas reales (REGLAS §4 5.3.2 y §6b), leído del código por codigo.py:
+    «client page» → «module» api/<area>.js → «controller» → «request» / «service» → «repository» → «model»."""
+    for cu, titulo in contenido.CU.items():
+        clases, deps, errores = codigo.cadena(cu)
+        assert not errores, errores
+        pkg = ea.paquete(raiz, f'{cu} Clases')
+        capas = {c: ea.paquete(pkg, n) for c, n in CAPAS.items()}
+        el, medidas = {}, {}
+        for n, x in clases.items():
+            # «repository» es un estereotipo propio de EA que se dibuja como cilindro y oculta los métodos
+            e = ea.elemento(capas[x['capa']], n, 'Class', {'repository': 'repositorio'}.get(x['estereotipo'], x['estereotipo']))
+            for i, a in enumerate(x['atributos']):
+                nombre, _, tipo = a.partition(': ')
+                at = e.Attributes.AddNew(nombre, tipo); at.Visibility = 'Private'; at.Pos = i; at.Update()
+            for i, texto in enumerate(x['metodos']):
+                vis, nombre, params, ret = _miembro(texto)
+                m = e.Methods.AddNew(nombre, ret); m.Visibility = vis; m.Pos = i; m.Update()
+                for j, (pn, pt, pd) in enumerate(params):
+                    p = m.Parameters.AddNew(pn, pt); p.Position = j
+                    if pd: p.Default = pd
+                    p.Update()
+            e.Update(); el[n] = e
+            largo = max([len(n) + 4] + [len(a) + 2 for a in x['atributos']] + [len(t) for t in x['metodos']])
+            medidas[n] = (max(120, int(6.3 * largo) + 24), 46 + 14 * (len(x['atributos']) + len(x['metodos'])))
+        for a, b in sorted(deps):
+            ea.conector(el[a], el[b], 'Dependency', '', 'use')
+        d = ea.diagrama(pkg, f'{cu}. {titulo}', 'Logical')
+        estilo = re.sub(r'OpParams=\d;?', '', d.ExtendedStyle or '')
+        d.ExtendedStyle = estilo + ('' if estilo.endswith(';') or not estilo else ';') + 'OpParams=2;'; d.Update()   # parámetros con nombre y tipo
+        # filas partidas a ANCHO_MAX; cada capa dentro de un marco «boundary» con el nombre de su paquete
+        y, pos, marcos, capa_ant = 30, {}, {}, None
+        for capa, sts in FILAS:
+            fila = [n for n in clases if clases[n]['capa'] == capa and clases[n]['estereotipo'] in sts]
+            if not fila: continue
+            if capa != capa_ant: y += 40; capa_ant = capa   # espacio para el nombre de la capa
+            y0, x, alto = y, 40, 0
+            for n in fila:
+                w, h = medidas[n]
+                if x + w > ANCHO_MAX and x > 40: x, y, alto = 40, y + alto + 30, 0
+                pos[n] = (x, y, w, h); x += w + 30; alto = max(alto, h)
+            y += alto + 40
+            marcos.setdefault(capa, [y0, y])[1] = y
+        ancho = max(x + w for x, _, w, _ in pos.values()) + 25
+        for capa, (y0, y1) in marcos.items():   # primero los marcos: quedan detrás de las clases
+            b = ea.elemento(capas[capa], f'Capa {CAPAS[capa]}', 'Boundary')
+            ea.poner(d, b, 15, y0 - 38, ancho, y1 - y0 + 18)
+        for n, (x, y_, w, h) in pos.items():
+            ea.poner(d, el[n], x, y_, w, h)
+        ea.exportar(d, f'cls-{cu.lower()}.png')
+
+
+# ------------------------------------------------------------------------------------------------ 2.5 Organigrama
+def organigrama(ea, raiz):
+    """Área comercial de UNEXO (contenido.ORGANIGRAMA_CARGOS): una caja por cargo, unida a su superior."""
+    pkg = ea.paquete(raiz, 'Organigrama')
+    el = {c: ea.elemento(pkg, c, 'Class') for c, _ in contenido.ORGANIGRAMA_CARGOS}
+    for c, jefe in contenido.ORGANIGRAMA_CARGOS:
+        if jefe: ea.conector(el[jefe], el[c], 'Association')
+    d = ea.diagrama(pkg, contenido.ORGANIGRAMA, 'Logical')
+    for i, (c, _) in enumerate(contenido.ORGANIGRAMA_CARGOS):
+        ea.poner(d, el[c], 60, 40 + i * 110, 200, 60)
+    ea.exportar(d, 'organigrama.png')
+
+
 # ------------------------------------------------------------------------------------------------ posiciones
 def guardar_posiciones():
     r = win32com.client.Dispatch('EA.Repository')
@@ -214,7 +299,9 @@ def guardar_posiciones():
 
 
 PARTES = {'datos': lambda ea, m: conceptual(ea, ea.paquete(m, 'Diseño de Datos')),
-          'nav': lambda ea, m: diagramas_navegacion(ea, ea.paquete(m, 'Diseño de Navegacion'))}
+          'nav': lambda ea, m: diagramas_navegacion(ea, ea.paquete(m, 'Diseño de Navegacion')),
+          'clases': lambda ea, m: clases_cu(ea, ea.paquete(m, 'Análisis de clases')),
+          'org': lambda ea, m: organigrama(ea, ea.paquete(m, 'Organización'))}
 
 
 def main():
