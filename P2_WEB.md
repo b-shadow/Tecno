@@ -205,7 +205,7 @@ Tailwind CSS v4** (ver abajo).
 - **Pruebas:** `verificar_p2.py` en verde y repetible sobre la misma base; navegadores 321/0 contra Vite (:5173);
   integridad OK sobre una base creada desde cero con las migraciones de `datos/`.
 - **Pendiente:** despliegue en tecnoweb (§6, adaptado a 3 carpetas), repo `inf513-proyecto2` público, tarball, documento
-  (diseño procedimental: ver `REGLAS_DOCUMENTO_P2.md` §6b) y hoja de rescate.
+  (diseño procedimental: ver `generadorDocumento/REGLAS_DOCUMENTO_P2.md` §6b) y hoja de rescate.
 
 ## 8. Lista de verificación final
 
