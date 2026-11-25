@@ -1,12 +1,9 @@
-"""Un diagrama de navegación grande por actor (como G07), pensado para cortarse en franjas apaisadas sin perder la
-continuidad: cada elemento aparece una sola vez, en el orden de implementación (login → menú → CU1 … CU8), y las
-relaciones pasan de una franja a la siguiente.
-
-Columnas: páginas (actor, client pages con sus formularios debajo, página externa) | server pages | tablas.
-Cada relación es ortogonal: sale horizontal del extremo que lleva el rótulo («estereotipo» arriba de la línea, texto
-debajo, pegados a la caja), baja o sube por el carril vertical de la caja del otro extremo y entra horizontal. Todas
-las relaciones que llegan a una misma caja comparten su carril (como un bus), así que ningún carril pisa otro, ninguna
-línea cruza una caja y los rótulos no se enciman. Los cortes de las franjas caen en huecos sin cajas ni rótulos.
+"""Un diagrama de navegación grande por actor (como G07), pensado para cortarse en franjas apaisadas: secciones en
+el orden de implementación (login → menú → CU1 … CU8), cada una en una banda con sus columnas alineadas
+(páginas | server pages | tablas de la sección), así que toda franja muestra clases. Las relaciones de navegación que
+cruzan secciones (menú → página, página → ficha, server pages compartidos) siguen de una franja a la siguiente, cada
+una por su propio carril y con su «estereotipo» y texto junto a la caja: ninguna línea comparte tramo con otra ni
+cruza una caja. Los cortes caen entre cajas.
 """
 import math
 
@@ -18,8 +15,9 @@ MARGEN = 40
 SEP_CAJAS = 30          # entre cajas de una misma columna
 SEP_BANDA = 60          # entre secciones (hueco seguro para cortar)
 PASO_CARRIL = 7         # distancia entre carriles verticales
+TEXTO_EA = 5.0          # ancho real por carácter de los rótulos de EA a 9 pt
 ALTO_FILA = 14          # alto de un renglón de rótulo (letra 9 de EA)
-LARGO_NOMBRE = 20       # caracteres por renglón del texto de una relación
+LARGO_NOMBRE = 16       # caracteres por renglón del texto de una relación
 HUECO_AGREGACION = 22   # franja junto a la izquierda de las páginas para las agregaciones con su formulario
 
 
@@ -69,7 +67,10 @@ def ancho_texto(s):
 
 
 def armar(paginas, enlaces, secciones, cortes_y=()):
-    """cortes_y: alturas fijas donde se parte en franjas; ninguna caja queda atravesada (baja a la franja siguiente)."""
+    """Acomodo del diagrama de un actor. Cada sección (en orden de implementación) ocupa una banda horizontal con sus
+    tres columnas alineadas: páginas (con sus formularios debajo) | server pages | tablas de esa sección. Cada relación
+    tiene su propio puerto en cada caja y su propio carril vertical (ninguna comparte tramo con otra), así que se puede
+    seguir de punta a punta. cortes_y: alturas donde se parte en franjas; ninguna caja queda atravesada."""
     tipo = {k: v[0] for k, v in paginas.items()}
     col = {k: {'ps': 'B', 'bd': 'C'}.get(t, 'A') for k, t in tipo.items()}
     duenio = {}
@@ -80,64 +81,68 @@ def armar(paginas, enlaces, secciones, cortes_y=()):
         for k in claves:
             if k in duenio and k not in formularios.setdefault(duenio[k], []): formularios[duenio[k]].append(k)
 
-    # ---------------------------------------------------------------- 1. de qué lado va cada extremo y cuál lleva rótulo
-    # lado: ('der' / 'izq'); el extremo con rótulo sale en su propio puerto, el otro entra al bus de su caja
+    def filas_de(i):
+        a, b, _, texto = enlaces[i]
+        return renglones(texto)
+
+    def alto_rotulo(i):   # «estereotipo» arriba de la línea y el texto (uno o más renglones) debajo
+        return ALTO_FILA * (1 + max(1, len(filas_de(i)))) + 8
+
+    # ---------------------------------------------------------------- 1. lados y rótulo de cada relación
     def lados(a, b):
         ca, cb = col[a], col[b]
         if ca == cb == 'A': return 'izq', 'izq'
         if ca == cb == 'B': return 'der', 'der'
-        if ca < cb: return 'der', 'izq'
-        return 'izq', 'der'
-    extremos = {}   # (clave, lado) -> [(i, 'a' | 'b', con_rotulo)]
-    rotulado = {}
+        return ('der', 'izq') if ca < cb else ('izq', 'der')
+    extremos, rotulado = {}, {}   # (clave, lado) -> [(i, 'a'|'b', con_rotulo)]
     for i, (a, b, st, texto) in enumerate(enlaces):
         if st == 'contiene': continue
         la, lb = lados(a, b)
         if col[a] == 'A' and col[b] == 'B': r = 'a'          # link / submit: rótulo junto a la página
-        elif col[a] == 'B' and col[b] == 'A': r = 'b'        # build: rótulo junto a la página que arma
+        elif col[a] == 'B' and col[b] == 'A': r = 'b'        # build: junto a la página que arma
         elif col[a] == 'B': r = 'a'                          # access / include: junto al server page
-        else:                                                # entre páginas: en la punta con menos rótulos
-            na = sum(1 for x in extremos.get((a, la), []) if x[2])
-            nb = sum(1 for x in extremos.get((b, lb), []) if x[2])
-            r = 'a' if na <= nb else 'b'
+        else: r = 'b' if a == 'menu' or tipo[a] == 'actor' else 'a'   # entre páginas: el menú rotula en el destino
         rotulado[i] = r
         extremos.setdefault((a, la), []).append((i, 'a', r == 'a'))
         extremos.setdefault((b, lb), []).append((i, 'b', r == 'b'))
+    tronco = {}   # i -> (clave, lado) de la caja de la que sale o a la que llega el tronco compartido
+    for i, (a, b, st, _) in enumerate(enlaces):
+        if st == 'contiene': continue
+        la, lb = lados(a, b)
+        if st in ('include', 'access'): tronco[i] = (b, lb)   # todas llegan a la misma caja, en un solo sentido
+        elif col[a] == col[b] == 'A' and a == 'menu': tronco[i] = (a, la)
+        elif col[a] == col[b] == 'A' and b == 'ficha': tronco[i] = (b, lb)
+    alto_puerto = lambda i, rot: alto_rotulo(i) if rot else 14
 
-    def filas_de(i):
-        a, b, _, texto = enlaces[i]
-        return [texto] if tipo[a] in PAGINA and tipo[b] in PAGINA else renglones(texto)   # pasillo izquierdo: un renglón
-
-    def alto_rotulo(i):
-        return ALTO_FILA * (1 + max(1, len(filas_de(i)))) + 10
-
-    # ---------------------------------------------------------------- 2. tamaños: contenido o los puertos que necesita
+    # ---------------------------------------------------------------- 2. tamaños: el contenido o los puertos
     medida = {}
     for k, v in paginas.items():
         w, h = medir(*v)
         for lado in ('izq', 'der'):
             xs = extremos.get((k, lado), [])
-            necesita = sum(alto_rotulo(i) for i, _, rot in xs if rot) + (24 if any(not rot for *_, rot in xs) else 0) + 24
-            h = max(h, necesita)
+            propios = sum(alto_puerto(i, rot) for i, _, rot in xs if tronco.get(i) != (k, lado))
+            h = max(h, propios + (14 if any(tronco.get(i) == (k, lado) for i, _, _ in xs) else 0) + 20)
         medida[k] = (w, h)
 
-    # ---------------------------------------------------------------- 3. bandas: cada elemento en la primera sección donde actúa
+    # ---------------------------------------------------------------- 3. bandas por sección
     def actua(k, rel):
         return any(k in (a, b) and (st in ('submit', 'contiene', 'access', 'include') or
                                      (st in ('link', 'build') and 'ps' in (tipo[a], tipo[b]))) for a, b, st, _ in rel)
     casa = {}
+    for n, (_, claves, rel) in enumerate(secciones):   # un server page va donde están sus tablas
+        for a, b, st, _ in rel:
+            if st == 'access' and a not in casa: casa[a] = n
     for n, (_, claves, rel) in enumerate(secciones):
         for k in claves:
             if k not in casa and (actua(k, rel) or tipo[k] in ('actor', 'externo')): casa[k] = n
     for n, (_, claves, _) in enumerate(secciones):
         for k in claves: casa.setdefault(k, n)
     for f, p in duenio.items(): casa[f] = casa[p]
-    orden = [k for _, claves, _ in secciones for k in claves]
-    orden = list(dict.fromkeys(orden))
-    y, cima = {}, MARGEN
+    orden = list(dict.fromkeys(k for _, claves, _ in secciones for k in claves))
     vecinos = {}
     for a, b, st, _ in enlaces:
         vecinos.setdefault(a, []).append(b); vecinos.setdefault(b, []).append(a)
+    y = {}
     centro = lambda k: y[k] + medida[k][1] / 2
 
     def sin_cruzar(y0, h):
@@ -146,105 +151,100 @@ def armar(paginas, enlaces, secciones, cortes_y=()):
         return y0
 
     def colocar(ks, deseo, piso):
-        """y de cada caja lo más cerca de su deseo, en ese orden, sin encimarse y desde piso (regresión isotónica)."""
         if not ks: return piso
         ys = _isotonica([deseo(k) - medida[k][1] / 2 for k in ks], [medida[k][1] for k in ks], SEP_CAJAS)
-        corr = max(0, piso - ys[0])
-        previo = piso - SEP_CAJAS
+        corr, previo = max(0, piso - ys[0]), piso - SEP_CAJAS
         for k, v in zip(ks, ys):
             y[k] = sin_cruzar(max(v + corr, previo + SEP_CAJAS), medida[k][1]); previo = y[k] + medida[k][1]
         return previo
 
-    piso = {'A': MARGEN, 'B': MARGEN, 'C': MARGEN}   # cada columna se apila sola: no espera el fondo de las otras
+    cima = MARGEN
     for n in range(len(secciones)):
         nuevos = [k for k in orden if casa[k] == n and k not in duenio]
         if not nuevos: continue
-        acc = piso['A']   # columna A: apilada en orden, cada página con sus formularios debajo
+        acc = cima
         for k in [k for k in nuevos if col[k] == 'A']:
             y[k] = sin_cruzar(acc, medida[k][1]); acc = y[k] + medida[k][1] + SEP_CAJAS
             for f in formularios.get(k, []):
                 y[f] = sin_cruzar(acc, medida[f][1]); acc = y[f] + medida[f][1] + SEP_CAJAS
-        piso['A'] = acc
-        prom = lambda k, c: [centro(v) for v in vecinos.get(k, []) if col[v] == c and v in y]
+        fondo = acc - SEP_CAJAS
+        prom = lambda k, c: [centro(v) for v in vecinos.get(k, []) if col[v] == c and v in y and casa[v] == n]
         bs = [k for k in nuevos if col[k] == 'B']
         deseo_b = {k: (sum(prom(k, 'A')) / len(prom(k, 'A')) if prom(k, 'A') else
-                       sum(prom(k, 'B')) / len(prom(k, 'B')) if prom(k, 'B') else piso['B']) for k in bs}
+                       sum(prom(k, 'B')) / len(prom(k, 'B')) if prom(k, 'B') else cima) for k in bs}
         bs.sort(key=lambda k: (deseo_b[k], orden.index(k)))
-        if bs: piso['B'] = colocar(bs, lambda k: deseo_b[k], piso['B']) + SEP_CAJAS
+        fondo = max(fondo, colocar(bs, lambda k: deseo_b[k], cima))
         cs = [k for k in nuevos if col[k] == 'C']
-        deseo_c = {k: (sum(prom(k, 'B')) / len(prom(k, 'B')) if prom(k, 'B') else piso['C']) for k in cs}
+        deseo_c = {k: (sum(prom(k, 'B')) / len(prom(k, 'B')) if prom(k, 'B') else cima) for k in cs}
         cs.sort(key=lambda k: (deseo_c[k], orden.index(k)))
-        if cs: piso['C'] = colocar(cs, lambda k: deseo_c[k], piso['C']) + SEP_CAJAS
+        fondo = max(fondo, colocar(cs, lambda k: deseo_c[k], cima))
+        cima = sin_cruzar(fondo + SEP_BANDA, 0)
 
-    # ---------------------------------------------------------------- 4. puertos de cada lado de cada caja
-    puerto, bus = {}, {}   # puerto[(i, 'a'|'b')] = y; bus[(clave, lado)] = y
+    # ---------------------------------------------------------------- 4. un puerto por extremo
+    puerto = {}
+    otro = lambda i, e: enlaces[i][1] if e == 'a' else enlaces[i][0]
     for (k, lado), xs in extremos.items():
-        otro = lambda i, e: enlaces[i][1] if e == 'a' else enlaces[i][0]
-        con = sorted([(i, e) for i, e, rot in xs if rot], key=lambda t: centro(otro(*t)))
-        sin = [(i, e) for i, e, rot in xs if not rot]
-        items = [('r', t) for t in con]
-        if sin:   # el bus se ubica entre los rótulos según dónde están, en promedio, sus otros extremos
-            prom_bus = sum(centro(otro(*t)) for t in sin) / len(sin)
-            pos = sum(1 for t in con if centro(otro(*t)) < prom_bus)
-            items.insert(pos, ('b', None))
-        alto = lambda it: alto_rotulo(it[1][0]) if it[0] == 'r' else 24
-        total = sum(alto(it) for it in items)
-        h = medida[k][1]
-        yy = y[k] + max(12, (h - total) / 2)
-        for it in items:
-            if it[0] == 'r':   # la línea va a 1 renglón del borde superior de su bloque: estereotipo arriba, texto abajo
-                puerto[it[1]] = yy + ALTO_FILA + 4
-            else:
-                bus[(k, lado)] = yy + 12
-                for t in sin: puerto[t] = yy + 12
-            yy += alto(it)
+        del_tronco = [(i, e) for i, e, _ in xs if tronco.get(i) == (k, lado)]
+        xs = sorted([x for x in xs if tronco.get(x[0]) != (k, lado)], key=lambda t: (centro(otro(t[0], t[1])), t[0]))
+        items = [(i, e, rot) for i, e, rot in xs]
+        if del_tronco:   # el tronco entra o sale por un solo puerto, en el lado de la caja más cercano a sus ramas
+            prom = sum(centro(otro(i, e)) for i, e in del_tronco) / len(del_tronco)
+            items.insert(sum(1 for i, e, _ in xs if centro(otro(i, e)) < prom), ('T', None, False))
+        total = sum(14 if it[0] == 'T' else alto_puerto(it[0], it[2]) for it in items)
+        yy = y[k] + max(10, (medida[k][1] - total) / 2)
+        for i, e, rot in items:
+            if i == 'T':
+                for t in del_tronco: puerto[t] = yy + 7
+                yy += 14; continue
+            puerto[(i, e)] = yy + (ALTO_FILA + 3 if rot else 7)   # con rótulo: el estereotipo arriba de la línea
+            yy += alto_puerto(i, rot)
 
-    # ---------------------------------------------------------------- 5. columnas y carriles
+    # ---------------------------------------------------------------- 5. columnas y un carril por relación
     ancho = {c: max([medida[k][0] for k in paginas if col[k] == c] + [0]) for c in 'ABC'}
-    zona_rot = {c: 0 for c in ('L', 'AB', 'BC')}
+    canal = {}
+    zona_rot = {'L': 0, 'AB': 0, 'BC': 0}
     for i, (a, b, st, texto) in enumerate(enlaces):
         if st == 'contiene': continue
-        canal = 'L' if col[a] == col[b] == 'A' else 'AB' if 'A' in (col[a], col[b]) else 'BC'
+        canal[i] = 'L' if col[a] == col[b] == 'A' else 'AB' if 'A' in (col[a], col[b]) else 'BC'
         w = max([ancho_texto(f'«{st}»')] + [ancho_texto(s) for s in filas_de(i)])
-        zona_rot[canal] = max(zona_rot[canal], w + 10)
-    # buses: intervalo vertical que recorre cada uno
-    canal_bus, tramo = {}, {}
-    for (k, lado), yb in bus.items():
-        ys = [yb]
-        for i, e, rot in extremos[(k, lado)]:
-            if not rot: ys.append(puerto[(i, 'b' if e == 'a' else 'a')])
-        tramo[(k, lado)] = (min(ys), max(ys))
-        canal_bus[(k, lado)] = 'L' if col[k] == 'A' and lado == 'izq' else 'AB' if col[k] in 'AB' and (
-            (col[k] == 'B' and lado == 'izq') or (col[k] == 'A' and lado == 'der')) else 'BC'
-    carril = {}
-    n_carriles = {}
-    for canal in ('L', 'AB', 'BC'):
-        libres = []   # [fin del último intervalo] por carril
-        for kb in sorted([kb for kb in bus if canal_bus[kb] == canal], key=lambda kb: tramo[kb]):
-            ini, fin = tramo[kb]
-            j = next((j for j, f in enumerate(libres) if f + 14 < ini), None)
-            if j is None: libres.append(fin); j = len(libres) - 1
-            else: libres[j] = fin
-            carril[kb] = j
-        n_carriles[canal] = len(libres)
-    ancho_canal = {c: zona_rot[c] + n_carriles[c] * PASO_CARRIL + 24 for c in ('L', 'AB', 'BC')}
+        zona_rot[canal[i]] = max(zona_rot[canal[i]], w + 16)
+    grupo = {i: (tronco[i] if i in tronco else i) for i in canal}   # lo que ocupa un carril
+    tramo = {}
+    for i in canal:
+        g = grupo[i]
+        ys = (puerto[(i, 'a')], puerto[(i, 'b')])
+        tramo[g] = (min(ys + (tramo.get(g, (1e9, 0))[0],)), max(ys + (tramo.get(g, (0, -1e9))[1],)))
+    carril_g, n_carriles = {}, {}
+    for c in ('L', 'AB', 'BC'):
+        fin_carril = []
+        gs = list(dict.fromkeys(grupo[i] for i in canal if canal[i] == c))
+        gs = [g for g in gs if tramo[g][1] - tramo[g][0] >= 0.5]
+        for g in sorted(gs, key=lambda g: (tramo[g][0], -tramo[g][1])):
+            ini, fin = tramo[g]
+            j = next((j for j, f in enumerate(fin_carril) if f + 10 < ini), None)
+            if j is None: fin_carril.append(fin); j = len(fin_carril) - 1
+            else: fin_carril[j] = fin
+            carril_g[g] = j
+        n_carriles[c] = len(fin_carril)
+    carril = {i: carril_g.get(grupo[i], 0) for i in canal}
+    ancho_canal = {c: zona_rot[c] + n_carriles[c] * PASO_CARRIL + 20 for c in ('L', 'AB', 'BC')}
     ancho_canal['L'] += HUECO_AGREGACION
     xA = MARGEN + ancho_canal['L']
     xB = xA + ancho['A'] + ancho_canal['AB']
     xC = xB + ancho['B'] + ancho_canal['BC']
     x_col = {'A': xA, 'B': xB, 'C': xC}
 
-    def x_carril(kb):
-        canal, j = canal_bus[kb], carril[kb]
-        if canal == 'L': return MARGEN + 10 + j * PASO_CARRIL                    # carriles a la izquierda, rótulos junto a las páginas
-        if canal == 'AB': return xB - 14 - j * PASO_CARRIL                      # rótulos junto a las páginas, carriles junto a los server pages
-        return xC - 14 - j * PASO_CARRIL                                         # rótulos junto a los server pages, carriles junto a las tablas
+    def x_carril(i):   # los carriles quedan del lado opuesto a la zona de rótulos de cada pasillo
+        c, j = canal[i], carril[i]
+        if c == 'L': return MARGEN + 8 + j * PASO_CARRIL
+        if c == 'AB': return xB - 12 - j * PASO_CARRIL
+        return xC - 12 - j * PASO_CARRIL
 
     cajas = {}
     for k in paginas:
         w, h = medida[k]
-        x0 = x_col[col[k]] if col[k] != 'C' else xC
-        cajas[k] = (x0 + (ancho[col[k]] - w) / 2 if col[k] == 'B' else x0, y[k], w, h)
+        x0 = x_col[col[k]]
+        cajas[k] = (x0 + (ancho['B'] - w) / 2 if col[k] == 'B' else x0, y[k], w, h)
 
     def borde(k, lado):
         x, _, w, _ = cajas[k]
@@ -264,21 +264,22 @@ def armar(paginas, enlaces, secciones, cortes_y=()):
                 pts = [(xf, yf + 18), (xl, yf + 18), (xl, yp + hp - 12 - 5 * fs.index(b)), (xp, yp + hp - 12 - 5 * fs.index(b))]
             lineas.append(dict(enlace=enlaces[i], puntos=pts, rotulos=None)); continue
         la, lb = lados(a, b)
+        pa, pb = (borde(a, la), puerto[(i, 'a')]), (borde(b, lb), puerto[(i, 'b')])
+        if abs(pa[1] - pb[1]) < 0.5: pts = [pa, pb]
+        else:
+            xl = x_carril(i)
+            pts = [pa, (xl, pa[1]), (xl, pb[1]), pb]
         r = rotulado[i]
         k_rot, lado_rot = (a, la) if r == 'a' else (b, lb)
-        k_bus, lado_bus = (b, lb) if r == 'a' else (a, la)
-        y_rot, y_bus = puerto[(i, r)], bus[(k_bus, lado_bus)]
-        x_rot, x_bus, xl = borde(k_rot, lado_rot), borde(k_bus, lado_bus), x_carril((k_bus, lado_bus))
-        tramo_pts = [(x_rot, y_rot), (xl, y_rot), (xl, y_bus), (x_bus, y_bus)]
-        if abs(y_rot - y_bus) < 0.5: tramo_pts = [(x_rot, y_rot), (x_bus, y_bus)]
-        pts = tramo_pts if r == 'a' else list(reversed(tramo_pts))
-        # rótulo: estereotipo arriba de la línea y texto debajo, pegados a la caja del extremo con rótulo
+        x_rot, y_rot = (pa if r == 'a' else pb)
         hacia_der = lado_rot == 'der'
         x0 = x_rot + 12 if hacia_der else x_rot - 12 - (HUECO_AGREGACION if col[k_rot] == 'A' and lado_rot == 'izq' else 0)
         filas = filas_de(i)
-        w_st = ancho_texto(f'«{st}»'); w_nom = max([ancho_texto(s) for s in filas] + [0])
-        c_st = (x0 + w_st / 2 if hacia_der else x0 - w_st / 2, y_rot - ALTO_FILA / 2 - 2)
-        lineas.append(dict(enlace=enlaces[i], puntos=pts, rotulos=dict(estereotipo=(c_st, w_st), nombre=(x0, y_rot, hacia_der, filas))))
+        real = lambda t: TEXTO_EA * len(t)   # ancho con que EA dibuja el rótulo
+        w_st, w_nom = real(f'«{st}»'), max([real(f) for f in filas] + [0])
+        x_st, x_nom = (x0, x0) if hacia_der else (x0 - w_st, x0 - w_nom)   # junto a la caja, alineado a su borde
+        lineas.append(dict(enlace=enlaces[i], puntos=pts, rotulos=dict(
+            estereotipo=((x_st + w_st / 2, y_rot - 2 - ALTO_FILA / 2), w_st), nombre=(x_nom, y_rot + 2, filas))))
     ancho_total = xC + ancho['C'] + MARGEN
     alto_total = max(yy + h for _, yy, _, h in cajas.values()) + MARGEN
     return dict(cajas=cajas, lineas=lineas, ancho=ancho_total, alto=alto_total)

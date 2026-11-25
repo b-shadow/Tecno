@@ -27,6 +27,7 @@ import re
 from contenido import PERMISOS, RECURSOS
 
 NIVEL = {'lectura': 1, 'modificacion': 2, 'eliminacion': 3}
+CERCANA = 0   # secciones de distancia hasta las que un server page o una tabla se reutiliza en vez de repetirse
 OPS = {'S': 'SELECT', 'I': 'INSERT', 'U': 'UPDATE', 'D': 'DELETE'}
 
 
@@ -34,44 +35,60 @@ class Diagrama:
     def __init__(self, permisos, actor):
         self.permisos, self.actor, self.paginas, self.enlaces, self.hojas = permisos, actor, {}, [], []
         self.incluidas = []   # server pages incluidos que usa el diagrama (sus «access» van en su propia hoja)
+        # Lo que se usa en varias secciones (páginas, server pages, tablas) se dibuja una vez en cada sección (clave#n):
+        # cada sección queda junta y sus relaciones son cortas. Solo el menú es una caja única: sus enlaces a cada
+        # página recorren el diagrama de punta a punta. local: clave -> instancia de la sección actual.
+        self.local, self.base, self.ultima = {}, {}, {}
 
     def puede(self, recurso, minimo='lectura'):
         return NIVEL.get(self.permisos.get(recurso), 0) >= NIVEL[minimo]
 
     def hoja(self, titulo):
         self.hojas.append((titulo, [], []))   # (título, claves, relaciones que se dibujan en esta sección)
+        self.local = {}
 
     def _en_hoja(self, *claves):
         for c in claves:
             if self.hojas and c not in self.hojas[-1][1]: self.hojas[-1][1].append(c)
 
     def p(self, clave, tipo, nombre, atributos='', operaciones=''):
-        self.paginas.setdefault(clave, (tipo, nombre, atributos, operaciones))   # compartidas: una vez por diagrama
-        self._en_hoja(clave)
+        if tipo in ('ps', 'bd', 'cliente', 'externo') and clave not in INCLUIDAS and clave != 'menu':
+            if clave not in self.local:
+                previa = self.ultima.get(clave)   # la de una sección cercana sirve (su línea no pasa de una página)
+                if previa and len(self.hojas) - previa[1] <= CERCANA: self.local[clave] = previa[0]
+                else: self.local[clave] = clave if clave not in self.paginas else f'{clave}#{len(self.hojas)}'
+            instancia = self.local[clave]
+            self.base[instancia] = clave
+            self.ultima[clave] = (instancia, len(self.hojas))
+        else:
+            instancia = clave   # páginas, formularios y partes compartidas: una sola vez por diagrama
+        self.paginas.setdefault(instancia, (tipo, nombre, atributos, operaciones))
+        self._en_hoja(instancia)
+        return instancia
 
     def e(self, a, b, estereotipo, texto=''):
+        a, b = self.local.get(a, a), self.local.get(b, b)
         if (a, b, estereotipo, texto) not in self.enlaces: self.enlaces.append((a, b, estereotipo, texto))
         self._en_hoja(a, b)
         if self.hojas and (a, b, estereotipo, texto) not in self.hojas[-1][2]: self.hojas[-1][2].append((a, b, estereotipo, texto))
 
     def ps(self, clave, nombre, atributos, operaciones):
         """Server page con sus «access» (y «include») leídos del código."""
-        self.p(clave, 'ps', nombre, atributos, operaciones)
-        accesos(self, clave)
+        accesos(self, self.p(clave, 'ps', nombre, atributos, operaciones))
 
 
 # ------------------------------------------------------------------ capa 3: tablas y qué hace cada método de D
-COLUMNAS = {   # columnas que muestran las cajas «database» (las que tocan los endpoints; existen en esquema.sql)
-    'usuarios': 'correo, password, rol, estado, fecha_inicio, fecha_fin', 'api_tokens': 'token_hash, usuario_correo, expira_en',
-    'bitacora': 'nro_registro, evento, usuario_correo, ip, fecha', 'recursos': 'codigo, nombre, ruta, visitas',
+COLUMNAS = {   # hasta 4 columnas por caja «database»: la clave y las que más tocan los endpoints (existen en esquema.sql)
+    'usuarios': 'correo, password, rol, estado', 'api_tokens': 'token_hash, usuario_correo, expira_en',
+    'bitacora': 'nro_registro, evento, usuario_correo, ip', 'recursos': 'codigo, nombre, ruta, visitas',
     'permisos': 'rol, recurso_codigo, acceso', 'roles': 'nombre, descripcion',
-    'intereses': 'nro_tarjeta, documento, modulo_codigo, estado, vendedor_correo, motivo_perdida',
-    'prospectos': 'documento, nombre, apellido, correo, telefono, estado', 'motivos_perdida': 'nombre, categoria',
+    'intereses': 'nro_tarjeta, documento, modulo_codigo, estado',
+    'prospectos': 'documento, nombre, apellido, correo', 'motivos_perdida': 'nombre, categoria',
     'recordatorios': 'nro_recordatorio, nro_tarjeta, fecha_programada, estado', 'interacciones': 'nro_interaccion, nro_tarjeta, tipo, resultado',
-    'programas': 'codigo, nombre', 'catalogo_cache': 'codigo, programa_codigo, nombre, precio, estado',
-    'metodos_pago': 'nro_metodo, documento, tipo, estado, stripe_metodo',
-    'ordenes_pago': 'nro_orden, nro_tarjeta, total, estado', 'cuotas': 'nro_orden, nro_cuota, monto, estado, token_pago',
-    'transacciones_stripe': 'nro_transaccion, tipo, stripe_sesion, estado_interno, token_publico',
+    'programas': 'codigo, nombre', 'catalogo_cache': 'codigo, programa_codigo, nombre, precio',
+    'metodos_pago': 'nro_metodo, documento, tipo, estado',
+    'ordenes_pago': 'nro_orden, nro_tarjeta, total, estado', 'cuotas': 'nro_orden, nro_cuota, monto, estado',
+    'transacciones_stripe': 'nro_transaccion, tipo, stripe_sesion, estado_interno',
     'orden_pago_descuentos': 'nro_orden, descuento_codigo, monto', 'pagos': 'nro_orden, estado, fecha_validacion',
     'descuentos': 'codigo, nombre, porcentaje, estado', 'solicitudes_compra': 'nro_solicitud, nro_orden, modulo_codigo, precio_acordado',
     'comprobantes_pago': 'nro_comprobante, nro_orden, nro_cuota, estado_revision',
@@ -164,16 +181,18 @@ def _permite(d, condicion):
 def accesos(d, ps):
     """«access» e «include» del server page ps, leídos de la cadena N → D del endpoint (codigo.metodos_datos)."""
     import codigo
-    if ps in INCLUIDAS:
-        clase, metodos = INCLUIDAS[ps][0], INCLUIDAS[ps][1].split()
+    if any(a == ps and st in ('access', 'include') for a, _, st, _ in d.enlaces): return   # ya dibujado
+    base = d.base.get(ps, ps)
+    if base in INCLUIDAS:
+        clase, metodos = INCLUIDAS[base][0], INCLUIDAS[base][1].split()
         cadena = [x for m in metodos for x in codigo.metodos_datos(clase, m, cortes=CORTES, propio=True)]
     else:
-        cadena = [x for f in API[ps].split() for x in codigo.metodos_datos(*_ruta(f), cortes=CORTES)]
+        cadena = [x for f in API[base].split() for x in codigo.metodos_datos(*_ruta(f), cortes=CORTES)]
     ops = {}
     for x in dict.fromkeys(cadena):
         if x[0] == 'incluye':   # corte: otra parte del servidor que se dibuja aparte
             inc = next(k for k, v in INCLUIDAS.items() if x[1] in [f'{v[0]}.{m}' for m in v[1].split()])
-            if inc != ps:   # sus «access» se dibujan una vez, en la hoja de partes compartidas (compartidas())
+            if inc != base:   # sus «access» se dibujan una vez, en la hoja de partes compartidas (compartidas())
                 d.p(inc, 'ps', *INCLUIDAS[inc][2:])
                 d.e(ps, inc, 'include', x[1].split('.')[1] + '()')
                 if inc not in d.incluidas: d.incluidas.append(inc)
@@ -182,7 +201,7 @@ def accesos(d, ps):
             tabla, _, resto = spec.partition(':')
             letras, _, cond = resto.partition('@')
             if _permite(d, cond): ops.setdefault(tabla, set()).update(letras)
-    for tabla, letras in ops.items():
+    for tabla, letras in ops.items():   # la tabla se dibuja en la sección del server page: sus «access» quedan cortos
         d.p('bd_' + tabla, 'bd', 'BD: ' + tabla, COLUMNAS[tabla])
         d.e(ps, 'bd_' + tabla, 'access', ' / '.join(OPS[l] for l in 'SIUD' if l in letras))
 
@@ -913,6 +932,7 @@ def verificar():
             if (paginas[a][0], paginas[b][0]) not in ESTEREOTIPO_VALIDO[st]:
                 errores.append(f'{actor}: «{st}» no va de {paginas[a][0]} a {paginas[b][0]} ({paginas[a][1]} → {paginas[b][1]})')
         for k, (tipo, nombre, at, op) in paginas.items():
+            k = k.split('#')[0]   # server page o tabla repetida en otra sección: se verifica igual que la original
             if tipo in ('cliente', 'form'):
                 fuentes = (FUENTE.get(k) or archivo.get(k) or '').split()
                 if k in archivo and archivo[k] not in fuentes: fuentes.insert(0, archivo[k])

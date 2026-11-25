@@ -47,18 +47,20 @@ def paquete_actor(r, actor):
 
 def sincronizar(r, pkg, actor, paginas, enlaces):
     """Elementos y relaciones del paquete del actor = navegacion.py (crea, actualiza y borra lo que sobra)."""
-    nombres = [v[1] for v in paginas.values()]
-    assert len(nombres) == len(set(nombres)), f'{actor}: nombres repetidos en navegacion.py'
-    existentes = {e.Name: e for e in pkg.Elements}
+    # cada caja se reconoce por su clave de navegacion.py (Alias): una página o tabla repetida en otra sección es
+    # otra caja con el mismo nombre
+    existentes = {e.Alias: e for e in pkg.Elements if e.Alias}
+    actores = [e for e in pkg.Elements if e.Type == 'Actor']
     el = {}
     for k, (tipo, nombre, at, op) in paginas.items():
-        e = existentes.get(nombre)
-        if e is not None and (e.Type == 'Actor') != (tipo == 'actor'): e = None
+        e = existentes.get(k) or (actores[0] if tipo == 'actor' and actores else None)
         if e is None:
             e = pkg.Elements.AddNew(nombre, 'Actor' if tipo == 'actor' else 'Class'); e.Update()
+        e.Name, e.Alias = nombre, k; e.Update()
         if tipo != 'actor':
+            base = k.split('#')[0]
             e.Stereotype = ESTEREOTIPO[tipo]
-            e.Notes = ('Server page: ' + (N.API.get(k) or N.INCLUIDAS.get(k, ('',))[0] + ' (parte compartida, «include»)')
+            e.Notes = ('Server page: ' + (N.API.get(base) or N.INCLUIDAS.get(base, ('',))[0] + ' (parte compartida, «include»)')
                        if tipo == 'ps' else f'{ESTEREOTIPO[tipo]} de la navegación (Conallen), tomada del código.')
             e.Update()
             for i in reversed(range(e.Attributes.Count)): e.Attributes.DeleteAt(i, False)
@@ -117,15 +119,13 @@ def geometria(l, cs, ce):
     t = (pts[-3], pts[-2]) if len(pts) > 3 else (pts[0], pts[-1])   # EA: tramo entre los dos últimos quiebres
     ax, ay = (t[0][0] + t[1][0]) / 2, (t[0][1] + t[1][1]) / 2
     (stx, sty), w_st = l['rotulos']['estereotipo']
-    x0, y_linea, hacia_der, filas = l['rotulos']['nombre']
-    # bloque del texto debajo de la línea, alineado a la caja. Medido en el EMF de EA: el bloque empieza 7 u. arriba
-    # del centro pedido; con varios renglones (ALN=0) su borde izquierdo queda en centro − CX + 128 − 47·renglones.
-    # EA ajusta el texto al ancho CX: se le da holgura para que respete solo los saltos de renglón propios.
+    izq, arriba, filas = l['rotulos']['nombre']
+    # Medido en el EMF de EA: el bloque del nombre empieza 7 u. arriba del centro pedido; EA ajusta el texto al ancho CX
+    # (se le da holgura) y, con varios renglones (ALN=0), su borde izquierdo queda en centro − CX + 128 − 47·renglones.
     n = max(1, len(filas)); largo = max([len(f) for f in filas] + [1])
     w_texto, w_nom = 5.0 * largo, 6.0 * largo + 14
-    izq = x0 if hacia_der else x0 - w_texto
-    nx = izq + w_nom - 128 + 47 * n if n > 1 else izq + w_texto / 2   # medido en el EMF para 2 y 3 renglones
-    ny = y_linea + 3 + 7
+    nx = izq + w_nom - 128 + 47 * n if n > 1 else izq + w_texto / 2
+    ny = arriba + 7
     rot = lambda w, h, ox, oy: (f'CX={round(w)}:CY={round(h)}:OX={round(ox)}:OY={round(oy)}:HDN=0:BLD=0:ITA=0:UND=0:'
                                 'CLR=-1:ALN={}:DIR=0:ROT=0;')
     lmt = rot(w_nom, 14 * n, nx - ax, ny - (ay - DT_NOMBRE)).format(0 if n > 1 else 1)
@@ -153,7 +153,7 @@ def dibujar(r, d, el, conector, paginas, ac):
     for l in ac['lineas']:
         rot = l['rotulos'] and dict(estereotipo=(mov(l['rotulos']['estereotipo'][0]), l['rotulos']['estereotipo'][1]),
                                     nombre=(l['rotulos']['nombre'][0] + DESPLAZA, l['rotulos']['nombre'][1] + DESPLAZA,
-                                            *l['rotulos']['nombre'][2:]))
+                                            l['rotulos']['nombre'][2]))
         por_id[conector[l['enlace']]] = dict(l, puntos=[mov(p) for p in l['puntos']], rotulos=rot)
     ids = [dl.ConnectorID for dl in d.DiagramLinks]
     faltan = set(por_id) - set(ids)
