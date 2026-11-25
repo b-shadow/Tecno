@@ -7,7 +7,7 @@
   Controller + Service fusionados, sin route-model binding), `datos/src/D*.php` (antes `*Repository`),
   `presentacion/src/paginas/P*.jsx`. `codigo.py` falla si vuelve un nombre MVC, si una N consulta la BD sin su D, si
   una D usa una N o si una página usa el cliente HTTP directo.
-- **5.3.2:** una figura por área del CU (`cls-cuN-k.png`): página → api → N → D → tablas, cada «use» con los métodos.
+- **5.3.2:** un diagrama por CU (`cls-cuN.png`, como G07): una columna por área (página → api → N → D → tablas), cada «use» con los métodos.
 - Pruebas: `scripts/verificar_p2.py` TODO OK; `verificar_navegadores.mjs` 321/321 en Chromium; `verificar_integridad.sql` OK.
 - `scripts/qa_local.py` adaptado a las 3 carpetas; el seeder apuntaba a `App\Services\Conversion` (no existía): corregido.
 

@@ -256,7 +256,7 @@ def clases_cu(ea, raiz):
             ea.conector(el[a], el[b], 'Dependency', '«use»' + ('\r\n' + texto if texto else ''))
         marcos_el = {c: ea.elemento(capas[c], f'Capa {n}', 'Boundary') for c, n in CAPAS.items()}
         for viejo in SALIDA.glob(f'cls-{cu.lower()}*.*'): viejo.unlink()   # el CU pudo tener otra cantidad de áreas
-        grupos = areas(clases, deps)
+        grupos = [('', list(clases))]   # un solo diagrama por CU, como G07 (las áreas van en columnas)
         for k, (area, sub) in enumerate(grupos, 1):
             solo = len(grupos) == 1
             sc = {n: clases[n] for n in sub}
