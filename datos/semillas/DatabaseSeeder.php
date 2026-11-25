@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use Datos\Modelos\CatalogoCache;
 use Datos\Modelos\Interes;
 use Datos\Modelos\Usuario;
-use App\Services\Conversion;
+use App\Negocio\NConversion;   // solo para sembrar la demo con la misma regla de conversión del sistema
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -108,7 +108,7 @@ class DatabaseSeeder extends Seeder
 
                 if ($estado === 'Convertido') {
                     DB::table('pagos')->where('nro_orden', $orden)->update(['estado' => 'Pago aprobado', 'fecha_validacion' => now()->subDays(2)]);
-                    Conversion::procesar($interes->fresh(), $admin);
+                    NConversion::procesar($interes->fresh(), $admin);
                 }
                 continue;
             }

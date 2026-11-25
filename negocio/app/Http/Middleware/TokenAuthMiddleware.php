@@ -2,15 +2,15 @@
 
 namespace App\Http\Middleware;
 
-use App\Services\AuthService;
+use App\Negocio\NAuth;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-/** Autenticación por token (API REST). Las reglas de vigencia están en AuthService::autenticarToken. */
+/** Autenticación por token (API REST). Las reglas de vigencia están en NAuth::autenticarToken. */
 class TokenAuthMiddleware
 {
-    public function __construct(private readonly AuthService $auth)
+    public function __construct(private readonly NAuth $auth)
     {
     }
 

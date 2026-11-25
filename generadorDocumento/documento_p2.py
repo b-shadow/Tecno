@@ -103,9 +103,11 @@ d.h('5.3.1. Diagramas de Colaboración', 4)
 for cu, nombre in C.CU.items():
     d.imagen(DIAG / f'com-{cu.lower()}.png', f'{cu}. {nombre}', alto_max=10)
 d.h('5.3.2. Análisis de clases', 4)   # 3 capas reales por CU (codigo.py → ea_p2.clases_cu), una página cada uno
-for i, (cu, nombre) in enumerate(C.CU.items()):
-    if i: d.salto()
-    d.imagen(DIAG / f'cls-{cu.lower()}.png', f'{cu}. {nombre}', alto_max=20)
+for i, (cu, nombre) in enumerate(C.CU.items()):   # una figura por área del CU (cls-cuN.png o cls-cuN-k.png)
+    figs = sorted(DIAG.glob(f'cls-{cu.lower()}-*.png'), key=lambda f: int(f.stem.rsplit('-', 1)[1])) or [DIAG / f'cls-{cu.lower()}.png']
+    for k, fig in enumerate(figs, 1):
+        if i or k > 1: d.salto()
+        d.imagen(fig, f'{cu}. {nombre}' + (f' ({k}/{len(figs)})' if len(figs) > 1 else ''), alto_max=20)
 
 # ------------------------------------------------------------------ Capítulo VII
 d.h('Capítulo VII: Diseño', 1)

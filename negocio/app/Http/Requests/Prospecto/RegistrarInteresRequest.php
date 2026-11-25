@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Prospecto;
 
-use App\Services\ProspectoService;
+use App\Negocio\NProspecto;
 
 /** CU2: formulario público "Me interesa" del catálogo (módulos sueltos o programa completo). */
 class RegistrarInteresRequest extends ProspectoRequest
@@ -14,6 +14,6 @@ class RegistrarInteresRequest extends ProspectoRequest
             'programa_codigo' => ['nullable', 'string', 'required_without_all:modulo_codigo,modulo_codigos'],
             'modulo_codigos' => ['sometimes', 'array', 'min:1'],
             'modulo_codigos.*' => ['required', 'string', 'distinct'],
-        ] + ProspectoService::reglasPersona();
+        ] + NProspecto::reglasPersona();
     }
 }

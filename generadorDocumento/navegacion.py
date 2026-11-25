@@ -530,10 +530,10 @@ API = {
     'ps_estvend': 'reportes.estadisticasVendedor', 'ps_est': 'reportes.estadisticas', 'ps_listado': 'reportes.listado',
 }
 # client page -> archivo de presentacion/src. Las del menú salen de RECURSOS + rutas.jsx; estas no son un recurso propio:
-PAGINA_EXTRA = {'login': 'paginas/Login.jsx', 'catalogo': 'paginas/Catalogo.jsx', 'error404': 'paginas/Error404.jsx',
-                'ficha': 'paginas/Agenda.jsx',            # /agenda?interes=n abre la ficha dentro de Agenda.jsx
+PAGINA_EXTRA = {'login': 'paginas/PLogin.jsx', 'catalogo': 'paginas/PCatalogo.jsx', 'error404': 'paginas/PError404.jsx',
+                'ficha': 'paginas/PAgenda.jsx',            # /agenda?interes=n abre la ficha dentro de Agenda.jsx
                 'menu': 'plantilla/AppShell.jsx',         # menú, búsqueda, perfil y contador: AppShell + componentes/Shell
-                'error': 'paginas/Login.jsx', 'exito': 'paginas/Catalogo.jsx'}   # «PC Message» dentro de su página
+                'error': 'paginas/PLogin.jsx', 'exito': 'paginas/PCatalogo.jsx'}   # «PC Message» dentro de su página
 SHELL = ('plantilla/AppShell.jsx', 'componentes/Shell.jsx')   # envuelven toda página: contador, búsqueda, perfil
 
 
