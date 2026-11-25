@@ -42,7 +42,7 @@ class NSitio
             return response()->json(['resultados' => []]);
         }
 
-        $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $termino).'%';
+        $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $termino).'%';
         $usuario = $this->auth->usuarioOpcional($r->bearerToken());
         $resultados = $this->sitio->buscarCatalogo($like)->map(fn ($modulo) => [
             'tipo' => 'Módulo',

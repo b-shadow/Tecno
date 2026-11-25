@@ -36,7 +36,7 @@ class DPago
     public function ordenes(Usuario $usuario): Collection
     {
         return OrdenPago::query()->whereHas('interes', fn ($q) => DAlcance::intereses($q, $usuario))
-            ->with('interes.prospecto', 'vendedor:correo,nombre,apellido', 'items', 'descuentos.descuento', 'pago', 'cuotas.metodo')
+            ->with('interes.prospecto', 'vendedor:correo,nombre,apellido', 'anuladaPor:correo,nombre,apellido', 'items', 'descuentos.descuento', 'pago', 'cuotas.metodo', 'transaccionesStripe')
             ->orderByDesc('nro_orden')->get();
     }
 
@@ -84,11 +84,12 @@ class DPago
             ->when($tipo, fn ($q, $valor) => $q->where('tipo', $valor))->first();
     }
 
-    /** Orden de la tarjeta con su 1.ª cuota todavía abierta (pendiente o en revisión), como en el P1. */
+    /** Orden de la tarjeta con su 1.ª cuota todavía abierta (pendiente o en revisión), excluyendo anuladas. */
     public function ordenAbierta(int $nroTarjeta): ?object
     {
         return DB::table('ordenes_pago as op')->join('pagos as pg', 'pg.nro_orden', '=', 'op.nro_orden')
-            ->where('op.nro_tarjeta', $nroTarjeta)->whereIn('pg.estado', ['Pendiente de pago', 'En revision'])
+            ->where('op.nro_tarjeta', $nroTarjeta)->where('op.estado', 'Activa')
+            ->whereIn('pg.estado', ['Pendiente de pago', 'En revision'])
             ->select('op.nro_orden', 'pg.estado')->first();
     }
     public function metodoConProspecto(MetodoPago $metodo): MetodoPago { return $metodo->loadMissing('prospecto'); }

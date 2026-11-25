@@ -1,14 +1,14 @@
 import { useState } from 'react'
-import { UserPlus, Users } from 'lucide-react'
+import { Trash2, UserPlus, Users } from 'lucide-react'
 import { leerArchivo } from '../servicios/archivos'
 import { useAppRoute } from '../servicios/navigation'
-import { puede, useAuth } from '../servicios/auth'
-import { Aviso, Boton, CabeceraPagina, Campo, Cargando, Etiqueta, Modal, Persona, Vacio, erroresDe, fecha, nombre, useAviso, useDatos } from '../componentes/ui'
+import { puede, refreshSession, useAuth } from '../servicios/auth'
+import { Aviso, Avatar, Boton, CabeceraPagina, Campo, Cargando, Etiqueta, Modal, Persona, Vacio, erroresDe, fecha, hoyLocal, nombre, useAviso, useDatos } from '../componentes/ui'
 import { apiErrorMessage } from '../servicios/errors'
 import * as usuariosApi from '../api/usuarios'
 
-const hoy = () => new Date().toISOString().slice(0, 10)
-const enUnAnio = () => new Date(Date.now() + 365 * 86400000).toISOString().slice(0, 10)
+const hoy = () => hoyLocal()
+const enUnAnio = () => hoyLocal(365)
 
 /** CU1: usuarios con rol, vigencia de la credencial y foto con nombre legible. */
 export default function PUsuarios() {
@@ -19,6 +19,7 @@ export default function PUsuarios() {
   const [editando, setEditando] = useState(null)
   const aviso = useAviso()
   const editable = puede('usuarios', 'modificacion', sesion)
+  const borrable = puede('usuarios', 'eliminacion', sesion)
 
   async function cambiarEstado(u) {
     try {
@@ -59,13 +60,13 @@ export default function PUsuarios() {
           </table>
         </div>
       )}
-      {editando && <FormUsuario usuario={editando} roles={datos?.roles || []} programas={datos?.programas || []} onCerrar={() => setEditando(null)} onListo={(m) => { aviso.ok(m); setEditando(null); recargar() }} />}
+      {editando && <FormUsuario usuario={editando} roles={datos?.roles || []} programas={datos?.programas || []} borrable={borrable} sesionCorreo={sesion.usuario?.correo} onCerrar={() => setEditando(null)} onFotoEliminada={(m, correoEditado) => { aviso.ok(m); recargar(); if (correoEditado === sesion.usuario?.correo) refreshSession().catch(() => {}) }} onListo={(m) => { aviso.ok(m); setEditando(null); recargar(); if (editando.correo === sesion.usuario?.correo) refreshSession().catch(() => {}) }} />}
       {aviso.nodo}
     </>
   )
 }
 
-function FormUsuario({ usuario, roles, programas, onCerrar, onListo }) {
+function FormUsuario({ usuario, roles, programas, borrable, sesionCorreo, onCerrar, onFotoEliminada, onListo }) {
   const nuevo = !usuario.correo
   const [form, setForm] = useState({
     nombre: usuario.nombre || '', apellido: usuario.apellido || '', correo: usuario.correo || '', telefono: usuario.telefono || '',
@@ -73,9 +74,26 @@ function FormUsuario({ usuario, roles, programas, onCerrar, onListo }) {
     fecha_inicio: usuario.fecha_inicio || hoy(), fecha_fin: usuario.fecha_fin || enUnAnio(),
     programas: (usuario.programas_a_cargo || []).map((p) => p.programa_codigo), foto: null,
   })
+  const [fotoActual, setFotoActual] = useState(usuario.foto_url || null)
+  const [confirmarQuitarFoto, setConfirmarQuitarFoto] = useState(false)
+  const [quitandoFoto, setQuitandoFoto] = useState(false)
   const [errores, setErrores] = useState({})
   const [enviando, setEnviando] = useState(false)
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value })
+  async function quitarFoto() {
+    setQuitandoFoto(true)
+    try {
+      const { data } = await usuariosApi.foto(usuario.correo)
+      setFotoActual(null)
+      setConfirmarQuitarFoto(false)
+      setForm((f) => ({ ...f, foto: null }))
+      onFotoEliminada(data.mensaje, usuario.correo)
+    } catch (err) {
+      setErrores({ ...erroresDe(err), general: apiErrorMessage(err) })
+    } finally {
+      setQuitandoFoto(false)
+    }
+  }
   async function guardar(e) {
     e.preventDefault()
     setEnviando(true)
@@ -102,6 +120,23 @@ function FormUsuario({ usuario, roles, programas, onCerrar, onListo }) {
         <Campo etiqueta="Fin de vigencia" requerido error={errores.fecha_fin}><input type="date" required min={form.fecha_inicio} value={form.fecha_fin} onChange={set('fecha_fin')} /></Campo>
         <Campo etiqueta="Estado" requerido><select value={form.estado} onChange={set('estado')}><option>activo</option><option>inactivo</option></select></Campo>
         <Campo etiqueta="Foto" error={errores.foto} ayuda="Se guarda como apellido_nombre.jpg."><input type="file" accept="image/jpeg,image/png,image/webp" onChange={async (e) => { const f = e.target.files[0]; if (f) setForm({ ...form, foto: await leerArchivo(f) }) }} /></Campo>
+        {!nuevo && fotoActual && (
+          <div className="col-span-full flex flex-wrap items-center justify-between gap-3 rounded-ui border border-filete bg-niebla-2 px-3 py-2.5">
+            <div className="flex items-center gap-2.5">
+              <Avatar usuario={{ ...usuario, foto_url: fotoActual }} />
+              <span className="text-sm">Fotografía actual registrada</span>
+            </div>
+            {borrable && (!confirmarQuitarFoto ? (
+              <button type="button" className="btn btn-peligro-suave" onClick={() => setConfirmarQuitarFoto(true)}><Trash2 size={15} /> Quitar fotografía</button>
+            ) : (
+              <div className="acciones">
+                <span className="text-xs text-tinta-suave">¿Quitar fotografía?</span>
+                <button type="button" className="btn btn-secundario" disabled={quitandoFoto} onClick={() => setConfirmarQuitarFoto(false)}>Cancelar</button>
+                <Boton className="btn-peligro" cargando={quitandoFoto} onClick={quitarFoto}>Confirmar</Boton>
+              </div>
+            ))}
+          </div>
+        )}
         {form.rol === 'coordinador' && (
           <fieldset className="col-span-full min-w-0 grid gap-2">
             <legend className="mb-2 font-bold">Programas a su cargo (RF1.3)</legend>
