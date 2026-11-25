@@ -7,3 +7,4 @@ ESQUEMA = AQUI / 'fuentes' / 'esquema.sql'                # pg_dump --schema-onl
 LOGO = AQUI / 'recursos' / 'logo_ficct.png'
 DIAGRAMAS = AQUI / 'diagramas'
 DOCUMENTO = AQUI / 'documento' / 'P2-INF513-GRUPO05SA.docx'   # cada corrida reemplaza este .docx (y exportar.ps1 su .doc/.pdf)
+EA_BASE = pathlib.Path(r'C:/Program Files (x86)/Sparx Systems/EA Trial/EABase.eapx')   # plantilla vacía de EA 15 Trial (otra instalación: cambiar aquí)

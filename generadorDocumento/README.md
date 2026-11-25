@@ -5,8 +5,12 @@ propio sistema documentado (`../negocio`, `../presentacion`, `../datos`, `../scr
 forma y contenido están en `REGLAS_DOCUMENTO_P2.md` (calco del aprobado del Grupo 07, en `referencias/`), que manda
 sobre todo lo demás.
 
-Requisitos: Python 3.12 con `python-docx`, `Pillow`, `numpy` y `pywin32`; Microsoft Word (para `exportar.ps1`);
-Enterprise Architect 15 Trial (solo para regenerar diagramas).
+Requisitos (Windows): Python 3.12 + `pip install -r requirements.txt`; Microsoft Word (para `exportar.ps1`);
+Enterprise Architect 15 Trial solo para regenerar diagramas (si se instaló en otra carpeta, cambiar `EA_BASE` en
+`rutas.py`). Para editar textos y regenerar el .docx no hace falta EA: los diagramas ya están en `diagramas/`.
+
+**Si `documento_p2.py` falla**, cada línea de `INCOHERENCIAS` dice qué no cuadra con el código y dónde: se corrige el
+texto o el diagrama (o el código, si el error está ahí) y se vuelve a correr.
 
 ## Qué hay y dónde se edita
 
@@ -18,7 +22,7 @@ Enterprise Architect 15 Trial (solo para regenerar diagramas).
 | `esquema.py` | Lee la BD de `fuentes/esquema.sql` (conceptual, mapeo, físico) y la compara con las migraciones |
 | `formato_g07.py`, `doc_ficct.py` | Formato G07 sobre la base FICCT (carátula, fuentes, tablas, franjas) |
 | `documento_p2.py` | Arma el .docx y corre los chequeos de coherencia |
-| `rutas.py` | Todas las rutas: `CRM_WEB`, `ESQUEMA`, `LOGO`, `DIAGRAMAS`, `DOCUMENTO` |
+| `rutas.py` | Todas las rutas: `CRM_WEB`, `ESQUEMA`, `LOGO`, `DIAGRAMAS`, `DOCUMENTO`, `EA_BASE` |
 | `ea/ea_p2.py`, `ea/ea_base.py` | Diagramas en Enterprise Architect 15 Trial por COM → `diagramas/` (PNG + EMF) |
 | `ea/crm-p2.eapx`, `ea/posiciones.json` | Repositorio EA y posiciones acomodadas a mano |
 | `exportar.ps1` | Word real: índices, EMF en lugar de PNG, `.doc` y `.pdf` |
