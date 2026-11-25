@@ -16,7 +16,7 @@ texto o el diagrama (o el código, si el error está ahí) y se vuelve a correr.
 
 | Archivo | Para qué |
 |---|---|
-| `contenido.py` | **Textos y datos** del documento. `None`/lista vacía = sale `[PENDIENTE]` en rojo |
+| `contenido.py` | **Textos y datos** del documento, incluidos los capítulos II/III y la bibliografía. `None`/lista vacía = sale `[PENDIENTE]` en rojo |
 | `codigo.py` | Lee el código: rutas de `api.php`, funciones de `api/<area>.js`, páginas, y la cadena Controller → Request → Service → Repository → Model por CU (5.3.2). `python codigo.py` la imprime |
 | `navegacion.py` | Diagramas de navegación por actor; `API` liga cada «server page» con su función de `api/<area>.js` |
 | `esquema.py` | Lee la BD de `fuentes/esquema.sql` (conceptual, mapeo, físico) y la compara con las migraciones |
@@ -24,6 +24,9 @@ texto o el diagrama (o el código, si el error está ahí) y se vuelve a correr.
 | `documento_p2.py` | Arma el .docx y corre los chequeos de coherencia |
 | `rutas.py` | Todas las rutas: `CRM_WEB`, `ESQUEMA`, `LOGO`, `DIAGRAMAS`, `DOCUMENTO`, `EA_BASE` |
 | `ea/ea_p2.py`, `ea/ea_base.py` | Diagramas en Enterprise Architect 15 Trial por COM → `diagramas/` (PNG + EMF) |
+| `ea/ea_faltantes.py` | Completa en el EAPX existente los 34 diagramas de requisitos, paquetes, comunicación, secuencia y despliegue; toma rutas y clases del código real |
+| `insertar_diagramas.py` | Sustituye solo los marcadores de diagramas del DOCX actual, conservando el resto de las ediciones manuales |
+| `actualizar_secuencias.py` | Reemplaza solo las ocho figuras de secuencia del DOCX actual cuando cambian sus PNG/EMF, sin reconstruir el documento |
 | `ea/crm-p2.eapx`, `ea/posiciones.json` | Repositorio EA y posiciones acomodadas a mano |
 | `exportar.ps1` | Word real: índices, EMF en lugar de PNG, `.doc` y `.pdf` |
 | `referencias/` | Documento aprobado del Grupo 07 (modelo) y síntesis de las clases del docente |
@@ -32,9 +35,12 @@ texto o el diagrama (o el código, si el error está ahí) y se vuelve a correr.
 ## Regenerar (desde esta carpeta)
 
 ```
-python ea/ea_p2.py [--solo datos|nav|clases|org]   # EA debe estar cerrado; sin --solo rehace todos
+python ea/ea_faltantes.py                          # abre el EAPX existente; conserva posiciones manuales
+python insertar_diagramas.py                       # sustituye solo diagramas pendientes del DOCX actual
+python actualizar_secuencias.py                    # si el DOCX ya tiene las figuras, refresca solo las ocho secuencias
+python ea/ea_p2.py --recrear [--solo datos|nav|clases|org]   # reconstruye el EAPX completo: usar solo tras respaldarlo
 python ea/ea_p2.py --guardar-posiciones             # tras mover cajas a mano en EA (abrir, mover, guardar, cerrar)
-python documento_p2.py                              # → documento/P2-INF513-GRUPO05SA.docx + PENDIENTES
+python documento_p2.py                              # reconstruye el DOCX completo: no conserva ediciones manuales
 powershell -ExecutionPolicy Bypass -File exportar.ps1   # → documento/*.doc y *.pdf (sobrescribe)
 ```
 

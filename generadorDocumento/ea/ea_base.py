@@ -156,6 +156,17 @@ class EA:
         self.modelo = self.r.Models.AddNew(nombre_modelo, ''); self.modelo.Update()
         self.exportados = []
 
+    @classmethod
+    def abrir_existente(cls):
+        """Amplía el proyecto P2 sin copiar EABase ni borrar los diagramas editados a mano."""
+        self = cls.__new__(cls)
+        self.r = win32com.client.Dispatch('EA.Repository')
+        if not self.r.OpenFile(str(EAPX)): raise SystemExit('EA no abrió ' + str(EAPX))
+        self.pi = self.r.GetProjectInterface()
+        self.modelo = next((m for m in self.r.Models if len(m.Packages)), self.r.Models.GetAt(0))
+        self.exportados = []
+        return self
+
     def cerrar(self):
         self.r.CloseFile(); self.r.Exit()
 
@@ -194,6 +205,30 @@ class EA:
         if card:
             c.ClientEnd.Cardinality, c.SupplierEnd.Cardinality = card
             c.ClientEnd.Update(); c.SupplierEnd.Update(); c.Update()
+        return c
+
+    def mensaje_seq(self, d, a, b, texto, n, tipo='call', args=''):
+        """Mensajes UML de secuencia, con la misma notación que el generador del P1."""
+        c = a.Connectors.AddNew(texto, 'Sequence'); c.SupplierID = b.ElementID
+        c.DiagramID = d.DiagramID; c.SequenceNo = n; c.Update()
+        p1, p3 = ('Asynchronous', 'Signal') if tipo == 'signal' else ('Synchronous', 'Call')
+        p2 = f'retval=void;params={args};paramsDlg={args};' if args else ''
+        self.r.Execute(f"UPDATE t_connector SET PDATA1='{p1}', PDATA2='{p2}', PDATA3='{p3}', "
+                       f"PDATA4='{int(tipo == 'return')}', StateFlags='IsReturn={str(tipo == 'return').lower()};' "
+                       f'WHERE Connector_ID={c.ConnectorID}')
+        return c
+
+    def mensaje_com(self, d, enlace, a, b, texto, numero, n, apilado, color=0x446688):
+        """Mensaje numerado unido a su enlace de comunicación, como en el P1."""
+        c = a.Connectors.AddNew(texto, 'Collaboration'); c.SupplierID = b.ElementID
+        c.DiagramID = d.DiagramID; c.SequenceNo = n
+        c.Direction = 'Source -> Destination'; c.Color = color; c.Update()
+        sy = 18 + 30 * apilado
+        self.r.Execute(f"UPDATE t_connector SET PDATA1='Synchronous', PDATA3='Call', PDATA4='{numero}', "
+                       f"PDATA5='SX=-15;SY={sy};EX=15;EY={sy};EDGE=2;', "
+                       f"SourceIsAggregate={enlace.ConnectorID}, RouteStyle=1, DestIsNavigable=TRUE, "
+                       f"StateFlags='IsReturn=false;', SourceTS='instance', DestTS='instance' "
+                       f'WHERE Connector_ID={c.ConnectorID}')
         return c
 
     def exportar(self, d, archivo):

@@ -67,16 +67,145 @@ FASES = {
 METODOLOGIA_CIERRE = None
 
 # ---------------------------------------------------------------- Capítulo II: Fundamentación Teórica
-PROGRAMACION_SERVIDOR = None
-TEORIA = {   # solo lo que usa crm-web (verificado en composer.json, package.json, routes/, app/Http) y lo que exige el
-             # enunciado: arquitectura de 3 capas, API RESTful, RBAC. G07 era MVC con Inertia y Vue: no se copia su lista.
-    'Fundamentos de la programación del lado del servidor': None, 'Servicios Web': None, 'Protocolo HTTP': None,
-    'Lenguaje HTML': None, 'Lenguaje PHP': None, 'Framework Laravel': None,
-    'Arquitectura de 3 capas (Presentación, Lógica de Negocio y Datos)': None, 'API RESTful': None,
-    'Hojas de estilo CSS': None, 'Framework Tailwind CSS': None, 'JavaScript': None, 'Biblioteca React': None, 'Enrutamiento en el cliente (React Router)': None,
-    'Cliente HTTP Axios': None, 'Base de datos relacional': None, 'PostgreSQL': None,
-    'Autenticación con token de acceso (Bearer)': None, 'Control de acceso basado en roles (RBAC)': None,
+# Teoria investigada con fuentes primarias; referencias y fecha de consulta en BIBLIOGRAFIA.
+PROGRAMACION_SERVIDOR = (
+    'La programación del lado del servidor procesa solicitudes recibidas por HTTP, aplica reglas de negocio, '
+    'consulta datos y devuelve una respuesta al cliente. En una aplicación con interfaz separada, esa respuesta '
+    'puede ser JSON en lugar de una página HTML. En este proyecto, React presenta la información y Laravel '
+    'atiende las solicitudes de la API, valida las entradas y coordina el acceso a PostgreSQL '
+    '(MDN Web Docs, «Introduction to the server side», s. f.; Laravel, «Routing», s. f.).'
+)
+
+TEORIA = {
+    'Fundamentos de la programación del lado del servidor': (
+        'El navegador envía una petición a una ruta del servidor; este identifica la operación, comprueba los datos y '
+        'permisos, ejecuta la lógica correspondiente y devuelve un estado HTTP y una representación del resultado. '
+        'La validación y la autorización deben repetirse en el servidor aunque la interfaz también limite las acciones. '
+        'En el CRM, las clases de negocio N* atienden las rutas y delegan la persistencia a las clases D* '
+        '(MDN Web Docs, «Introduction to the server side», s. f.; Laravel, «Validation», s. f.).'),
+    'Servicios Web': (
+        'Un servicio web expone operaciones para que otro programa intercambie información con él mediante una red. '
+        'En este sistema, la interfaz React consume un servicio HTTP que recibe parámetros y devuelve respuestas JSON: '
+        'por ejemplo, consulta el catálogo o registra un interés. El contrato de rutas y respuestas permite separar '
+        'la interfaz de la lógica que procesa la solicitud '
+        '(MDN Web Docs, «Overview of HTTP», s. f.; Laravel, «Routing», s. f.).'),
+    'Protocolo HTTP': (
+        'HTTP organiza la comunicación en solicitudes y respuestas. Sus métodos expresan la intención de la operación: '
+        'GET consulta, POST envía datos para crear o procesar, y PUT, PATCH y DELETE se usan para modificar o eliminar '
+        'recursos según el contrato de la API. Las respuestas incluyen un código de estado y pueden transportar JSON. '
+        'La interfaz del CRM utiliza estos métodos al llamar a las rutas de Laravel '
+        '(MDN Web Docs, «Overview of HTTP», s. f.).'),
+    'Lenguaje HTML': (
+        'HTML es el lenguaje de marcado que estructura el contenido de una página mediante elementos como títulos, '
+        'enlaces y formularios. Proporciona significado y organización al documento, mientras CSS define su aspecto '
+        'y JavaScript aporta comportamiento. El proyecto entrega un documento HTML inicial y React compone la '
+        'interfaz que ve el usuario (MDN Web Docs, «HTML», s. f.).'),
+    'Lenguaje PHP': (
+        'PHP es un lenguaje de programación que puede ejecutarse en el servidor para recibir datos de formularios, '
+        'consultar servicios y producir respuestas dinámicas. En este proyecto se usa PHP 8.3 o superior para las '
+        'clases de negocio, las reglas de validación y el acceso a datos que utiliza Laravel; el navegador no ejecuta '
+        'ese código PHP (PHP Documentation Group, «Introduction», s. f.).'),
+    'Framework Laravel': (
+        'Laravel organiza en PHP el ciclo de una solicitud HTTP y ofrece rutas, middleware, validación y herramientas '
+        'de acceso a datos. El proyecto utiliza Laravel 13 como base de la API: las rutas públicas y privadas están en '
+        'routes/api.php; middleware propio autentica el token y exige el permiso del recurso antes de ejecutar la '
+        'operación. Las clases de negocio se mantienen separadas de las clases de datos '
+        '(Laravel, «Routing», s. f.; Laravel, «Middleware», s. f.).'),
+    'Arquitectura de 3 capas (Presentación, Lógica de Negocio y Datos)': (
+        'Una arquitectura de tres capas distribuye las responsabilidades entre presentación, reglas de negocio y '
+        'persistencia. La primera recoge y muestra información; la segunda decide qué operaciones son válidas; '
+        'la tercera consulta y modifica los datos. En el proyecto, presentacion/ contiene React y Axios, negocio/ '
+        'contiene la API Laravel y sus reglas, y datos/ contiene los accesos a PostgreSQL. La interfaz no consulta '
+        'la base directamente (Microsoft, «Using a Three-Tier Architecture Model», s. f.).'),
+    'API RESTful': (
+        'REST es un estilo arquitectónico para sistemas distribuidos que separa cliente y servidor y define una '
+        'interfaz uniforme sobre recursos. Una API HTTP inspirada en REST identifica recursos mediante rutas, emplea '
+        'métodos HTTP y devuelve representaciones y estados de respuesta. Las rutas del CRM exponen usuarios, '
+        'prospectos, intereses y pagos mediante ese esquema; llamar a la API «RESTful» describe su diseño de '
+        'recursos y operaciones, sin afirmar que implemente todas las restricciones formales de REST '
+        '(Fielding, 2000; Laravel, «Routing», s. f.).'),
+    'Hojas de estilo CSS': (
+        'CSS define la presentación de los elementos HTML: colores, tipografía, espacios, disposición y adaptación '
+        'a distintos tamaños de pantalla. Su uso permite mantener reglas visuales comunes a las páginas. El CRM '
+        'combina una hoja de estilos propia con utilidades de Tailwind para la identidad visual y la disposición '
+        'responsiva (MDN Web Docs, «CSS», s. f.).'),
+    'Framework Tailwind CSS': (
+        'Tailwind CSS proporciona clases de utilidad para expresar estilos directamente en los componentes, como '
+        'espaciado, color, tamaño y estados. También admite variantes para puntos de quiebre y modo oscuro. '
+        'En este proyecto, Tailwind 4 complementa las reglas CSS propias de la interfaz React; las clases de utilidad '
+        'se usan para construir vistas adaptables sin que Tailwind determine la lógica de negocio '
+        '(Tailwind Labs, «Styling with utility classes», s. f.).'),
+    'JavaScript': (
+        'JavaScript es el lenguaje de programación de la interfaz web: responde a eventos, modifica el estado visible '
+        'y solicita datos al servidor. En el CRM se emplea en componentes JSX, funciones de acceso a la API y '
+        'controles de navegación. La ejecución en el navegador mejora la interacción, pero las decisiones de '
+        'autorización siguen verificándose en Laravel (MDN Web Docs, «JavaScript», s. f.).'),
+    'Biblioteca React': (
+        'React construye interfaces mediante componentes que combinan estructura, lógica de presentación y estado. '
+        'Un cambio de estado vuelve a representar la parte pertinente de la pantalla. El CRM usa React 18 para '
+        'el catálogo público y los paneles de administrador, coordinador y vendedor, mientras el servidor entrega '
+        'datos mediante la API (React, «Quick Start», s. f.).'),
+    'Enrutamiento en el cliente (React Router)': (
+        'El enrutamiento del cliente relaciona la dirección del navegador con la vista que debe mostrarse sin '
+        'solicitar un documento HTML completo en cada navegación. React Router permite configurar el árbol de rutas '
+        'con createBrowserRouter. En el proyecto, rutas.jsx declara las páginas; AppShell comprueba el menú recibido '
+        'desde la API para redirigir cuando el usuario no tiene acceso '
+        '(React Router, «createBrowserRouter», s. f.).'),
+    'Cliente HTTP Axios': (
+        'Axios es un cliente HTTP para JavaScript que permite enviar solicitudes y manejar respuestas de forma '
+        'asíncrona. El proyecto centraliza su configuración en presentacion/src/api/cliente.js: define la URL base, '
+        'solicita JSON, agrega el token Bearer cuando existe y procesa respuestas de sesión vencida o acceso '
+        'denegado. Las páginas llaman a funciones de api/ y no a la base de datos '
+        '(Axios, «First steps», s. f.).'),
+    'Base de datos relacional': (
+        'Una base de datos relacional organiza la información en tablas con filas y columnas; las claves primarias '
+        'identifican registros y las claves foráneas mantienen relaciones válidas. SQL permite consultar y modificar '
+        'estos datos. En el CRM se relacionan prospectos, intereses, órdenes, cuotas e inscripciones, y las '
+        'restricciones de la base complementan las validaciones de negocio '
+        '(PostgreSQL Global Development Group, «Foreign Keys», s. f.).'),
+    'PostgreSQL': (
+        'PostgreSQL es el gestor de base de datos utilizado para la persistencia del sistema. Admite consultas SQL, '
+        'relaciones entre tablas, claves foráneas y transacciones. En este proyecto conserva los usuarios, la '
+        'matriz de acceso, la actividad comercial y los pagos; las migraciones de datos/ definen las tablas y '
+        'restricciones que utiliza la API Laravel '
+        '(PostgreSQL Global Development Group, «Tutorial», s. f.).'),
+    'Autenticación con token de acceso (Bearer)': (
+        'Un token Bearer acredita una solicitud cuando se envía en el encabezado Authorization con el esquema '
+        'Bearer; quien posea el token puede presentarlo, por lo que debe protegerse durante su transporte y '
+        'almacenamiento. En el CRM, Laravel emite un token opaco al iniciar sesión, conserva su hash en la base y '
+        'el middleware lo verifica en las rutas privadas '
+        '(Jones y Hardt, 2012).'),
+    'Control de acceso basado en roles (RBAC)': (
+        'RBAC vincula permisos con roles y asigna esos roles a usuarios, de modo que el acceso a un recurso depende '
+        'del rol activo. El CRM utiliza Administrador, Coordinador y Vendedor; las tablas recursos y permisos '
+        'definen lectura, modificación o eliminación. La API consulta esa matriz antes de ejecutar cada acción '
+        'protegida, y el menú se construye con los recursos permitidos '
+        '(Ferraiolo, Cugini y Kuhn, 1995).'),
 }
+
+BIBLIOGRAFIA = [
+    'Axios. (s. f.). First steps. https://axios.rest/pages/getting-started/first-steps (consulta: 25 de noviembre de 2026).',
+    'Ferraiolo, D. F., Cugini, J. A. y Kuhn, D. R. (1995). Role-Based Access Control (RBAC): Features and Motivations. NIST. https://www.nist.gov/publications/role-based-access-control-rbac-features-and-motivations (consulta: 25 de noviembre de 2026).',
+    'Fielding, R. T. (2000). Architectural Styles and the Design of Network-based Software Architectures, cap. 5: Representational State Transfer. University of California, Irvine. https://ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm (consulta: 25 de noviembre de 2026).',
+    'Jones, M. y Hardt, D. (2012). RFC 6750: The OAuth 2.0 Authorization Framework: Bearer Token Usage. IETF. https://www.rfc-editor.org/rfc/rfc6750 (consulta: 25 de noviembre de 2026).',
+    'Laravel. (s. f.). Middleware. Documentación de Laravel 13.x. https://laravel.com/framework/docs/13.x/middleware (consulta: 25 de noviembre de 2026).',
+    'Laravel. (s. f.). Routing. Documentación de Laravel 13.x. https://laravel.com/framework/docs/13.x/routing (consulta: 25 de noviembre de 2026).',
+    'Laravel. (s. f.). Validation. Documentación de Laravel 13.x. https://laravel.com/framework/docs/13.x/validation (consulta: 25 de noviembre de 2026).',
+    'MDN Web Docs. (s. f.). CSS: Cascading Style Sheets. https://developer.mozilla.org/en-US/docs/Web/CSS (consulta: 25 de noviembre de 2026).',
+    'MDN Web Docs. (s. f.). HTML: HyperText Markup Language. https://developer.mozilla.org/en-US/docs/Web/HTML (consulta: 25 de noviembre de 2026).',
+    'MDN Web Docs. (s. f.). Introduction to the server side. https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Server-side/First_steps/Introduction (consulta: 25 de noviembre de 2026).',
+    'MDN Web Docs. (s. f.). JavaScript. https://developer.mozilla.org/en-US/docs/Web/JavaScript (consulta: 25 de noviembre de 2026).',
+    'MDN Web Docs. (s. f.). Overview of HTTP. https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview (consulta: 25 de noviembre de 2026).',
+    'Microsoft. (s. f.). Using a Three-Tier Architecture Model. Microsoft Learn. https://learn.microsoft.com/en-us/windows/win32/cossdk/using-a-three-tier-architecture-model (consulta: 25 de noviembre de 2026).',
+    'PHP Documentation Group. (s. f.). Introduction. PHP Manual. https://www.php.net/intro (consulta: 25 de noviembre de 2026).',
+    'PostgreSQL Global Development Group. (s. f.). Foreign Keys. Documentación de PostgreSQL 17. https://www.postgresql.org/docs/17/tutorial-fk.html (consulta: 25 de noviembre de 2026).',
+    'PostgreSQL Global Development Group. (s. f.). Tutorial. Documentación de PostgreSQL 17. https://www.postgresql.org/docs/17/tutorial.html (consulta: 25 de noviembre de 2026).',
+    'React. (s. f.). Quick Start. https://react.dev/learn (consulta: 25 de noviembre de 2026).',
+    'React Router. (s. f.). createBrowserRouter. https://reactrouter.com/api/data-routers/createBrowserRouter (consulta: 25 de noviembre de 2026).',
+    'Tailwind Labs. (s. f.). Styling with utility classes. https://tailwindcss.com/docs/styling-with-utility-classes (consulta: 25 de noviembre de 2026).',
+    'UNEXO. (s. f.). Campus virtual. FICCT-UAGRM. https://cicit.ficct.uagrm.edu.bo/moodle/?lang=es&redirect=0 (consulta: 25 de noviembre de 2026).',
+]
+
 # Dónde está cada tema / herramienta en crm-web. documento_p2.py no genera el documento si un tema o herramienta no
 # tiene evidencia o la evidencia ya no está. 'composer:x' / 'npm:x' = dependencia directa en composer.json / package.json;
 # 'ruta[:texto]' = el archivo existe (y contiene el texto). Rutas relativas a crm-web.
@@ -102,11 +231,15 @@ STACK_AJENO = ('inertia', 'vue', 'jwt', 'livewire', 'blade')   # nada de esto pu
 # Los textos del P1 eran de la Unidad de Capacitación de la FICCT: no se reutilizan. Misión, visión, objetivo y organigrama
 # son PROPUESTA DEL GRUPO a partir de ../PRODUCT.md (propósito, usuarios y criterio de éxito); confirmarlos con la clienta
 # y vaciar POR_CONFIRMAR. Ubicación: dato de UNEXO que no está en ninguna fuente.
-MISION = ('Formar profesionales mediante programas de formación y módulos independientes, acompañando a cada interesado '
+ORGANIZACION_CONTEXTO = ('UNEXO dispone de un campus virtual para cursos, módulos y perfiles, según su portal académico. '
+                        'Este proyecto documenta el proceso comercial de captación, seguimiento y matrícula de esa oferta; '
+                        'el organigrama presentado corresponde al alcance funcional del CRM y no se presenta como '
+                        'estructura institucional oficial (UNEXO, «Campus virtual», s. f.).')
+MISION = ('Propuesta del equipo de desarrollo: formar profesionales mediante programas de formación y módulos independientes, acompañando a cada interesado '
           'desde su primer contacto hasta su matrícula.')
-VISION = ('Ser una institución de formación reconocida por convertir el interés de cada persona en una matrícula, con un '
+VISION = ('Propuesta del equipo de desarrollo: ser una institución de formación reconocida por convertir el interés de cada persona en una matrícula, con un '
           'proceso comercial ordenado, medible y sin interesados olvidados.')
-OBJETIVO_EMPRESA = ('Captar, dar seguimiento y matricular a los interesados en sus programas de formación, con la '
+OBJETIVO_EMPRESA = ('Propuesta del equipo de desarrollo: captar, dar seguimiento y matricular a los interesados en sus programas de formación, con la '
                     'coordinación al tanto de cada prospecto y de los motivos por los que se pierde.')
 UBICACION = None
 ORGANIGRAMA = 'Organigrama del área comercial de UNEXO'
@@ -464,6 +597,5 @@ PRUEBAS_NEGRA = [
      'Vuelve al login y no queda token guardado en el navegador.', ' cierre de sesion'),
 ]
 CONCLUSIONES = []           # una por objetivo específico, mismo orden
-BIBLIOGRAFIA = []
 ANEXOS = []                 # (título, ruta de imagen); solo documentos que existan
 URL_GITHUB = None   # se lee de .git/config de crm-web al generar (documento_p2.py)
