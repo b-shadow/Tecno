@@ -3,7 +3,7 @@
 namespace App\Http\Requests\Prospecto;
 
 use App\Http\Requests\ApiRequest;
-use App\Services\ProspectoService;
+use App\Negocio\NProspecto;
 
 /** Base de los formularios con datos personales del prospecto: correo normalizado y atributos en español. */
 abstract class ProspectoRequest extends ApiRequest
@@ -17,6 +17,6 @@ abstract class ProspectoRequest extends ApiRequest
 
     public function attributes(): array
     {
-        return ProspectoService::ATRIBUTOS;
+        return NProspecto::ATRIBUTOS;
     }
 }
