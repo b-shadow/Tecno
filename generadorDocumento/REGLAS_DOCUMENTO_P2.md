@@ -86,6 +86,8 @@ Generador: esta carpeta, `crm-web/generadorDocumento/` (autosuficiente; cómo re
 
 ## 5. Diagrama de navegación (lo que más mira el docente)
 
+Consulta los [criterios de diseño de navegación](CRITERIOS_DIAGRAMAS_NAVEGACION.md) para aplicar las decisiones vigentes sobre distribución por flujo, formularios, rombos, rótulos y cortes.
+
 - **Uno por actor de 4.1** (Administrador, Coordinador, Vendedor, Visitante), **armado desde la matriz de acceso real**
   (`recursos` + `permisos` de la migración 000003): el diagrama de un rol tiene solo las páginas de su menú y, en cada una,
   solo las acciones que la interfaz le habilita con su nivel (la misma condición `puede(recurso, nivel)` de las páginas
@@ -94,18 +96,17 @@ Generador: esta carpeta, `crm-web/generadorDocumento/` (autosuficiente; cómo re
   **Un diagrama grande por actor, cortado en franjas apaisadas como G07** (una por página; el título `7.5.n.
   Diagrama de Navegación del <Actor>` solo en la primera): cada elemento aparece una vez y las relaciones siguen de una
   franja a la siguiente. Orden de implementación (login → menú → CU1 … CU8 → partes compartidas del servidor), cada
-  elemento en la primera sección donde actúa. Columnas: páginas (y sus formularios debajo) | server pages | tablas.
-  Relaciones ortogonales: salen del extremo con rótulo y llegan por el carril vertical de la caja del otro extremo
-  (un carril por caja, como un bus), sin cruzar cajas; el `«estereotipo»` va arriba de la línea y su texto debajo,
-  pegados a la caja, para que se distinga el tipo de cada relación. Los cortes caen en huecos sin cajas ni rótulos.
-  Letra impresa de 6,3 a 7,2 pt (las franjas viejas quedaban a ~2 pt). Estereotipo escrito solo donde G07 lo pone
+  elemento cerca de las pantallas, formularios, servicios y tablas con los que interactúa.
+  Los conectores pueden usar diagonales o quiebres cuando mejoran la lectura. El estereotipo y el texto quedan
+  junto a su tramo. Los cortes caen en huecos sin cajas ni rótulos y conservan la escala y el ancho del dibujo.
+  Comprueba la legibilidad en el PDF. Estereotipo escrito donde G07 lo pone
   («Formulario», «database»); client page y server page llevan su ícono de Conallen.
 - Elementos (estereotipos de Conallen que EA trae, como G07), **todos tomados del código** (`navegacion.verificar()`
   falla si algo no existe):
   - actor → `«link» /login` (o `/anuncios`) → primera página;
   - **client page** (icono de página): componente React; atributos `- dato {bag}` = su estado (`useState`/`useDatos`),
     operaciones = sus funciones reales (`mover()`, `entrar()`, `recargar()`…);
-  - **«Formulario»**: los campos `{bag}` que envía y su función de envío real (`guardar()`, `agendar()`…);
+  - **«Formulario»**: los campos `{bag}` que envía. Las funciones JavaScript pertenecen a la página;
   - **server page** con nombre `ps …` (engranaje): una ruta de `routes/api.php`; atributos = parámetros de la ruta, del
     FormRequest o de la consulta; operación = el método real de la clase N (`mover()`, `crearOrden()`…);
   - **«database» `BD: tabla`** (verde): columnas que tocan los endpoints;
@@ -122,7 +123,7 @@ Generador: esta carpeta, `crm-web/generadorDocumento/` (autosuficiente; cómo re
     N → D del endpoint (`codigo.metodos_datos`, todas las ramas) y de `navegacion.DATOS` (qué lee o escribe cada método
     de D). Se dibuja la tabla consultada (FROM/JOIN) o escrita; las relaciones cargadas con `with()`, los filtros de
     alcance y la autorización no; los triggers están en 7.3.4.
-  - página ◇— formulario (agregación, rombo en la página).
+  - página ◆— formulario integrado (composición, rombo en la página). Para un diálogo, `«link»` con la acción que lo abre.
 - **Ninguna clase vacía**: toda página tiene atributos y operaciones (excepción del docente: el «Formulario» puede no
   tener operaciones). Cada recurso del menú del rol (`recursos` + `permisos`) aparece en su diagrama.
 

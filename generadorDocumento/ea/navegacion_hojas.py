@@ -3,13 +3,12 @@
 
   python ea/navegacion_hojas.py                 # los cuatro actores
   python ea/navegacion_hojas.py Vendedor        # solo uno
-  python ea/navegacion_hojas.py --simular       # sin EA: tamaño, franjas y letra impresa de cada actor
+  python ea/navegacion_hojas.py --simular       # sin EA: dimensiones y elementos de cada actor
 
-Sincroniza los elementos del paquete con navegacion.py (el modelo es el del código: crea, actualiza y borra lo que
-sobra), los ubica con ea/mosaico_navegacion.py y escribe cada relación con sus quiebres por COM; la posición de sus
-rótulos («estereotipo» arriba, texto abajo, junto a la caja) va directo en t_diagramlinks.Geometry porque la API no
-la expone. Salida: diagramas/nav-<actor>.emf/.png y diagramas/nav-franjas.json (alturas de corte y referencias para
-ubicar el diagrama dentro del EMF; lo lee insertar_navegacion.py). Cerrar EA antes de correrlo; respaldar el EAPX.
+Sincroniza los elementos del paquete con navegacion.py y escribe cada relación con sus quiebres por COM.
+Cada rol usa un lienzo distribuido por flujos. La posición de los rótulos se guarda en
+t_diagramlinks.Geometry. Exporta el EMF y el PNG por actor y actualiza el manifiesto
+nav-franjas.json. insertar_navegacion.py calcula los cortes a partir del EMF.
 """
 import json
 import sys
@@ -46,7 +45,7 @@ def paquete_actor(r, actor):
     raise SystemExit(f'No está el paquete «Navegacion {actor}» en el EAPX')
 
 
-def sincronizar(r, pkg, actor, paginas, enlaces):
+def sincronizar(r, pkg, paginas, enlaces, nombres_visibles=None):
     """Elementos y relaciones del paquete del actor = navegacion.py (crea, actualiza y borra lo que sobra)."""
     # cada caja se reconoce por su clave de navegacion.py (Alias): una página o tabla repetida en otra sección es
     # otra caja con el mismo nombre
@@ -62,7 +61,7 @@ def sincronizar(r, pkg, actor, paginas, enlaces):
         if tipo == 'nota': e.Notes = at; e.Update()
         if tipo not in ('actor', 'nota'):
             base = k.split('#')[0]
-            e.Stereotype = ESTEREOTIPO[tipo]
+            e.StereotypeEx = ESTEREOTIPO[tipo]
             e.Notes = ('Server page: ' + (N.API.get(base) or N.INCLUIDAS.get(base, ('',))[0] + ' (parte compartida, «include»)')
                        if tipo == 'ps' else f'{ESTEREOTIPO[tipo]} de la navegación (Conallen), tomada del código.')
             e.Update()
@@ -72,6 +71,8 @@ def sincronizar(r, pkg, actor, paginas, enlaces):
             for i, a in enumerate(lista(at)):
                 x = e.Attributes.AddNew(a.split('=')[0].strip(), ''); x.Visibility = 'Private'; x.Pos = i
                 x.IsCollection = True; x.AllowDuplicates = True; x.Update()   # {bag}, como G07
+            if nombres_visibles is not None and tipo == 'form':
+                op = ''   # Conallen: las funciones de JavaScript pertenecen a la página.
             for i, o in enumerate(lista(op)):
                 m = e.Methods.AddNew(o.removesuffix('()'), ''); m.Visibility = 'Public'; m.Pos = i; m.Update()
             e.Update()
@@ -88,10 +89,13 @@ def sincronizar(r, pkg, actor, paginas, enlaces):
             import franjas_navegacion as F
             entre_paginas = paginas[a][0] in F.PAGINA and paginas[b][0] in F.PAGINA   # pasillo izquierdo: un renglón
             tipo_relacion = 'Dependency' if st == 'link' else 'Association'
-            clave = (el[a].ElementID, el[b].ElementID, tipo_relacion, st,
-                     texto if entre_paginas else '\r\n'.join(F.renglones(texto)))
+            nombre = (texto if entre_paginas else '\r\n'.join(F.renglones(texto))) if nombres_visibles is None else \
+                nombres_visibles[(a, b, st, texto)]
+            clave = (el[a].ElementID, el[b].ElementID, tipo_relacion, st, nombre)
         deseadas[clave] = (a, b, st, texto)
     conector = {}
+    if nombres_visibles is not None:
+        assert len(deseadas) == len(enlaces), 'Hay relaciones con los mismos extremos, tipo y nombre'
     for e in el.values():
         for i in reversed(range(e.Connectors.Count)):
             c = e.Connectors.GetAt(i)
@@ -101,11 +105,19 @@ def sincronizar(r, pkg, actor, paginas, enlaces):
             else: e.Connectors.DeleteAt(i, False)
         e.Connectors.Refresh()
     for clave, enlace in deseadas.items():
-        if enlace in conector: continue
-        cliente = next(e for e in el.values() if e.ElementID == clave[0])
-        c = cliente.Connectors.AddNew(clave[4], clave[2]); c.SupplierID = clave[1]
-        if clave[3]: c.Stereotype = clave[3]
-        c.Direction = 'Source -> Destination'
+        if enlace in conector:
+            if nombres_visibles is None:
+                continue
+            c = r.GetConnectorByID(conector[enlace])
+        else:
+            cliente = next(e for e in el.values() if e.ElementID == clave[0])
+            c = cliente.Connectors.AddNew(clave[4], clave[2]); c.SupplierID = clave[1]
+            if clave[3]: c.Stereotype = clave[3]
+            c.Direction = 'Source -> Destination'
+        if nombres_visibles is not None:
+            c.Notes = enlace[3]
+            if enlace[2] == 'contiene' and paginas[enlace[1]][0] == 'form':
+                c.SupplierEnd.Aggregation = 2   # composición en el extremo de la página
         c.Update(); conector[enlace] = c.ConnectorID
     return el, conector
 
@@ -113,15 +125,21 @@ def sincronizar(r, pkg, actor, paginas, enlaces):
 DT_NOMBRE, DT_ESTEREOTIPO = 8, 10   # dónde pone EA los rótulos por omisión: nombre arriba, estereotipo abajo del ancla
 
 
-def geometria(l, cs, ce):
+def geometria(l, cs, ce, horizontal=False):
     """Geometry de t_diagramlinks: extremos (SX/SY/EX/EY, y de EA hacia arriba) y rótulos movidos a su lugar.
-    EA ancla los rótulos en el medio del tramo entre los dos últimos quiebres (o de la recta); OX/OY los corren desde ahí."""
+    OX/OY desplazan los rótulos desde el ancla que elige EA."""
     pts = l['puntos']
     (sx, sy), (ex, ey) = pts[0], pts[-1]
     lado = lambda px, py, b: 2 if px >= b[2] + b[4] - 1 else 4 if px <= b[2] + 1 else 3 if py >= b[3] + b[5] - 1 else 1
     g = f'SX={round(sx - cs[0])};SY={round(cs[1] - sy)};EX={round(ex - ce[0])};EY={round(ce[1] - ey)};EDGE={lado(sx, sy, cs)};'
     if not l['rotulos']: return g
-    t = (pts[-3], pts[-2]) if len(pts) > 3 else (pts[0], pts[-1])   # EA: tramo entre los dos últimos quiebres
+    if horizontal and len(pts) >= 3 and len(pts) != 4:
+        # EA 15 centra el ancla en este tramo en las relaciones personalizadas
+        # de varios quiebres. Medido contra los textos del EMF exportado.
+        i = len(pts) // 2
+        t = (pts[i], pts[i + 1])
+    else:
+        t = (pts[-3], pts[-2]) if len(pts) > 3 else (pts[0], pts[-1])
     ax, ay = (t[0][0] + t[1][0]) / 2, (t[0][1] + t[1][1]) / 2
     (stx, sty), w_st = l['rotulos']['estereotipo']
     izq, arriba, filas = l['rotulos']['nombre']
@@ -138,8 +156,8 @@ def geometria(l, cs, ce):
     return g + f'$LLB=;LLT=;LMT={lmt}LMB={lmb}LRT=;LRB=;IRHS=;ILHS=;'
 
 
-def dibujar(r, d, el, conector, paginas, ac):
-    """Rehace el diagrama general del actor con el acomodo de franjas_navegacion."""
+def dibujar(r, d, el, conector, paginas, ac, horizontal=False):
+    """Rehace el diagrama general del actor con las posiciones calculadas."""
     for i in reversed(range(d.DiagramObjects.Count)): d.DiagramObjects.DeleteAt(i, False)
     d.DiagramObjects.Refresh(); d.Update()
     cajas = {k: (x + DESPLAZA, y + DESPLAZA, w, h) for k, (x, y, w, h) in ac['cajas'].items()}
@@ -168,10 +186,12 @@ def dibujar(r, d, el, conector, paginas, ac):
         l = por_id.get(dl.ConnectorID)
         if l is None: dl.IsHidden = True; dl.Update(); continue
         c = r.GetConnectorByID(dl.ConnectorID)
-        g = geometria(l, centro[c.ClientID], centro[c.SupplierID])
+        g = geometria(l, centro[c.ClientID], centro[c.SupplierID], horizontal)
         camino = ''.join(f'{round(px)}:{-round(py)};' for px, py in l['puntos'][1:-1])
         dl.Geometry = g.split('$')[0]
-        if camino: dl.Style = 'Mode=3;EOID=;SOID=;Color=-1;LWidth=0;'; dl.Path = camino
+        if camino or horizontal:
+            dl.Style = 'Mode=3;EOID=;SOID=;Color=-1;LWidth=0;'
+            dl.Path = camino
         dl.IsHidden = False; dl.Update()
         if '$' in g: rotulos[dl.ConnectorID] = g
     d.Update()
@@ -187,26 +207,22 @@ def exportar(r, d, stem):
     pi = r.GetProjectInterface()
     r.ReloadDiagram(d.DiagramID)
     assert pi.PutDiagramImageToFile(d.DiagramGUID, str(DIAGRAMAS / f'{stem}.emf'), 0), f'No exportó {stem}.emf'
-    pi.PutDiagramImageToFile(d.DiagramGUID, str(DIAGRAMAS / f'{stem}.png'), 1)
+    assert pi.PutDiagramImageToFile(d.DiagramGUID, str(DIAGRAMAS / f'{stem}.png'), 1), f'No exportó {stem}.png'
     print('Exportado', stem, flush=True)
 
 
 def correr(actores, simular):
     import win32com.client
     import sincronizar_documentacion as S
-    import franjas_navegacion as F
+    from ea import navegacion_roles
     ruta_m = DIAGRAMAS / 'nav-franjas.json'
     manifiesto = json.loads(ruta_m.read_text(encoding='utf-8')) if ruta_m.exists() else {}
     planes = {}
     for actor in actores:
-        # Administrador se presenta a nivel de navegación, como G07. El modelo
-        # exhaustivo sigue en N.hojas()/N.verificar(); los demás roles no cambian.
-        paginas, enlaces, secciones = (N.hojas_ejemplo(actor) if actor == 'Administrador'
-                                       else N.hojas(actor))
-        ac, cortes, escala = F.armar_en_franjas(paginas, enlaces, secciones,
-                                                 con_titulo_75=(actor == list(N.DIAGRAMAS)[0]))
-        planes[actor] = (paginas, enlaces, ac, cortes, escala)
-        print(f'{actor}: {round(ac["ancho"])} x {round(ac["alto"])}, {len(cortes) - 1} franjas, letra impresa {10 * escala:.1f} pt')
+        paginas, enlaces = N.vista_rol(actor)
+        ac = navegacion_roles.armar(actor, paginas, enlaces)
+        planes[actor] = (paginas, enlaces, ac)
+        print(f'{actor}: {ac["ancho"]} × {ac["alto"]}, {len(paginas)} cajas y {len(enlaces)} relaciones', flush=True)
     if simular: return
     errores = N.verificar()
     assert not errores, 'navegacion.py no coincide con el código:\n' + '\n'.join(errores)
@@ -219,9 +235,11 @@ def correr(actores, simular):
     try:
         assert r.OpenFile(str(EAPX)), 'EA no abrió el EAPX'
         for actor in actores:
-            paginas, enlaces, ac, cortes, escala = planes[actor]
+            paginas, enlaces, ac = planes[actor]
+            nombres_visibles = {l['enlace']: ''.join(l['rotulos']['nombre'][2])
+                                for l in ac['lineas'] if l['rotulos']}
             pkg = paquete_actor(r, actor)
-            el, conector = sincronizar(r, pkg, actor, paginas, enlaces)
+            el, conector = sincronizar(r, pkg, paginas, enlaces, nombres_visibles)
             for i in reversed(range(pkg.Packages.Count)):   # versiones anteriores de este script
                 if pkg.Packages.GetAt(i).Name == SUBPAQUETE: pkg.Packages.DeleteAt(i, True)
             for i in reversed(range(pkg.Diagrams.Count)):
@@ -230,16 +248,16 @@ def correr(actores, simular):
             nombre = f'Diagrama de Navegacion - {actor}'
             d = next((x for x in pkg.Diagrams if x.Name == nombre), None)
             if d is None: d = pkg.Diagrams.AddNew(nombre, 'Logical'); d.Update()
-            d = dibujar(r, d, el, conector, paginas, ac)
+            d = dibujar(r, d, el, conector, paginas, ac, horizontal=True)
             for viejo in DIAGRAMAS.glob(f'nav-{actor.lower()}-[0-9][0-9].*'): viejo.unlink()
             stem = f'nav-{actor.lower()}'
             exportar(r, d, stem)
             xs = [x for x, _, _, _ in ac['cajas'].values()] + [p[0] for l in ac['lineas'] for p in l['puntos']]
             nombres = Counter(paginas[k][1] for k in ac['cajas'] if paginas[k][0] in ('cliente', 'ps', 'nota'))
-            manifiesto[actor] = dict(stem=stem, cortes=[round(c + DESPLAZA, 1) for c in cortes],
+            manifiesto[actor] = dict(stem=stem, cortes=[],
                                      arriba=round(min(y for _, y, _, _ in ac['cajas'].values()) + DESPLAZA, 1),
                                      abajo=round(max(y + h for _, y, _, h in ac['cajas'].values()) + DESPLAZA, 1),
-                                     izquierda=round(min(xs) + DESPLAZA, 1), ancho=round(ac['ancho']), letra_pt=round(10 * escala, 1),
+                                     izquierda=round(min(xs) + DESPLAZA, 1), ancho=round(ac['ancho']),
                                      referencias={paginas[k][1]: round(y + DESPLAZA, 1) for k, (_, y, _, _) in ac['cajas'].items()
                                                   if paginas[k][0] in ('cliente', 'ps', 'nota') and nombres[paginas[k][1]] == 1})
             ruta_m.write_text(json.dumps(manifiesto, ensure_ascii=False, indent=1), encoding='utf-8')

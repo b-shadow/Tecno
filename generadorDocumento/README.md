@@ -51,12 +51,17 @@ El mantenimiento incremental utiliza:
   hoja (los de `ea/ea_faltantes.py --analisis`, subpaquete EA «Un diagrama
   por CU (5.3)»); reemplaza solo esas dos secciones del maestro.
 - `navegacion.py` + `ea/navegacion_hojas.py` + `insertar_navegacion.py`: 7.5 desde el código, como G07. `navegacion.py`
-  describe cada actor con los nombres reales del JSX y de `api.php` y lo comprueba (`python navegacion.py`);
-  `ea/navegacion_hojas.py` sincroniza los paquetes «Navegacion <Actor>» del EAPX y dibuja un diagrama grande por actor
-  (`ea/franjas_navegacion.py`: columnas páginas | server pages | tablas, relaciones ortogonales por carriles, rótulos
-  junto a la caja y cortes que no parten cajas; `--simular` da tamaño, franjas y letra sin abrir EA);
-  `insertar_navegacion.py` corta ese EMF en franjas apaisadas, una por página, con las relaciones siguiendo entre
-  páginas. Reemplaza a `ea/actualizar_navegacion.py` para 7.5.
+  describe cada actor con los nombres reales del JSX y de `api.php` y lo comprueba (`python navegacion.py`).
+  `ea/navegacion_hojas.py` sincroniza los paquetes «Navegacion <Actor>» del EAPX y dibuja un diagrama por actor.
+  `ea/navegacion_roles.py` aplica la distribución por flujos del Administrador a cada actor.
+  `python ea/navegacion_hojas.py Coordinador Vendedor Visitante --simular` comprueba el acomodo sin abrir EA.
+  Al omitir `--simular`, se actualizan el EAPX y las exportaciones PNG y EMF.
+  `python insertar_navegacion.py --actor Coordinador --actor Vendedor --actor Visitante` actualiza 7.5.2 a 7.5.4.
+  La opción `--administrador` actualiza 7.5.1.
+  Inserta franjas vectoriales de ancho completo y a escala uniforme. Los cortes aprovechan la altura útil
+  de la hoja y se comprueban contra las cajas y los rótulos del EMF. Después se ejecuta `exportar.ps1`.
+  Para reemplazar las cuatro vistas juntas, regenere primero los EMF y el manifiesto con
+  `python ea/navegacion_hojas.py` y ejecute `python insertar_navegacion.py`.
 - `exportar.ps1`: actualiza campos con Microsoft Word y produce DOC y PDF.
 
 Respaldar el maestro y el EAPX antes de editar. No ejecutar dos escritores COM
@@ -114,7 +119,7 @@ python actualizar_datos_docx.py                    # tras cambiar esquema.sql: M
 python insertar_diagramas.py                       # sustituye solo diagramas pendientes del DOCX actual
 python navegacion.py                               # 7.5: comprueba la navegación contra el código (vacío = cuadra)
 python ea/navegacion_hojas.py [Actor] [--simular]  # 7.5: modelo y diagrama por actor en EA -> diagramas/nav-<actor> + nav-franjas.json
-python insertar_navegacion.py                      # 7.5: corta cada diagrama en franjas en el maestro (y luego limpiar_medios_docx.py)
+python insertar_navegacion.py --administrador       # 7.5.1: franjas de ancho completo del administrador en el maestro
 python ea/ea_faltantes.py --secuencias [CU1 CU6]   # rehace los sd de 7.4 desde el código (falla si un recorrido ya no coincide)
 python actualizar_secuencias.py                    # si el DOCX ya tiene las figuras, refresca solo las ocho secuencias
 python ea/ea_p2.py --recrear [--solo datos|nav|clases|org]   # reconstruye el EAPX completo: usar solo tras respaldarlo

@@ -16,7 +16,8 @@ Todo sale del código (verificar() lo exige):
 
 Estereotipos (Conallen, REGLAS_DOCUMENTO_P2.md §5): client page → client page «link»; client page → server page «link»
 con la URL y sus parámetros; «Formulario» → server page «submit» (uno por formulario); server page → client page
-«build»; server page → server page «include»; server page → BD «access»; página ◇— formulario (agregación).
+«build»; server page → server page «include»; server page → BD «access»;
+página ◇— formulario o vista interna (agregación).
 
 Cada diagrama se arma por SECCIONES en el orden de navegación del menú de la base de datos: la entrada del actor,
 su primera vista y las opciones que su rol puede usar. Una vista cliente aparece una sola vez; los procesos y tablas
@@ -76,6 +77,10 @@ class Diagrama:
         if (a, b, estereotipo, texto) not in self.enlaces: self.enlaces.append((a, b, estereotipo, texto))
         self._en_hoja(a, b)
         if self.hojas and (a, b, estereotipo, texto) not in self.hojas[-1][2]: self.hojas[-1][2].append((a, b, estereotipo, texto))
+
+    def abrir_formulario(self, pagina, formulario, accion):
+        """Registra la acción que abre el diálogo."""
+        self.e(pagina, formulario, 'link', accion)
 
     def ps(self, clave, nombre, atributos, operaciones):
         """Server page con sus «access» (y «include») leídos del código."""
@@ -231,20 +236,21 @@ def inicio_sesion(d):
     d.hoja('CU1 Inicio de sesión')
     d.p('actor', 'actor', d.actor)
     d.p('login', 'cliente', 'Login', 'form, recordar, ver, error, ayuda, enviando', 'entrar()')
-    d.p('f_login', 'form', 'Iniciar Sesion', 'correo, password, recordar', 'entrar()')
+    d.p('f_login', 'form', 'Iniciar Sesion', 'correo, password', 'entrar()')
     d.e('actor', 'login', 'link', '/login')
     d.e('login', 'f_login', 'contiene')
     d.ps('ps_login', 'ps Login', 'correo, password', 'login()')
     d.e('f_login', 'ps_login', 'submit', url('auth.login'))
-    d.p('error', 'cliente', 'PC Message', 'tipo, children', 'Aviso()')
+    d.p('error', 'cliente', 'Aviso en Login', 'tipo, children', 'Aviso()')
     menu(d)
     d.e('ps_login', 'menu', 'build', '200: sesión y menú según rol')
-    d.e('ps_login', 'error', 'build', '422: mensaje')
-    d.e('error', 'login', 'link', 'volver a intentar')
+    d.e('ps_login', 'error', 'build', '422 / 403: aviso de acceso')
+    d.e('login', 'error', 'contiene')
 
 
 def menu(d):
-    d.p('menu', 'cliente', f'Menú y cabecera de {d.actor}', 'menu, cerrado, movil', 'alternar(), elegir()')
+    nombre = f'Plantilla y menú de {d.actor}'
+    d.p('menu', 'cliente', nombre, 'menu, cerrado, movil', 'alternar(), elegir()')
 
 
 def sesion_y_perfil(d):
@@ -254,12 +260,12 @@ def sesion_y_perfil(d):
     d.ps('ps_me', 'ps Sesion Actual', 'token', 'me()')
     d.e('menu', 'ps_me', 'link', url('auth.me'))
     d.e('ps_me', 'menu', 'build', 'usuario, menu, permisos')
-    d.ps('ps_visita', 'ps Registrar Visita', 'ruta', 'visita()')
-    d.e('menu', 'ps_visita', 'link', url('sitio.visita', ' ruta (pie de cada vista)'))
-    d.e('ps_visita', 'menu', 'build', 'visitas')
+    visitas(d, 'menu')
     d.p('error404', 'cliente', 'Pagina no Encontrada', 'titulo, icono', 'PError404()')
     d.p('actor', 'actor', d.actor)
     d.e('actor', 'error404', 'link', 'URL inexistente (*)')
+    d.p('catalogo', 'cliente', 'Catalogo de Programas', 'datos, area, eleccion, registrando', 'coloresDeAreas(), recargar()')
+    d.e('error404', 'catalogo', 'link', '/anuncios (Ir al catálogo)')
     d.grupo = 'busqueda'
     d.hoja('CU1 Búsqueda global')
     menu(d)
@@ -271,12 +277,12 @@ def sesion_y_perfil(d):
     d.hoja('CU1 Perfil y cierre de sesión')
     menu(d)
     d.p('f_perfil', 'form', 'Mi Perfil', 'nombre, apellido, telefono, foto', 'guardar()')
-    d.e('menu', 'f_perfil', 'contiene')
+    d.abrir_formulario('menu', 'f_perfil', 'Mi perfil')
     d.ps('ps_perfil', 'ps Actualizar Perfil', 'nombre, apellido, telefono, foto', 'actualizarPerfil()')
     d.e('f_perfil', 'ps_perfil', 'submit', url('auth.actualizarPerfil'))
     d.e('ps_perfil', 'menu', 'build', 'usuario')
     d.p('f_clave', 'form', 'Cambiar Contrasena', 'password_actual, password, password_confirmation', 'guardar()')
-    d.e('menu', 'f_clave', 'contiene')
+    d.abrir_formulario('menu', 'f_clave', 'Cambiar contraseña')
     d.ps('ps_clave', 'ps Cambiar Password', 'password_actual, password', 'cambiarPassword()')
     d.e('f_clave', 'ps_clave', 'submit', url('auth.cambiarPassword'))
     d.e('ps_clave', 'menu', 'build', 'mensaje')
@@ -284,6 +290,14 @@ def sesion_y_perfil(d):
     d.e('menu', 'ps_logout', 'link', url('auth.logout', ' (Perfil > Cerrar sesión > Confirmar)'))
     d.p('login', 'cliente', 'Login', 'form, recordar, ver, error, ayuda, enviando', 'entrar()')
     d.e('ps_logout', 'login', 'build', 'go("/login")')
+
+
+def visitas(d, plantilla):
+    d.p('pie', 'cliente', 'Pie de página', 'visitas', 'Pie()')
+    d.e(plantilla, 'pie', 'contiene')
+    d.ps('ps_visita', 'ps Registrar Visita', 'ruta', 'visita()')
+    d.e('pie', 'ps_visita', 'link', url('sitio.visita', ' ruta (pie de cada vista)'))
+    d.e('ps_visita', 'pie', 'build', 'visitas')
 
 
 def entrada(d, codigo):
@@ -331,13 +345,14 @@ def usuarios(d):   # CU1
     if not d.puede('usuarios', 'modificacion'): return   # PUsuarios.jsx: editable
     d.p('f_usuario', 'form', 'Registrar / Editar Usuario',
         'nombre, apellido, correo, telefono, password, rol, fecha_inicio, fecha_fin, estado, foto, programas', 'guardar(), quitarFoto()')
-    d.e('usuarios', 'f_usuario', 'contiene')
+    d.abrir_formulario('usuarios', 'f_usuario', 'Nuevo / Editar')
     d.ps('ps_usuario_g', 'ps Guardar Usuario', 'usuario, nombre, apellido, correo, telefono, password, rol, estado, fecha_inicio, fecha_fin, foto, programas',
          'store(), update()')
     d.e('f_usuario', 'ps_usuario_g', 'submit', 'POST /usuarios | PUT /usuarios/{usuario}')
     d.e('ps_usuario_g', 'usuarios', 'build', 'usuario')
     d.ps('ps_foto_usuario', 'ps Quitar Fotografia', 'usuario', 'foto()')
-    d.e('f_usuario', 'ps_foto_usuario', 'submit', url('usuarios.foto'))
+    d.e('f_usuario', 'ps_foto_usuario', 'link', url('usuarios.foto', ' (Editar > Quitar foto > Confirmar)'))
+    d.e('ps_foto_usuario', 'f_usuario', 'build', 'foto eliminada, editor abierto')
     d.ps('ps_estado', 'ps Cambiar Estado', 'usuario, estado', 'cambiarEstado()')
     d.e('usuarios', 'ps_estado', 'link', url('usuarios.cambiarEstado'))
     d.e('ps_estado', 'usuarios', 'build', 'mensaje')
@@ -392,25 +407,28 @@ def prospectos(d):
     ficha(d, 'prospectos')
     if d.puede('interesados', 'modificacion'):   # PProspectos.jsx: puedeAlta
         d.p('f_prospecto', 'form', 'Registrar Prospecto', 'documento, origen, nombre, apellido, telefono, correo, profesion, ubicacion, interes', 'guardar()')
-        d.e('prospectos', 'f_prospecto', 'contiene')
+        d.abrir_formulario('prospectos', 'f_prospecto', 'Registrar prospecto')
         d.ps('ps_alta', 'ps Registrar Prospecto', 'documento, nombre, apellido, telefono, correo, origen, profesion, ubicacion, modulo_codigo, programa_codigo', 'store()')
         d.e('f_prospecto', 'ps_alta', 'submit', url('prospectos.store'))
         d.e('ps_alta', 'prospectos', 'build', 'mensaje, prospecto')
         d.p('f_csv', 'form', 'Importar CSV', 'archivo', 'importar()')
-        d.e('prospectos', 'f_csv', 'contiene')
+        d.abrir_formulario('prospectos', 'f_csv', 'Importar CSV')
         d.ps('ps_csv', 'ps Importar CSV', 'csv', 'importarCSV()')
         d.e('f_csv', 'ps_csv', 'submit', url('prospectos.importarCSV'))
         d.e('ps_csv', 'prospectos', 'build', 'creados, errores')
         d.p('plantilla_csv', 'externo', 'Plantilla CSV descargada')
-        d.e('prospectos', 'plantilla_csv', 'link', 'Importar CSV > Plantilla')
+        d.e('f_csv', 'plantilla_csv', 'link', 'Importar CSV > Plantilla')
     if d.puede('prospectos', 'modificacion') or d.puede('embudo', 'modificacion'):   # puedeAgregarInteres
         d.hoja('CU3 Prospectos: nuevo interés')
         entrada(d, 'prospectos')
         d.p('f_nuevo_interes', 'form', 'Agregar Interes', 'interes', 'guardar()')
-        d.e('prospectos', 'f_nuevo_interes', 'contiene')
+        d.abrir_formulario('prospectos', 'f_nuevo_interes', 'Agregar interés')
         d.ps('ps_catalogo', 'ps Catalogo', 'buscar', 'programas()')
-        d.e('prospectos', 'ps_catalogo', 'link', url('catalogo.programas'))
-        d.e('ps_catalogo', 'prospectos', 'build', 'programas')
+        d.e('f_nuevo_interes', 'ps_catalogo', 'link', url('catalogo.programas'))
+        d.e('ps_catalogo', 'f_nuevo_interes', 'build', 'programas')
+        if 'f_prospecto' in d.paginas:
+            d.e('f_prospecto', 'ps_catalogo', 'link', url('catalogo.programas'))
+            d.e('ps_catalogo', 'f_prospecto', 'build', 'programas')
         d.ps('ps_nuevo_interes', 'ps Agregar Interes', 'prospecto, modulo_codigo, programa_codigo', 'crearInteres()')
         d.e('f_nuevo_interes', 'ps_nuevo_interes', 'submit', url('prospectos.crearInteres'))
         d.e('ps_nuevo_interes', 'prospectos', 'build', 'mensaje')
@@ -418,7 +436,8 @@ def prospectos(d):
 
 def listar_intereses(d, desde, consulta):
     d.ps('ps_intereses', 'ps Listar Intereses', 'buscar, estado, vendedor, sin_asignar, orden', 'index()')
-    d.e(desde, 'ps_intereses', 'link', url('intereses.index', consulta))
+    alcance = {'Coordinador': ' (programas asignados)', 'Vendedor': ' (cartera propia)'}.get(d.actor, '')
+    d.e(desde, 'ps_intereses', 'link', url('intereses.index', consulta + alcance))
     d.e('ps_intereses', desde, 'build', 'intereses, estados, motivos')
 
 
@@ -443,7 +462,7 @@ def embudo(d):
     d.hoja('CU4 Embudo de ventas')
     d.p('embudo', 'cliente', 'Embudo de Ventas', 'filtros, datos, arrastrada, encima, perdida, faltantes', 'mover(), agrupar(), recargar()')
     entrada(d, 'embudo')
-    listar_intereses(d, 'embudo', '?buscar&vendedor')
+    listar_intereses(d, 'embudo', '?buscar' if d.actor == 'Vendedor' else '?buscar&vendedor')
     if 'inicio-vendedor' not in d.permisos: vendedores(d, 'embudo')   # PEmbudo.jsx: esVendedor no filtra
     ficha(d, 'embudo')
     if d.puede('embudo', 'modificacion'):
@@ -452,7 +471,7 @@ def embudo(d):
         d.ps('ps_mover', 'ps Mover Tarjeta', 'interes, estado, motivo_perdida, observacion', 'mover()')
         d.e('embudo', 'ps_mover', 'link', url('intereses.mover'))
         d.p('f_perdida', 'form', 'Marcar como Perdido', 'motivo, observacion', 'mover()')
-        d.e('embudo', 'f_perdida', 'contiene')
+        d.abrir_formulario('embudo', 'f_perdida', 'Mover a Perdido')
         d.e('f_perdida', 'ps_mover', 'submit', url('intereses.mover'))
         d.e('ps_mover', 'embudo', 'build', 'mensaje, interes | 422 faltantes')
         ficha(d, 'embudo')
@@ -467,7 +486,7 @@ def motivos(d):   # CU5
     d.e('ps_motivos', 'motivos', 'build', 'motivos, categorias')
     if d.puede('motivos', 'modificacion'):   # PMotivos.jsx: editable
         d.p('f_motivo', 'form', 'Nuevo / Editar Motivo', 'nombre, categoria', 'guardar()')
-        d.e('motivos', 'f_motivo', 'contiene')
+        d.abrir_formulario('motivos', 'f_motivo', 'Nuevo / Editar')
         d.ps('ps_motivo_g', 'ps Guardar Motivo', 'motivo, nombre, categoria', 'store(), update()')
         d.e('f_motivo', 'ps_motivo_g', 'submit', 'POST /motivos | PUT /motivos/{motivo}')
         d.e('ps_motivo_g', 'motivos', 'build', 'mensaje')
@@ -486,20 +505,22 @@ def validacion_pagos(d):
     d.e('validacion-pagos', 'ps_cuotas', 'link', url('pagos.cuotas', '?estado'))
     d.e('ps_cuotas', 'validacion-pagos', 'build', 'cuotas, comprobantes')
     ficha(d, 'validacion-pagos')
-    d.p('f_revisar', 'form', 'Modal de revisión', 'observacion', 'decidir()')
-    d.e('validacion-pagos', 'f_revisar', 'contiene')
+    d.p('f_revisar', 'cliente', 'Modal de revisión', 'observacion, archivo', 'decidir()')
+    d.abrir_formulario('validacion-pagos', 'f_revisar', 'Revisar / Ver')
     d.ps('ps_comp', 'ps Ver Comprobante', 'comprobante', 'comprobante()')
-    d.e('validacion-pagos', 'ps_comp', 'link', url('pagos.comprobante'))
-    d.e('ps_comp', 'validacion-pagos', 'build', 'comprobante')
+    d.e('f_revisar', 'ps_comp', 'link', url('pagos.comprobante', ' (si hay comprobante)'))
+    d.e('ps_comp', 'f_revisar', 'build', 'comprobante')
     if d.puede('validacion-pagos', 'modificacion'):
         d.hoja('CU6 Aprobar o rechazar cuota')
         entrada(d, 'validacion-pagos')
-        d.p('f_revisar', 'form', 'Modal de revisión', 'observacion', 'decidir()')
-        d.e('validacion-pagos', 'f_revisar', 'contiene')
+        d.abrir_formulario('validacion-pagos', 'f_revisar', 'Revisar / Ver')
         for k, fn, nombre, op in (('ps_aprobar', 'pagos.aprobar', 'ps Aprobar Cuota', 'aprobar()'),
                                   ('ps_rechazar', 'pagos.rechazar', 'ps Rechazar Cuota', 'rechazar()')):
             d.ps(k, nombre, 'orden, cuota, observacion', op)
-            d.e('f_revisar', k, 'submit', url(fn, ' (solo cuota En revisión y no Stripe)'))
+            condicion = ' (solo cuota En revisión y no Stripe)'
+            if k == 'ps_rechazar':
+                condicion = ' (cuota En revisión, no Stripe y observación obligatoria)'
+            d.e('f_revisar', k, 'link', url(fn, condicion))
             d.e(k, 'validacion-pagos', 'build', 'mensaje')
 
 
@@ -527,13 +548,13 @@ def pagos_ficha(d):   # CU6 dentro de la ficha (componentes/pagos)
     ficha(d, 'agenda')
     if d.actor == 'Vendedor':
         d.p('f_orden', 'form', 'Generar Orden de Pago', 'modulos, dctos, formaPago, cuotas, vence', 'generarOrden(), seleccionarModulo(), alternarDescuento()')
-        d.e('ficha', 'f_orden', 'contiene')
+        d.abrir_formulario('ficha', 'f_orden', 'Generar orden de pago')
         d.ps('ps_catalogo', 'ps Catalogo', 'buscar', 'programas()')
-        d.e('ficha', 'ps_catalogo', 'link', url('catalogo.programas'))
-        d.e('ps_catalogo', 'ficha', 'build', 'programas')
+        d.e('f_orden', 'ps_catalogo', 'link', url('catalogo.programas'))
+        d.e('ps_catalogo', 'f_orden', 'build', 'programas')
         d.ps('ps_desc', 'ps Listar Descuentos', 'token', 'descuentos()')
-        d.e('ficha', 'ps_desc', 'link', url('pagos.descuentos'))
-        d.e('ps_desc', 'ficha', 'build', 'descuentos')
+        d.e('f_orden', 'ps_desc', 'link', url('pagos.descuentos'))
+        d.e('ps_desc', 'f_orden', 'build', 'descuentos')
         d.ps('ps_orden', 'ps Crear Orden', 'interes, modulos, descuentos, cuotas, primer_vencimiento', 'crearOrden()')
         d.e('f_orden', 'ps_orden', 'submit', url('pagos.crearOrden', ' (vendedor asignado; tarjeta abierta; sin orden activa)'))
         d.e('ps_orden', 'ficha', 'build', 'orden')
@@ -545,7 +566,7 @@ def pagos_ficha(d):   # CU6 dentro de la ficha (componentes/pagos)
     d.hoja('CU6 Anular orden')
     ficha(d, 'agenda')
     d.p('f_anular', 'form', 'Anular Orden', 'motivo', 'enviar()')
-    d.e('ficha', 'f_anular', 'contiene')
+    d.abrir_formulario('ficha', 'f_anular', 'Detalles > Anular')
     d.ps('ps_anular_orden', 'ps Anular Orden', 'orden, motivo', 'anularOrden()')
     d.e('f_anular', 'ps_anular_orden', 'submit', url('pagos.anularOrden'))
     d.e('ps_anular_orden', 'ficha', 'build', 'mensaje, orden')
@@ -571,43 +592,44 @@ def pagos_ficha(d):   # CU6 dentro de la ficha (componentes/pagos)
     d.e('f_correo', 'ps_enviar', 'submit', url('notificaciones.enviar'))
     d.e('ps_enviar', 'compartir', 'build', 'mensaje')
     d.hoja('CU6 Retorno de Stripe')
-    retorno_stripe(d, publico=False)
+    retorno_stripe(d)
 
 
-def retorno_stripe(d, publico):
+def retorno_stripe(d):
     externo = lambda: d.p('stripe', 'externo', 'Stripe Checkout (externo)', 'url, session_id', 'pagar(), cancelar()')
     externo()
     d.p('pago_confirmacion', 'cliente', 'Confirmacion de Stripe', 'sessionId, token, estado', 'accionVolver()')
     d.e('stripe', 'pago_confirmacion', 'link', 'success_url ?session_id&token')
-    if publico:
-        d.ps('ps_retorno_publico', 'ps Consultar Retorno Publico', 'sessionId, token', 'consultarRetornoPublico()')
-        d.e('pago_confirmacion', 'ps_retorno_publico', 'link', url('pagos.consultarRetornoPublico', '?token'))
-        d.e('ps_retorno_publico', 'pago_confirmacion', 'build', 'estado del pago')
-        destino, texto = 'catalogo', '/anuncios'
-        d.p('catalogo', 'cliente', 'Catalogo de Programas', 'datos, area, eleccion, registrando', 'coloresDeAreas(), recargar()')
-    else:
-        d.ps('ps_confirmar_checkout', 'ps Confirmar Sesion Stripe', 'sessionId', 'confirmarCheckout()')
-        d.e('pago_confirmacion', 'ps_confirmar_checkout', 'link', url('pagos.confirmarCheckout'))
-        d.e('ps_confirmar_checkout', 'pago_confirmacion', 'build', 'estado del pago')
-        destino, texto = 'ficha', '/agenda?interes={nro_tarjeta}'
-        d.p('ficha', 'cliente', 'Ficha del Prospecto', 'datos, pestana, editar', 'actualizar()')
-    d.e('pago_confirmacion', destino, 'link', texto)
-    d.hoja('CU6 Pago cancelado en Stripe' + (' (visitante)' if publico else ''))
+    d.ps('ps_retorno_publico', 'ps Ver Retorno Público', 'sessionId, token', 'consultarRetornoPublico()')
+    d.e('pago_confirmacion', 'ps_retorno_publico', 'link', url('pagos.consultarRetornoPublico', '?token'))
+    d.e('ps_retorno_publico', 'pago_confirmacion', 'build', 'estado del pago')
+    d.p('catalogo', 'cliente', 'Catalogo de Programas', 'datos, area, eleccion, registrando', 'coloresDeAreas(), recargar()')
+    ir_catalogo = '/anuncios' if d.actor == 'Visitante' else '/anuncios (retorno público)'
+    d.e('pago_confirmacion', 'catalogo', 'link', ir_catalogo)
+    d.hoja('CU6 Pago cancelado en Stripe' + (' (visitante)' if d.actor == 'Visitante' else ''))
     externo()
     d.p('pago_cancelado', 'cliente', 'Cancelacion de Stripe', 'sessionId, token, estado', 'PPagoCancelado()')
     d.e('stripe', 'pago_cancelado', 'link', 'cancel_url ?session_id&token')
-    if publico:
-        d.ps('ps_cancelar_publico', 'ps Cancelar Retorno Publico', 'sessionId, token', 'cancelarRetornoPublico()')
-        d.e('pago_cancelado', 'ps_cancelar_publico', 'link', url('pagos.cancelarRetornoPublico', '?token'))
-        d.e('ps_cancelar_publico', 'pago_cancelado', 'build', 'estado, url_checkout')
-    else:
-        d.ps('ps_cancelar_checkout', 'ps Cancelar Sesion Stripe', 'sessionId', 'cancelarCheckout()')
-        d.e('pago_cancelado', 'ps_cancelar_checkout', 'link', url('pagos.cancelarCheckout'))
-        d.e('ps_cancelar_checkout', 'pago_cancelado', 'build', 'estado, url_checkout')
-    d.p(destino, *({'catalogo': ('cliente', 'Catalogo de Programas', 'datos, area, eleccion, registrando', 'coloresDeAreas(), recargar()'),
-                    'ficha': ('cliente', 'Ficha del Prospecto', 'datos, pestana, editar', 'actualizar()')}[destino]))
-    d.e('pago_cancelado', destino, 'link', texto)
+    d.ps('ps_cancelar_publico', 'ps Cancelar Retorno', 'sessionId, token', 'cancelarRetornoPublico()')
+    d.e('pago_cancelado', 'ps_cancelar_publico', 'link', url('pagos.cancelarRetornoPublico', ' token (cuerpo)'))
+    d.e('ps_cancelar_publico', 'pago_cancelado', 'build', 'estado, url_checkout')
+    d.e('pago_cancelado', 'catalogo', 'link', ir_catalogo)
     d.e('pago_cancelado', 'stripe', 'link', 'url_checkout (reintentar)')
+    d.e('pago_cancelado', 'pago_confirmacion', 'link', 'Ver confirmación (si Stripe ya confirmó)')
+    if d.actor != 'Visitante':
+        d.hoja('CU6 Retorno autenticado sin token público')
+        d.ps('ps_confirmar_checkout', 'ps Confirmar Sesion Stripe', 'sessionId', 'confirmarCheckout()')
+        d.e('pago_confirmacion', 'ps_confirmar_checkout', 'link', url('pagos.confirmarCheckout', ' (sin token público)'))
+        d.e('ps_confirmar_checkout', 'pago_confirmacion', 'build', 'estado del pago')
+        d.ps('ps_cancelar_checkout', 'ps Cancelar Sesion Stripe', 'sessionId', 'cancelarCheckout()')
+        d.e('pago_cancelado', 'ps_cancelar_checkout', 'link', url('pagos.cancelarCheckout', ' (sin token público)'))
+        d.e('ps_cancelar_checkout', 'pago_cancelado', 'build', 'estado, url_checkout')
+        for pagina in ('pago_confirmacion', 'pago_cancelado'):
+            if d.actor == 'Administrador':
+                d.e(pagina, 'agenda', 'link', '/agenda (sesión, ?interes={nro_tarjeta} si hay tarjeta)')
+            else:
+                d.e(pagina, 'ficha', 'link', '/agenda?interes={nro_tarjeta} (sesión y tarjeta disponible)')
+                d.e(pagina, 'agenda', 'link', '/agenda (sesión sin tarjeta)')
 
 
 # ------------------------------------------------------------------ CU7
@@ -636,7 +658,7 @@ def agenda(d):
     d.e('f_record', 'ps_crearrec', 'submit', url('seguimiento.crearRecordatorio'))
     d.e('ps_crearrec', 'ficha', 'build', 'mensaje')
     d.p('f_realizada', 'form', 'Marcar Realizada', 'resultado')
-    d.e('ficha', 'f_realizada', 'contiene')
+    d.abrir_formulario('ficha', 'f_realizada', 'Marcar realizada')
     d.ps('ps_completar', 'ps Completar Recordatorio', 'recordatorio, resultado', 'completarRecordatorio()')
     d.e('f_realizada', 'ps_completar', 'submit', url('seguimiento.completarRecordatorio'))
     d.e('ps_completar', 'ficha', 'build', 'mensaje')
@@ -646,7 +668,7 @@ def agenda(d):
     d.hoja('CU7 Editar prospecto y convertir')
     ficha(d, 'agenda')
     d.p('f_editar', 'form', 'Editar Prospecto', 'nombre, apellido, correo, telefono, profesion, ubicacion, origen', 'guardar()')
-    d.e('ficha', 'f_editar', 'contiene')
+    d.abrir_formulario('ficha', 'f_editar', 'Editar datos')
     d.ps('ps_update', 'ps Actualizar Prospecto', 'prospecto, nombre, apellido, correo, telefono, profesion, ubicacion, origen', 'update()')
     d.e('f_editar', 'ps_update', 'submit', url('prospectos.update'))
     d.e('ps_update', 'ficha', 'build', 'mensaje, prospecto')
@@ -671,7 +693,7 @@ def inicio_vendedor(d):   # CU7: Mi día
     ficha(d, 'inicio-vendedor')
     if d.puede('agenda', 'modificacion'):
         d.p('f_realizada_dia', 'form', 'Marcar Actividad Realizada', 'resultado')
-        d.e('inicio-vendedor', 'f_realizada_dia', 'contiene')
+        d.abrir_formulario('inicio-vendedor', 'f_realizada_dia', 'Marcar realizada')
         d.ps('ps_completar', 'ps Completar Recordatorio', 'recordatorio, resultado', 'completarRecordatorio()')
         d.e('f_realizada_dia', 'ps_completar', 'submit', url('seguimiento.completarRecordatorio'))
         d.e('ps_completar', 'inicio-vendedor', 'build', 'mensaje')
@@ -709,13 +731,16 @@ def reportes(d):
     d.hoja('CU8 Reportes y estadísticas')
     d.p('reportes', 'cliente', 'Reportes y Estadisticas', 'vista, f, est, rep', 'set()')
     entrada(d, 'reportes')
-    d.ps('ps_est', 'ps Estadisticas', 'desde, hasta, vendedor, programa, estado, buscar', 'estadisticas()')
-    d.e('reportes', 'ps_est', 'link', url('reportes.estadisticas', '?desde&hasta&vendedor'))
+    filtro_vendedor = d.actor != 'Vendedor'
+    parametros = 'desde, hasta' + (', vendedor' if filtro_vendedor else '') + ', programa, estado, buscar'
+    filtros = 'desde&hasta' + ('&vendedor' if filtro_vendedor else '')
+    d.ps('ps_est', 'ps Estadisticas', parametros, 'estadisticas()')
+    d.e('reportes', 'ps_est', 'link', url('reportes.estadisticas', '?' + filtros))
     d.e('ps_est', 'reportes', 'build', 'graficos')
     d.hoja('CU8 Listados de reportes')
     entrada(d, 'reportes')
-    d.ps('ps_listado', 'ps Listado', 'tipo, desde, hasta, vendedor, programa, estado, buscar', 'listado()')
-    d.e('reportes', 'ps_listado', 'link', url('reportes.listado', '?tipo&desde&hasta&vendedor&estado&buscar'))
+    d.ps('ps_listado', 'ps Listado', 'tipo, ' + parametros, 'listado()')
+    d.e('reportes', 'ps_listado', 'link', url('reportes.listado', '?tipo&' + filtros + '&buscar'))
     d.e('ps_listado', 'reportes', 'build', 'titulo, columnas, filas')
     d.p('reporte_csv', 'externo', 'Reporte CSV descargado')
     d.e('reportes', 'reporte_csv', 'link', 'clic Exportar CSV con filas del listado')
@@ -820,9 +845,7 @@ def visitante():
     d.p('resultados_busqueda', 'cliente', 'Resultados de búsqueda', 'resultados, activo, abierto', 'elegir(), tecla()')
     d.e('ps_buscar', 'resultados_busqueda', 'build', 'resultados del catálogo')
     d.e('resultados_busqueda', 'catalogo', 'link', '/anuncios?modulo={codigo}')
-    d.ps('ps_visita', 'ps Registrar Visita', 'ruta', 'visita()')
-    d.e('catalogo', 'ps_visita', 'link', url('sitio.visita', ' ruta (pie de cada vista)'))
-    d.e('ps_visita', 'catalogo', 'build', 'visitas')
+    visitas(d, 'catalogo')
     d.p('error404', 'cliente', 'Pagina no Encontrada', 'titulo, icono', 'PError404()')
     d.e('actor', 'error404', 'link', 'URL inexistente (*)')
     d.e('error404', 'catalogo', 'link', '/anuncios (Ir al catálogo)')
@@ -835,13 +858,14 @@ def visitante():
     d.e('pago_cuota', 'ps_cuota_publica', 'link', url('pagos.abrirEnlaceCuotaPublico'))
     d.e('ps_cuota_publica', 'pago_cuota', 'build', 'estado_link, url_checkout')
     d.p('stripe', 'externo', 'Stripe Checkout (externo)', 'url, session_id', 'pagar(), cancelar()')
-    d.e('pago_cuota', 'stripe', 'link', 'redirección automática; botón Ir a pagar')
+    d.e('pago_cuota', 'stripe', 'link', 'Cuota pendiente y URL disponible (redirige salvo sin_redirigir; botón Ir a pagar)')
+    d.e('pago_cuota', 'catalogo', 'link', '/anuncios (Volver al catálogo)')
     d.hoja('CU6 Enlace público para registrar tarjeta')
     d.p('actor', 'actor', 'Visitante')
     d.p('stripe', 'externo', 'Stripe Checkout (externo)', 'url, session_id', 'pagar(), cancelar()')
     d.e('actor', 'stripe', 'link', 'enlace Stripe Setup compartido por el vendedor')
     d.hoja('CU6 Retorno de Stripe al visitante')
-    retorno_stripe(d, publico=True)
+    retorno_stripe(d)
     compartidas(d)
     return d
 
@@ -875,7 +899,7 @@ def hojas_visuales(actor):
         'ps_repartir', 'ps_mover', 'ps_sinc', 'ps_cuotas', 'ps_exportar', 'ps_resultado',
         'ps_estmetodo', 'ps_setup_stripe', 'ps_checkout', 'ps_cuota_publica',
         'ps_retorno_publico', 'ps_cancelar_publico', 'ps_confirmar_checkout', 'ps_cancelar_checkout',
-        'ps_comp', 'ps_leida', 'ps_pagar', 'ps_est', 'ps_listado', 'ps_comis',
+        'ps_comp', 'ps_aprobar', 'ps_rechazar', 'ps_foto_usuario', 'ps_leida', 'ps_pagar', 'ps_est', 'ps_listado', 'ps_comis',
     }
     for a, b, st, texto in enlaces:
         if paginas[b][0] != 'ps' or a not in conservar or st not in ('link', 'submit'):
@@ -903,98 +927,49 @@ def hojas_visuales(actor):
     return visual, relaciones, grupos
 
 
-def hojas_ejemplo(actor):
-    """Proyección de navegación al nivel de detalle del ejemplo G07.
-
-    Deja cada operación principal en su propia server page, elimina las llamadas
-    internas «include» y resume los accesos a tablas con una relación por área.
-    El grafo exhaustivo permanece disponible en hojas() y verificar().
-    """
-    if actor != 'Administrador':
-        return hojas(actor)
-
-    paginas, enlaces, secciones = hojas(actor)
-    visuales, relaciones_visuales, _ = hojas_visuales(actor)
+def vista_administrador():
+    """Vista de navegación del administrador con accesos representativos a tablas reales."""
+    paginas, enlaces, _ = hojas('Administrador')
+    visuales, relaciones, _ = hojas_visuales('Administrador')
     visuales = {k: v for k, v in visuales.items() if v[0] != 'bd'}
-    enlaces_resumidos = [
-        (a, b, st, 'consultar' if st == 'link' and paginas[a][0] in ('cliente', 'form')
-         and paginas[b][0] == 'ps' else
-         'enviar' if st == 'submit' else
-         'mostrar resultado' if st == 'build' else texto)
-        for a, b, st, texto in relaciones_visuales if st != 'access'
-    ]
-    claves = set(visuales)
-
-    dominios = {
-        'usuarios': 'Acceso y usuarios', 'api_tokens': 'Acceso y usuarios',
-        'bitacora': 'Acceso y usuarios', 'recursos': 'Acceso y usuarios',
-        'permisos': 'Acceso y usuarios', 'roles': 'Acceso y usuarios',
-        'programas': 'Oferta académica', 'catalogo_cache': 'Oferta académica',
-        'programas_responsables': 'Oferta académica',
-        'prospectos': 'Gestión comercial', 'intereses': 'Gestión comercial',
-        'motivos_perdida': 'Gestión comercial', 'recordatorios': 'Gestión comercial',
-        'interacciones': 'Gestión comercial',
-        'metodos_pago': 'Pagos', 'ordenes_pago': 'Pagos', 'cuotas': 'Pagos',
-        'transacciones_stripe': 'Pagos', 'orden_pago_descuentos': 'Pagos',
-        'pagos': 'Pagos', 'descuentos': 'Pagos', 'solicitudes_compra': 'Pagos',
-        'comprobantes_pago': 'Pagos',
-        'inscripciones_comerciales': 'Seguimiento y resultados',
-        'comisiones': 'Seguimiento y resultados', 'exportaciones': 'Seguimiento y resultados',
-        'configuraciones': 'Seguimiento y resultados', 'notificaciones': 'Seguimiento y resultados',
+    tablas = {
+        ('ps_login', 'bd_usuarios'), ('ps_intereses', 'bd_intereses'),
+        ('ps_sinc', 'bd_programas'), ('ps_cuotas', 'bd_cuotas'),
+        ('ps_comis', 'bd_comisiones'),
     }
-    por_dominio = {}
-    for a, b, st, texto in enlaces:
-        if st != 'access' or a not in claves or paginas[a][0] != 'ps':
-            continue
-        tabla = paginas[b][1].removeprefix('BD: ')
-        dominio = dominios.get(tabla, 'Datos del sistema')
-        cantidad, tablas = por_dominio.get(dominio, (0, {}))
-        n, operaciones = tablas.get(tabla, (0, set()))
-        operaciones.update(x.strip() for x in texto.split('/') if x.strip())
-        tablas[tabla] = (n + 1, operaciones)
-        por_dominio[dominio] = (cantidad + 1, tablas)
+    accesos = [e for e in enlaces if e[:2] in tablas and e[2] == 'access']
+    assert {e[:2] for e in accesos} == tablas, 'Revisar los accesos de navegación del administrador'
+    visuales.update({b: paginas[b] for _, b, _, _ in accesos})
+    return visuales, [e for e in relaciones if e[2] != 'access'] + accesos
 
-    accesos_resumidos = []
-    for dominio, (_, tablas) in por_dominio.items():
-        tabla = max(tablas, key=lambda x: tablas[x][0])
-        proceso = next(a for a, b, st, _ in enlaces
-                       if st == 'access' and a in claves
-                       and paginas[b][1].removeprefix('BD: ') == tabla)
-        bd = 'bd_resumen_' + re.sub(r'[^a-z0-9]+', '_', dominio.lower()).strip('_')
-        visuales[bd] = ('bd', f'BD: {dominio}', tabla, '')
-        claves.add(bd)
-        edge = (proceso, bd, 'access', ' / '.join(sorted(tablas[tabla][1])))
-        accesos_resumidos.append(edge)
-        enlaces_resumidos.append(edge)
 
-    enlaces_resumidos = list(dict.fromkeys(enlaces_resumidos))
-    por_caso = {}
-    for titulo, nodos, _ in secciones:
-        nodos = [k for k in nodos if k in visuales]
-        if not nodos:
-            continue
-        codigo_cu = titulo.split(' ', 1)[0]
-        grupo = codigo_cu if codigo_cu.startswith('CU') else titulo
-        fila = por_caso.setdefault(grupo, [titulo, [], []])
-        fila[1].extend(k for k in nodos if k not in fila[1])
-        fila[2].extend(e for e in enlaces_resumidos
-                       if e[0] in nodos and e[1] in nodos and e not in fila[2])
-
-    for proceso, bd, *_ in accesos_resumidos:
-        for _, nodos, relaciones in por_caso.values():
-            if proceso in nodos:
-                if bd not in nodos:
-                    nodos.append(bd)
-                edge = next(e for e in enlaces_resumidos if e[0] == proceso and e[1] == bd)
-                if edge not in relaciones:
-                    relaciones.append(edge)
-                break
-
-    secciones_ejemplo = [
-        (f'{codigo_cu} — {titulo}', nodos, relaciones)
-        for codigo_cu, (titulo, nodos, relaciones) in por_caso.items()
-    ]
-    return visuales, enlaces_resumidos, secciones_ejemplo
+def vista_rol(actor):
+    """Navegación visible de 7.5, con accesos representativos a tablas concretas."""
+    if actor == 'Administrador':
+        return vista_administrador()
+    paginas, enlaces, _ = hojas(actor)
+    internos = set(INCLUIDAS)
+    visuales = {k: v for k, v in paginas.items() if v[0] != 'bd' and k not in internos}
+    tablas = {
+        'Coordinador': {('ps_login', 'bd_usuarios'), ('ps_intereses', 'bd_intereses'),
+                        ('ps_cuotas', 'bd_cuotas'), ('ps_comis', 'bd_comisiones')},
+        'Vendedor': {('ps_login', 'bd_usuarios'), ('ps_intereses', 'bd_intereses'),
+                      ('ps_orden', 'bd_ordenes_pago'), ('ps_record', 'bd_recordatorios')},
+        'Visitante': {('ps_catalogo', 'bd_programas'), ('ps_registro', 'bd_prospectos'),
+                       ('ps_cuota_publica', 'bd_cuotas')},
+    }[actor]
+    accesos = [e for e in enlaces if e[2] == 'access' and e[:2] in tablas]
+    assert {e[:2] for e in accesos} == tablas, f'{actor}: revisar las tablas representativas'
+    relaciones = [e for e in enlaces if e[0] in visuales and e[1] in visuales]
+    visuales.update({b: paginas[b] for _, b, _, _ in accesos})
+    for k, (tipo, nombre, atributos, operaciones) in list(visuales.items()):
+        if tipo == 'form':
+            operaciones = ''
+        elif tipo != 'bd':
+            atributos = ', '.join(atributos.split(', ')[:4])
+            operaciones = ', '.join(operaciones.split(', ')[:2])
+        visuales[k] = (tipo, nombre, atributos, operaciones)
+    return visuales, relaciones + accesos
 
 
 # ------------------------------------------------------------------ coherencia con el código (documento_p2.py la exige)
@@ -1040,7 +1015,8 @@ INCLUIDAS = {
 CORTES = {f'{c}.{m}' for c, ms, *_ in INCLUIDAS.values() for m in ms.split()}
 # client page / formulario -> archivos de presentacion/src donde están sus atributos y operaciones (verificar() los busca)
 FUENTE = {
-    'login': 'paginas/PLogin.jsx', 'f_login': 'paginas/PLogin.jsx', 'error': 'componentes/ui.jsx', 'exito': 'componentes/ui.jsx',
+    'login': 'paginas/PLogin.jsx', 'f_login': 'paginas/PLogin.jsx', 'error': 'paginas/PLogin.jsx componentes/ui.jsx',
+    'exito': 'componentes/ui.jsx', 'pie': 'plantilla/AppShell.jsx componentes/Shell.jsx',
     'menu': 'plantilla/AppShell.jsx componentes/Shell.jsx', 'resultados_busqueda': 'componentes/Shell.jsx',
     'f_perfil': 'componentes/Shell.jsx', 'f_clave': 'componentes/Shell.jsx', 'error404': 'paginas/PError404.jsx componentes/ui.jsx',
     'catalogo': 'paginas/PCatalogo.jsx componentes/ui.jsx', 'registro_interes': 'paginas/PCatalogo.jsx',
@@ -1068,10 +1044,10 @@ FUENTE = {
 }
 SHELL = ('plantilla/AppShell.jsx', 'componentes/Shell.jsx')   # envuelven toda página: contador, búsqueda, perfil
 ESTEREOTIPO_VALIDO = {   # (tipo origen, tipo destino) admitidos por cada estereotipo (Conallen; REGLAS §5)
-    'link': {('actor', 'cliente'), ('actor', 'externo'), ('cliente', 'cliente'), ('cliente', 'ps'),
+    'link': {('actor', 'cliente'), ('actor', 'externo'), ('cliente', 'cliente'), ('cliente', 'form'), ('cliente', 'ps'), ('form', 'ps'), ('form', 'externo'),
              ('cliente', 'externo'), ('externo', 'cliente')},
-    'submit': {('form', 'ps')}, 'build': {('ps', 'cliente')}, 'include': {('ps', 'ps')}, 'access': {('ps', 'bd')},
-    'contiene': {('cliente', 'form')},
+    'submit': {('form', 'ps')}, 'build': {('ps', 'cliente'), ('ps', 'form')}, 'include': {('ps', 'ps')}, 'access': {('ps', 'bd')},
+    'contiene': {('cliente', 'form'), ('cliente', 'cliente')},
 }
 
 
@@ -1193,7 +1169,7 @@ def verificar():
             for a, b, st, texto in enlaces:   # la página (o la del formulario) que llama al server page lo llama de verdad
                 if b != k or st not in ('submit', 'link'): continue
                 pagina = a if paginas[a][0] == 'cliente' else next(
-                    (x for x, y, s, _ in enlaces if y == a and paginas[x][0] == 'cliente' and s == 'contiene'), None)
+                    (x for x, y, s, _ in enlaces if y == a and paginas[x][0] == 'cliente' and s in ('contiene', 'link')), None)
                 fuentes = (FUENTE.get(pagina) or archivo.get(pagina) or '').split() if pagina else []
                 if fuentes and not any(set(funcs) & usos(f) for f in fuentes):
                     errores.append(f'{actor}: {" / ".join(fuentes)} no llama a api/{"/".join(funcs)} ("{paginas[a][1]}" → "{nombre}")')
