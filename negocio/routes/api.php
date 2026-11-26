@@ -25,13 +25,17 @@ use Illuminate\Support\Facades\Route;
 Route::get('/salud', [NSitio::class, 'salud']);
 Route::post('/login', [NAuth::class, 'login'])->middleware('throttle:crm-login');
 Route::get('/catalogo', [NCatalogo::class, 'programas']);
-Route::post('/registro-interes', [NProspecto::class, 'registrarInteres'])->middleware('throttle:20,1');
-Route::post('/visitas', [NSitio::class, 'visita'])->middleware('throttle:120,1');
-Route::get('/buscar', [NSitio::class, 'buscar'])->middleware('throttle:90,1');
+Route::post('/registro-interes', [NProspecto::class, 'registrarInteres'])->middleware('throttle:20,1,registro-interes');
+Route::post('/visitas', [NSitio::class, 'visita'])->middleware('throttle:120,1,visitas');
+Route::get('/buscar', [NSitio::class, 'buscar'])->middleware('throttle:90,1,buscar');
 Route::get('/fotos/{archivo}', [NSitio::class, 'foto']);
 
 // CU6 — webhook oficial de Stripe (autenticado por firma HMAC Stripe-Signature)
 Route::post('/stripe/webhook', [NPago::class, 'webhook']);
+// CU6 — retorno público seguro tras Stripe Checkout y apertura segura de enlace por cuota
+Route::get('/pagos/publico/cuotas/{token}', [NPago::class, 'abrirEnlaceCuotaPublico'])->middleware('throttle:60,1,pago-enlace');
+Route::get('/pagos/publico/sesiones/{sessionId}', [NPago::class, 'consultarRetornoPublico'])->middleware('throttle:60,1,pago-retorno');
+Route::post('/pagos/publico/sesiones/{sessionId}/cancelar', [NPago::class, 'cancelarRetornoPublico'])->middleware('throttle:30,1,pago-cancelar');
 
 Route::middleware('auth.token')->group(function (): void {
     // CU1 — sesión y perfil
@@ -93,6 +97,7 @@ Route::middleware('auth.token')->group(function (): void {
     Route::patch('/metodos-pago/{metodo}/estado', [NPago::class, 'cambiarEstadoMetodo'])->middleware('acceso:agenda');
     Route::get('/ordenes-pago', [NPago::class, 'ordenes'])->middleware('acceso:agenda|validacion-pagos,lectura');
     Route::post('/intereses/{interes}/ordenes-pago', [NPago::class, 'crearOrden'])->middleware('acceso:agenda');
+    Route::patch('/ordenes-pago/{orden}/envio-automatico', [NPago::class, 'configurarEnvioAutomatico'])->middleware('acceso:agenda')->whereNumber('orden');
     Route::patch('/ordenes-pago/{orden}/anular', [NPago::class, 'anularOrden'])->middleware('acceso:agenda')->whereNumber('orden');
     Route::post('/ordenes-pago/{orden}/cuotas/{cuota}/comprobante', [NPago::class, 'registrarComprobante'])->middleware('acceso:agenda')->whereNumber('cuota');
     Route::post('/ordenes-pago/{orden}/cuotas/{cuota}/checkout', [NPago::class, 'crearCheckout'])->middleware('acceso:agenda')->whereNumber('cuota');

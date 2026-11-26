@@ -21,7 +21,7 @@ class NInteres
     public function index(ConsultaRequest $r): JsonResponse
     {
         return response()->json([
-            'intereses' => $this->intereses->listar($r->usuario(), $r->only(['buscar', 'estado', 'vendedor', 'sin_asignar'])),
+            'intereses' => $this->intereses->listar($r->usuario(), $r->only(['buscar', 'estado', 'vendedor', 'sin_asignar', 'orden'])),
             'estados' => Interes::ESTADOS,
             'motivos' => $this->intereses->motivos(),
         ]);

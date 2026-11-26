@@ -14,7 +14,7 @@ export default function PProspectos() {
   const puedeAlta = puede('interesados', 'modificacion', sesion)
   const puedeAgregarInteres = puede('prospectos', 'modificacion', sesion) || puede('embudo', 'modificacion', sesion)
   const [filtro, setFiltro] = useState({ buscar: '', origen: '' })
-  const { datos, cargando, error, recargar } = useDatos(async () => (await prospectosApi.index({ buscar: filtro.buscar || undefined, origen: filtro.origen || undefined })).data, [filtro.buscar, filtro.origen])
+  const { datos, cargando, error, recargar } = useDatos(async () => (await prospectosApi.index({ buscar: filtro.buscar || undefined, origen: filtro.origen || undefined })).data, [filtro.buscar, filtro.origen], { intervaloMs: 3000, refrescarAlEnfocar: true })
   const [modal, setModal] = useState(null)
   const aviso = useAviso()
 

@@ -21,6 +21,7 @@ class OrdenPago extends Model
             'subtotal' => 'decimal:2',
             'descuento_total' => 'decimal:2',
             'total' => 'decimal:2',
+            'envio_automatico' => 'boolean',
             'fecha_generacion' => 'datetime',
             'fecha_anulacion' => 'datetime',
         ];

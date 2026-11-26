@@ -1,14 +1,14 @@
 /*
- * UNEXO — tokens del sistema "Prospecto de admisión".
- * Ejes de tema en <html> (enunciado 5):
- *   data-theme="light|dark"          día/noche (automático por la hora del cliente o manual)
- *   data-audiencia="adultos|jovenes|ninos"  carácter completo: tipografía, radios, densidad, acento secundario
- *   data-letra="-1..3"               tamaño de letra (accesibilidad)
- *   data-contraste="alto"            alto contraste (WCAG AAA en texto)
- * Marca obligatoria: navy #083456 y turquesa #10aeb5 (logo UNEXO). El turquesa no se usa como texto sobre claro.
+ * UNEXO — Variables compartidas del sistema de diseño.
+ * Los estilos visuales específicos de cada público están separados en estilos/temas/{adultos,niños,jovenes}.css.
+ * Atributos activos en <html>:
+ *   data-theme="light|dark"                día o noche (horario de Bolivia UTC-4 o manual)
+ *   data-audiencia="adultos|jovenes|niños" tema según público objetivo
+ *   data-letra="-1..3"                     tamaño de fuente accesible
+ *   data-contraste="alto"                  alto contraste prioritario (WCAG AAA en texto)
  */
 :root {
-  /* Primitivos de marca */
+  /* Colores primitivos compartidos */
   --navy: #083456;
   --navy-700: #0b4268;
   --navy-950: #041d31;
@@ -16,11 +16,18 @@
   --turquesa-700: #0a7c82;
   --turquesa-100: #dcf4f4;
 
-  /* Superficies y tinta (día) */
-  --papel: #ffffff;
+  /* Alias semánticos fáciles de ubicar (sincronizados en cada tema) */
+  --color-primario: #083456;
+  --color-secundario: #10aeb5;
+  --color-fondo: #f4f7f9;
+  --color-superficie: #ffffff;
+  --color-texto: #1d2733;
+
+  /* Superficies, tinta y encabezado/riel compartidos */
+  --papel: var(--color-superficie);
   --niebla: #e9eef2;
-  --niebla-2: #f4f7f9;
-  --tinta: #1d2733;
+  --niebla-2: var(--color-fondo);
+  --tinta: var(--color-texto);
   --tinta-suave: #4e5d6b;
   --filete: #cfd9e0;
   --filete-fuerte: #9fb1bf;
@@ -34,7 +41,20 @@
   --sobre-acento: var(--navy-950);
   --foco: #0a7c82;
 
-  /* Estados (siempre con texto o ícono además del color) */
+  /* Encabezado, pie y menú lateral (riel) */
+  --header-bg: var(--papel);
+  --header-borde: var(--filete);
+  --footer-bg: var(--papel);
+  --riel: var(--navy-950);
+  --riel-marca: #ffffff;
+  --riel-tinta: #dbe7f0;
+  --riel-suave: #8fa9bd;
+  --riel-borde: rgb(255 255 255 / 0.1);
+  --riel-hover: rgb(255 255 255 / 0.08);
+  --riel-activo: var(--turquesa);
+  --riel-activo-tinta: var(--navy-950);
+
+  /* Estados semánticos */
   --exito: #1d7547;
   --exito-suave: #e1f3e8;
   --aviso: #94540a;
@@ -42,7 +62,7 @@
   --peligro: #b42318;
   --peligro-suave: #fde8e6;
 
-  /* Etapas del embudo (RF3.2): pestaña-separador de cada columna */
+  /* Etapas del embudo */
   --etapa-nuevo: #52677a;
   --etapa-contacto: #0a7c82;
   --etapa-seguimiento: #2f5d9c;
@@ -50,14 +70,14 @@
   --etapa-convertido: #1d7547;
   --etapa-perdido: #b42318;
 
-  /* Pestañas de programa (capítulos del prospecto) */
+  /* Áreas del catálogo */
   --programa-1: #083456;
   --programa-2: #0a7c82;
   --programa-3: #2f5d9c;
   --programa-4: #43407f;
   --programa-5: #2d5f5a;
 
-  /* Tipografía (adultos por defecto) */
+  /* Tipografía base */
   --fuente-titulo: 'Source Serif 4 Variable', 'Source Serif 4', Georgia, serif;
   --fuente-ui: 'Public Sans Variable', 'Public Sans', 'Segoe UI', system-ui, sans-serif;
   --titulo-peso: 650;
@@ -71,7 +91,7 @@
   --acento-2: var(--turquesa);
   --acento-2-texto: var(--turquesa-700);
 
-  /* Espacio (múltiplos de 4px, escalados por densidad) */
+  /* Espaciado base */
   --e-1: calc(4px * var(--densidad));
   --e-2: calc(8px * var(--densidad));
   --e-3: calc(12px * var(--densidad));
@@ -81,7 +101,7 @@
   --e-7: calc(48px * var(--densidad));
   --e-8: calc(64px * var(--densidad));
 
-  /* Escala tipográfica (rem: sigue al tamaño de letra elegido) */
+  /* Escala tipográfica */
   --t-xs: 0.75rem;
   --t-s: 0.875rem;
   --t-m: 1rem;
@@ -97,81 +117,22 @@
   color-scheme: light;
 }
 
-/* ---------- Noche ---------- */
-:root[data-theme='dark'] {
-  --papel: #0b1f33;
-  --niebla: #102a42;
-  --niebla-2: #0d2439;
-  --tinta: #e6eef4;
-  --tinta-suave: #a9bccb;
-  --filete: #24425c;
-  --filete-fuerte: #3a5d7a;
-  --portada: #0f3a5f;
-  --portada-tinta: #ffffff;
-  --portada-suave: #b9cde0;
-  --enlace: #9fd0ff;
-  --acento: #2ccfd5;
-  --acento-texto: #5fe0e4;
-  --acento-suave: #0f3b45;
-  --sobre-acento: #04202a;
-  --foco: #5fe0e4;
-  --exito: #6fd39b;
-  --exito-suave: #123827;
-  --aviso: #f3b762;
-  --aviso-suave: #3a2a10;
-  --peligro: #ff8a80;
-  --peligro-suave: #401c1a;
-  --etapa-nuevo: #9fb3c5;
-  --etapa-contacto: #5fe0e4;
-  --etapa-seguimiento: #8db8f2;
-  --etapa-promesa: #f3b762;
-  --etapa-convertido: #6fd39b;
-  --etapa-perdido: #ff8a80;
-  --programa-1: #9fd0ff;
-  --programa-2: #5fe0e4;
-  --programa-3: #8db8f2;
-  --programa-4: #b8b2f5;
-  --programa-5: #8fd3c8;
-  --acento-2-texto: var(--acento-texto);
-  --sombra: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.6);
-  --sombra-capa: 0 2px 6px rgb(0 0 0 / 0.35), 0 24px 48px -16px rgb(0 0 0 / 0.7);
-  color-scheme: dark;
-}
-
-/* ---------- Públicos (carácter completo) ---------- */
-:root[data-audiencia='jovenes'] {
-  --fuente-titulo: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', var(--fuente-ui);
-  --titulo-peso: 760;
-  --radio: 10px;
-  --radio-grande: 16px;
-  --densidad: 1;
-  --acento-2: #ff6b57;
-  --acento-2-texto: #c33a28;
-}
-:root[data-audiencia='jovenes'][data-theme='dark'] { --acento-2-texto: #ff9a8b; }
-
-:root[data-audiencia='ninos'] {
-  --fuente-titulo: 'Fredoka Variable', 'Fredoka', 'Nunito Variable', sans-serif;
-  --fuente-ui: 'Nunito Variable', 'Nunito', system-ui, sans-serif;
-  --titulo-peso: 620;
-  --radio: 16px;
-  --radio-grande: 24px;
-  --densidad: 1.2;
-  --escala: 1.08;
-  --acento-2: #ffb703;
-  --acento-2-texto: #8a5a00;
-}
-:root[data-audiencia='ninos'][data-theme='dark'] { --acento-2-texto: #ffd166; }
-
-/* ---------- Tamaño de letra ---------- */
+/* ---------- Tamaño de letra accesible (A- / deslizador / A+ / Restablecer) ---------- */
 :root[data-letra='-1'] { --paso-letra: 0.9; }
-:root[data-letra='1'] { --paso-letra: 1.12; }
-:root[data-letra='2'] { --paso-letra: 1.25; }
-:root[data-letra='3'] { --paso-letra: 1.4; }
+:root[data-letra='0']  { --paso-letra: 1; }
+:root[data-letra='1']  { --paso-letra: 1.12; }
+:root[data-letra='2']  { --paso-letra: 1.25; }
+:root[data-letra='3']  { --paso-letra: 1.4; }
 
-/* ---------- Alto contraste (AAA) ---------- */
-:root[data-contraste='alto'] {
+/* ---------- Alto contraste prioritario (especificidad superior a cualquier tema) ---------- */
+html:root[data-contraste='alto'] {
   --fuente-ui: 'Atkinson Hyperlegible', 'Public Sans Variable', 'Segoe UI', system-ui, sans-serif;
+  --color-fondo: #ffffff;
+  --color-superficie: #ffffff;
+  --color-texto: #000000;
+  --navy: #001a33;
+  --navy-700: #00294f;
+  --navy-950: #000000;
   --papel: #ffffff;
   --niebla: #ffffff;
   --niebla-2: #ffffff;
@@ -186,11 +147,34 @@
   --acento-suave: #ffffff;
   --sobre-acento: #ffffff;
   --foco: #c4005a;
+  --header-bg: #ffffff;
+  --header-borde: #000000;
+  --footer-bg: #ffffff;
+  --riel: #000000;
+  --riel-marca: #ffffff;
+  --riel-tinta: #ffffff;
+  --riel-suave: #e5e5e5;
+  --riel-borde: #ffffff;
+  --riel-hover: #222222;
+  --riel-activo: #ffffff;
+  --riel-activo-tinta: #000000;
   --exito: #00501f;
   --aviso: #5c3300;
   --peligro: #8a0000;
+  --programa-1: #001a33;
+  --programa-2: #00494d;
+  --programa-3: #001a8c;
+  --programa-4: #2d0059;
+  --programa-5: #004d26;
 }
-:root[data-contraste='alto'][data-theme='dark'] {
+
+html:root[data-contraste='alto'][data-theme='dark'] {
+  --color-fondo: #000000;
+  --color-superficie: #000000;
+  --color-texto: #ffffff;
+  --navy: #00ffff;
+  --navy-700: #66ffff;
+  --navy-950: #000000;
   --papel: #000000;
   --niebla: #000000;
   --niebla-2: #000000;
@@ -202,17 +186,37 @@
   --enlace: #ffff66;
   --acento: #00ffff;
   --acento-texto: #00ffff;
-  /* Fondo de lo elegido y de los avisos: oscuro, para que el texto blanco se lea (heredaba el blanco del contraste de día). */
   --acento-suave: #003336;
   --sobre-acento: #000000;
   --foco: #ffff00;
+  --header-bg: #000000;
+  --header-borde: #ffffff;
+  --footer-bg: #000000;
+  --riel: #000000;
+  --riel-marca: #ffffff;
+  --riel-tinta: #ffffff;
+  --riel-suave: #d4d4d4;
+  --riel-borde: #ffffff;
+  --riel-hover: #1f1f1f;
+  --riel-activo: #00ffff;
+  --riel-activo-tinta: #000000;
   --exito: #7dff9e;
   --aviso: #ffd166;
   --peligro: #ff8f8f;
+  --programa-1: #00ffff;
+  --programa-2: #7dff9e;
+  --programa-3: #ffd166;
+  --programa-4: #ff99ff;
+  --programa-5: #99d6ff;
 }
 
-/* ---------- Catálogo y login (data-zona="oferta") en el público adulto: títulos en grotesca pesada ---------- */
-:root:not([data-audiencia='jovenes']):not([data-audiencia='ninos']) [data-zona='oferta'] {
-  --fuente-titulo: var(--fuente-ui);
-  --titulo-peso: 800;
+/* En alto contraste se ocultan decoraciones y degradados llamativos para priorizar legibilidad */
+html:root[data-contraste='alto'] .decoracion-tema {
+  display: none !important;
+}
+html:root[data-contraste='alto'] .hoja,
+html:root[data-contraste='alto'] .btn-primario,
+html:root[data-contraste='alto'] .btn-acento {
+  background-image: none !important;
+  box-shadow: none !important;
 }

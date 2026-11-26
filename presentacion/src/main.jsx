@@ -12,7 +12,14 @@ import './servicios/theme'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'
+import { ErrorBoundary } from './componentes/ErrorBoundary'
 import { router } from './rutas'
 
 // Capa 1 (presentación): SPA de React. Todos los datos llegan de la API REST de Laravel (capa 2) por api/.
-createRoot(document.getElementById('app')).render(<StrictMode><RouterProvider router={router} /></StrictMode>)
+createRoot(document.getElementById('app')).render(
+  <StrictMode>
+    <ErrorBoundary nombreSeccion="aplicación">
+      <RouterProvider router={router} />
+    </ErrorBoundary>
+  </StrictMode>,
+)

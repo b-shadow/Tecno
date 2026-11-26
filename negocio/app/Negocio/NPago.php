@@ -7,6 +7,7 @@ use App\Http\Requests\ConsultaRequest;
 use App\Http\Requests\Pago\AnularOrdenRequest;
 use App\Http\Requests\Pago\AprobarCuotaRequest;
 use App\Http\Requests\Pago\CambiarEstadoMetodoRequest;
+use App\Http\Requests\Pago\ConfigurarEnvioOrdenRequest;
 use App\Http\Requests\Pago\CrearCheckoutRequest;
 use App\Http\Requests\Pago\CrearOrdenRequest;
 use App\Http\Requests\Pago\CrearSetupTarjetaRequest;
@@ -36,6 +37,7 @@ class NPago
     public function __construct(
         private readonly DPago $pagos,
         private readonly NStripe $stripe,
+        private readonly NNotificacion $notificaciones,
     ) {
     }
 
@@ -54,22 +56,17 @@ class NPago
         return response()->json(['metodos' => $this->pagos->metodos($registro), 'marcas' => self::MARCAS]);
     }
 
-    /** Registro manual únicamente para QR o transferencia; las tarjetas se registran mediante Stripe Checkout (mode=setup). */
+    /** Los nuevos métodos de pago se registran únicamente mediante Stripe Setup; se prohíbe crear QR/transferencia manual. */
     public function registrarMetodo(RegistrarMetodoRequest $r, string $prospecto): JsonResponse
     {
-        $datos = $r->validated();
+        $r->validated();
         $registro = $this->pagos->prospecto($prospecto);
         $this->autorizarProspecto($r->usuario(), $registro);
-        $fila = [
-            'documento' => $registro->documento,
-            'tipo' => $datos['tipo'],
-            'titular' => trim($datos['titular']),
-            'estado' => 'activo',
-            'proveedor' => 'manual',
-            'registrado_por' => $r->usuario()->correo,
-        ];
 
-        return response()->json(['mensaje' => 'Método de pago registrado.', 'metodo' => $this->pagos->crearMetodo($fila)], 201);
+        throw new ReglaNegocioException(
+            'Los cobros actuales utilizan exclusivamente Stripe Sandbox. Utilice «Solicitar registro de tarjeta» o genere el enlace de pago.',
+            422
+        );
     }
 
     public function crearSetupTarjeta(CrearSetupTarjetaRequest $r, string $prospecto): JsonResponse
@@ -100,7 +97,7 @@ class NPago
         return response()->json(['ordenes' => $this->pagos->ordenes($r->usuario())]);
     }
 
-    /** Orden de pago: pago único (1 cuota) o plan de 2 a 12 cuotas mensuales. La genera el vendedor de la tarjeta. */
+    /** Orden de pago: pago único (1 cuota) o plan de 2 a 12 cuotas mensuales. Valida descuentos y programación automática. */
     public function crearOrden(CrearOrdenRequest $r, int $interes): JsonResponse
     {
         $usuario = $r->usuario();
@@ -109,36 +106,48 @@ class NPago
         ReglaNegocioException::si($tarjeta->vendedor_correo !== $usuario->correo, 'Solo el vendedor asignado genera la orden de pago.', 403);
         ReglaNegocioException::si(in_array($tarjeta->estado, ['Convertido', 'Perdido'], true), 'La tarjeta ya está cerrada.');
 
-        $orden = $this->pagos->transaccion(function () use ($tarjeta, $usuario, $datos) {
-            // Igual que el P1: una sola orden abierta por tarjeta (evita la venta duplicada).
+        $correoProspecto = trim((string) ($tarjeta->prospecto?->correo ?? ''));
+        $tieneCorreoValido = $correoProspecto !== '' && filter_var($correoProspecto, FILTER_VALIDATE_EMAIL) !== false;
+        if (array_key_exists('envio_automatico', $datos) && $datos['envio_automatico'] === true && ! $tieneCorreoValido) {
+            throw ValidationException::withMessages([
+                'envio_automatico' => 'Registre un correo electrónico válido en el prospecto para habilitar los envíos automáticos.',
+            ]);
+        }
+        $envioAutomatico = array_key_exists('envio_automatico', $datos) ? (bool) $datos['envio_automatico'] : $tieneCorreoValido;
+
+        [$orden, $filasCuota] = $this->pagos->transaccion(function () use ($tarjeta, $usuario, $datos, $envioAutomatico) {
             $abierta = $this->pagos->ordenAbierta($tarjeta->nro_tarjeta);
             ReglaNegocioException::si((bool) $abierta, $abierta
-                ? "La tarjeta ya tiene la orden #{$abierta->nro_orden} ({$abierta->estado}). Registre su comprobante o espere su revisión."
+                ? "La tarjeta ya tiene la orden #{$abierta->nro_orden} ({$abierta->estado}). Complete o anule la orden abierta antes de crear otra."
                 : '');
 
             $modulos = $this->pagos->modulos($datos['modulos']);
             $descuentos = $this->pagos->descuentosPorCodigo($datos['descuentos'] ?? []);
+            $this->validarReglasDescuentos($descuentos, $modulos);
+
             $subtotal = round($modulos->sum(fn ($m) => (float) $m->precio), 2);
             $descuentoTotal = 0.0;
-
-            $orden = $this->pagos->crearOrden([
-                'nro_tarjeta' => $tarjeta->nro_tarjeta, 'vendedor_correo' => $usuario->correo,
-                'subtotal' => $subtotal, 'descuento_total' => 0, 'total' => $subtotal, 'fecha_generacion' => now(),
-            ]);
-
             $filasDescuento = [];
             foreach ($descuentos as $descuento) {
                 $monto = round($subtotal * (float) $descuento->porcentaje / 100, 2);
                 $descuentoTotal += $monto;
                 $filasDescuento[] = [
-                    'nro_orden' => $orden->nro_orden, 'descuento_codigo' => $descuento->codigo,
+                    'descuento_codigo' => $descuento->codigo,
                     'porcentaje' => $descuento->porcentaje, 'monto' => $monto, 'created_at' => now(), 'updated_at' => now(),
                 ];
             }
-            $this->pagos->insertarDescuentosOrden($filasDescuento);
             $total = max(round($subtotal - $descuentoTotal, 2), 0);
             ReglaNegocioException::si($total <= 0, 'El total de la orden debe ser mayor a cero.');
-            $this->pagos->actualizarOrden($orden, ['descuento_total' => round($descuentoTotal, 2), 'total' => $total]);
+
+            $orden = $this->pagos->crearOrden([
+                'nro_tarjeta' => $tarjeta->nro_tarjeta, 'vendedor_correo' => $usuario->correo,
+                'subtotal' => $subtotal, 'descuento_total' => round($descuentoTotal, 2), 'total' => $total,
+                'envio_automatico' => $envioAutomatico, 'fecha_generacion' => now(),
+            ]);
+
+            if ($filasDescuento) {
+                $this->pagos->insertarDescuentosOrden(array_map(fn ($f) => ['nro_orden' => $orden->nro_orden] + $f, $filasDescuento));
+            }
 
             $items = [];
             foreach ($modulos as $m) {
@@ -159,6 +168,7 @@ class NPago
                     'nro_orden' => $orden->nro_orden, 'nro_cuota' => $i,
                     'monto' => $i === $n ? round($total - $base * ($n - 1), 2) : $base,
                     'fecha_vencimiento' => Carbon::parse($datos['primer_vencimiento'])->addMonthsNoOverflow($i - 1)->toDateString(),
+                    'token_pago' => bin2hex(random_bytes(24)),
                     'estado' => 'Pendiente de pago', 'created_at' => now(), 'updated_at' => now(),
                 ];
             }
@@ -173,55 +183,61 @@ class NPago
             ]);
             $this->pagos->actualizarInteres($tarjeta, ['estado' => 'Promesa de Pago', 'ultima_actividad_en' => now()]);
 
-            return $orden;
+            return [$orden, $filasCuota];
         });
 
-        return response()->json(['mensaje' => 'Orden de pago generada.', 'orden' => $this->pagos->ordenCompleta($orden)], 201);
+        $avisoCorreo = null;
+        if ($envioAutomatico && config('pagos_recordatorios.enviar_al_crear_orden', true)) {
+            $avisoCorreo = $this->enviarSolicitudInicialOrden($orden, $tarjeta, $filasCuota, $usuario->correo);
+        }
+
+        return response()->json([
+            'mensaje' => 'Orden de pago generada.',
+            'aviso_correo' => $avisoCorreo,
+            'orden' => $this->pagos->ordenCompleta($orden),
+        ], 201);
     }
 
-    /** Cuotas para validar (coordinación): por defecto las que esperan revisión. */
+    /** Activa o desactiva el envío automático de recordatorios para una orden activa. */
+    public function configurarEnvioAutomatico(ConfigurarEnvioOrdenRequest $r, int $orden): JsonResponse
+    {
+        $registro = $this->pagos->orden($orden);
+        ReglaNegocioException::si($registro->estado !== 'Activa', 'No se puede modificar una orden anulada.');
+        $interes = $this->pagos->interesDeOrden($registro);
+        NAlcance::autorizarTarjeta($r->usuario(), $interes);
+
+        $activar = (bool) $r->validated('envio_automatico');
+        if ($activar && ! filter_var((string) ($interes->prospecto?->correo ?? ''), FILTER_VALIDATE_EMAIL)) {
+            throw ValidationException::withMessages([
+                'envio_automatico' => 'El prospecto no tiene un correo electrónico válido para habilitar los envíos automáticos.',
+            ]);
+        }
+
+        $this->pagos->actualizarOrden($registro, ['envio_automatico' => $activar]);
+
+        return response()->json([
+            'mensaje' => $activar ? 'Envíos automáticos activados.' : 'Envíos automáticos desactivados.',
+            'orden' => $this->pagos->ordenCompleta($registro),
+        ]);
+    }
+
+    /** Cuotas para validar (coordinación): conserva la resolución de comprobantes históricos pendientes. */
     public function cuotas(ConsultaRequest $r): JsonResponse
     {
         return response()->json(['cuotas' => $this->pagos->cuotas($r->usuario(), $r->query('estado'))]);
     }
 
-    /** El vendedor registra el comprobante manual (QR/transferencia) que el prospecto le envió (imagen o PDF, hasta 5 MB). */
+    /** Bloquea la carga de nuevos comprobantes QR/transferencia para exigir Stripe Checkout como pasarela única. */
     public function registrarComprobante(RegistrarComprobanteRequest $r, int $orden, int $cuota): JsonResponse
     {
-        $usuario = $r->usuario();
-        $datos = $r->validated();
+        $r->validated();
         $registro = $this->pagos->orden($orden);
-        ReglaNegocioException::si($registro->estado !== 'Activa', 'La orden fue anulada.');
-        $interes = $this->pagos->interesDeOrden($registro);
-        NAlcance::autorizarTarjeta($usuario, $interes);
-        if (! empty($datos['nro_metodo'])) {
-            $this->metodoActivo($interes->documento, (int) $datos['nro_metodo'], null, 'El método de pago seleccionado no es válido.');
-        }
-        $mime = $this->validarArchivo($datos['archivo']);
+        NAlcance::autorizarTarjeta($r->usuario(), $this->pagos->interesDeOrden($registro));
 
-        $this->pagos->transaccion(function () use ($registro, $interes, $cuota, $datos, $mime, $usuario) {
-            $fila = $this->cuotaBloqueada($registro->nro_orden, $cuota);
-            ReglaNegocioException::si($fila->estado === 'Pago aprobado', 'Esta cuota ya está pagada.');
-            ReglaNegocioException::si($fila->estado === 'En revision', 'Ya hay un comprobante en revisión para esta cuota.');
-
-            $prospecto = $interes->prospecto;
-            // Clase 40: nombre legible y ligado al dato.
-            $nombre = Str::slug("{$prospecto->apellido} {$prospecto->nombre}", '_')."_orden{$registro->nro_orden}_cuota{$cuota}.".($mime === 'application/pdf' ? 'pdf' : explode('/', $mime)[1]);
-
-            $this->pagos->crearComprobante([
-                'nro_orden' => $registro->nro_orden, 'nro_cuota' => $cuota, 'archivo' => $datos['archivo'], 'nombre_archivo' => $nombre, 'mime' => $mime,
-                'remitente' => $datos['remitente'] ?? null, 'hora_pago' => $datos['hora_pago'] ?? null, 'observacion' => $datos['observacion'] ?? null,
-                'fecha_envio' => now(), 'estado_revision' => 'En revision',
-            ]);
-            $this->pagos->cambiarEstadoCuota($registro->nro_orden, $cuota, 'En revision', ['nro_metodo' => $datos['nro_metodo'] ?? null]);
-            $this->pagos->registrarInteraccion($interes, [
-                'usuario_correo' => $usuario->correo, 'tipo' => 'Pago informado', 'fecha' => now(),
-                'descripcion' => "Comprobante de la cuota {$cuota} de la orden #{$registro->nro_orden} enviado a revisión.", 'resultado' => 'Pago en revisión',
-            ]);
-            $this->pagos->actualizarInteres($interes, ['ultima_actividad_en' => now()]);
-        });
-
-        return response()->json(['mensaje' => 'Comprobante enviado a revisión.'], 201);
+        throw new ReglaNegocioException(
+            'Los pagos de órdenes activas se realizan exclusivamente mediante Stripe Checkout Sandbox; no se admiten comprobantes manuales nuevos.',
+            422
+        );
     }
 
     /** Inicia una sesión oficial de Stripe Checkout (moneda BOB) para pagar una cuota pendiente. */
@@ -233,16 +249,127 @@ class NPago
         return response()->json($resultado, 201);
     }
 
-    /** Consulta y confirma de manera idempotente una Checkout Session real en Stripe Sandbox. */
+    /** Consulta y confirma de manera idempotente una Checkout Session real en Stripe Sandbox (vendedor/coordinación autenticados). */
     public function confirmarCheckout(ConsultaRequest $r, string $sessionId): JsonResponse
     {
         return response()->json($this->stripe->verificarSesion($sessionId, $r->usuario()));
     }
 
-    /** Gestiona el retorno desde Stripe Checkout cuando el usuario cancela o abandona el flujo. */
+    /** Gestiona el retorno desde Stripe Checkout cuando un usuario autenticado cancela o abandona el flujo. */
     public function cancelarCheckout(ConsultaRequest $r, string $sessionId): JsonResponse
     {
         return response()->json($this->stripe->cancelarSesion($sessionId, $r->usuario()));
+    }
+
+    /** Retorno público seguro para el cliente después de pagar en Stripe Checkout (autorizado por token único). */
+    public function consultarRetornoPublico(ConsultaRequest $r, string $sessionId): JsonResponse
+    {
+        $token = trim((string) $r->query('token', ''));
+        ReglaNegocioException::si($token === '', 'Falta el token de verificación del enlace.', 400);
+
+        return response()->json($this->stripe->verificarRetornoPublico($sessionId, $token));
+    }
+
+    /** Retorno público seguro cuando el cliente cancela en Stripe Checkout (mantiene la orden activa para continuar). */
+    public function cancelarRetornoPublico(ConsultaRequest $r, string $sessionId): JsonResponse
+    {
+        $token = trim((string) ($r->input('token') ?: $r->query('token', '')));
+        ReglaNegocioException::si($token === '', 'Falta el token de verificación del enlace.', 400);
+
+        return response()->json($this->stripe->cancelarRetornoPublico($sessionId, $token));
+    }
+
+    /** Enlace público seguro por cuota: verifica estado en BD y recupera o genera una sesión Stripe vigente. */
+    public function abrirEnlaceCuotaPublico(ConsultaRequest $r, string $token): JsonResponse
+    {
+        return response()->json($this->stripe->resolverEnlacePublicoCuota($token));
+    }
+
+    /** Ejecutado por Laravel Scheduler: evalúa cuotas pendientes con envío automático habilitado y envía recordatorios sin duplicados. */
+    public function procesarEnviosAutomaticos(?Carbon $fechaReferencia = null): array
+    {
+        $tz = (string) config('pagos_recordatorios.zona_horaria', 'America/La_Paz');
+        $hoy = ($fechaReferencia ? $fechaReferencia->copy()->timezone($tz) : now($tz))->startOfDay();
+        $diasAntes = max((int) config('pagos_recordatorios.dias_antes_vencimiento', 3), 0);
+        $enviarDia = (bool) config('pagos_recordatorios.enviar_dia_vencimiento', true);
+        $diasDespues = max((int) config('pagos_recordatorios.dias_despues_vencimiento', 3), 0);
+        $frontend = rtrim((string) config('services.frontend.url', 'http://localhost:5173'), '/');
+
+        $cuotas = $this->pagos->cuotasPendientesParaRecordatorio();
+        $enviados = 0;
+        $fallidos = 0;
+        $omitidos = 0;
+
+        foreach ($cuotas as $c) {
+            $correo = trim((string) ($c->prospecto_correo ?? ''));
+            if ($correo === '' || ! filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+                $omitidos++;
+                continue;
+            }
+
+            $vence = Carbon::parse($c->fecha_vencimiento, $tz)->startOfDay();
+            $yaEnviadoHoy = $c->primer_envio_en && Carbon::parse($c->primer_envio_en, $tz)->isSameDay($hoy);
+
+            $columnaMarca = null;
+            $asunto = null;
+            $tituloDetalle = null;
+
+            if ($diasAntes > 0 && $vence->copy()->subDays($diasAntes)->isSameDay($hoy) && is_null($c->recordatorio_previo_en) && ! $yaEnviadoHoy) {
+                $columnaMarca = 'recordatorio_previo_en';
+                $asunto = "UNEXO — Recordatorio: tu cuota {$c->nro_cuota} vence el ".$vence->format('d/m/Y');
+                $tituloDetalle = "Te recordamos que dentro de {$diasAntes} días vence tu cuota en UNEXO.";
+            } elseif ($enviarDia && $vence->isSameDay($hoy) && is_null($c->recordatorio_vencimiento_en) && ! $yaEnviadoHoy) {
+                $columnaMarca = 'recordatorio_vencimiento_en';
+                $asunto = "UNEXO — Hoy vence tu cuota {$c->nro_cuota} de {$c->programa_nombre}";
+                $tituloDetalle = 'Hoy es la fecha de vencimiento de tu cuota en UNEXO.';
+            } elseif ($diasDespues > 0 && $vence->copy()->addDays($diasDespues)->isSameDay($hoy) && is_null($c->recordatorio_mora_en)) {
+                $columnaMarca = 'recordatorio_mora_en';
+                $asunto = "UNEXO — Aviso de cuota pendiente (Orden #{$c->nro_orden} · Cuota {$c->nro_cuota})";
+                $tituloDetalle = "Tu cuota {$c->nro_cuota} venció el ".$vence->format('d/m/Y').' y continúa pendiente de pago.';
+            }
+
+            if (! $columnaMarca) {
+                $omitidos++;
+                continue;
+            }
+
+            $token = $c->token_pago ?: $this->pagos->asegurarTokenCuota((int) $c->nro_orden, (int) $c->nro_cuota);
+            $enlace = "{$frontend}/pagos/cuota?token={$token}";
+            $monto = number_format((float) $c->monto, 2, '.', '');
+            $clienteNombre = trim("{$c->prospecto_nombre} {$c->prospecto_apellido}");
+            $totalCuotas = max((int) ($c->total_cuotas ?? 1), 1);
+
+            $cuerpo = implode("\n", [
+                "Hola, {$clienteNombre}.",
+                '',
+                $tituloDetalle,
+                '',
+                "Programa: {$c->programa_nombre}".($c->modulo_nombre ? " — {$c->modulo_nombre}" : ''),
+                "Orden: #{$c->nro_orden}",
+                "Cuota: {$c->nro_cuota} de {$totalCuotas}",
+                "Importe: Bs {$monto} (BOB)",
+                'Vencimiento: '.$vence->format('d/m/Y'),
+                '',
+                'Haz clic en «Completar pago» para abrir de forma segura la pasarela de Stripe Sandbox.',
+                'Operación de demostración mediante Stripe Sandbox.',
+            ]);
+
+            $res = $this->notificaciones->enviarCorreoSistema($correo, $asunto, $cuerpo, $c->vendedor_correo, $enlace, 'Completar pago');
+            if ($res['notificacion']->estado === 'enviada') {
+                $this->pagos->marcarEnvioCuota((int) $c->nro_orden, (int) $c->nro_cuota, $columnaMarca);
+                $enviados++;
+            } else {
+                $fallidos++;
+            }
+        }
+
+        return [
+            'fecha' => $hoy->toDateString(),
+            'evaluadas' => $cuotas->count(),
+            'enviados' => $enviados,
+            'fallidos' => $fallidos,
+            'omitidos' => $omitidos,
+        ];
     }
 
     /** Anula una orden sin pagos confirmados ni en revisión, expirando sesiones Stripe pendientes. */
@@ -313,6 +440,89 @@ class NPago
 
     // ---------------------------------------------------------------- apoyo
 
+    private function validarReglasDescuentos($descuentos, $modulos): void
+    {
+        foreach ($descuentos as $descuento) {
+            if ($descuento->codigo === '3_MAS_MODULOS' && $modulos->count() < 3) {
+                throw ValidationException::withMessages([
+                    'descuentos' => 'El descuento «3 o más módulos» requiere seleccionar al menos 3 módulos.',
+                ]);
+            }
+            if ($descuento->codigo === 'PROGRAMA_COMPLETO') {
+                $programas = $modulos->pluck('programa_codigo')->unique();
+                $totalAbiertos = $programas->count() === 1 ? $this->pagos->cantidadModulosAbiertos((string) $programas->first()) : 0;
+                if ($programas->count() !== 1 || $totalAbiertos === 0 || $modulos->count() < $totalAbiertos) {
+                    throw ValidationException::withMessages([
+                        'descuentos' => 'El descuento «Programa completo» requiere seleccionar todos los módulos del programa.',
+                    ]);
+                }
+            }
+        }
+    }
+
+    private function enviarSolicitudInicialOrden(OrdenPago $orden, $tarjeta, array $filasCuota, string $vendedorCorreo): ?string
+    {
+        $prospecto = $tarjeta->prospecto;
+        $correo = trim((string) ($prospecto?->correo ?? ''));
+        if ($correo === '' || ! filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+            return null;
+        }
+
+        $primera = $filasCuota[0] ?? null;
+        if (! $primera) {
+            return null;
+        }
+
+        $tz = (string) config('pagos_recordatorios.zona_horaria', 'America/La_Paz');
+        $hoy = now($tz)->startOfDay();
+        $frontend = rtrim((string) config('services.frontend.url', 'http://localhost:5173'), '/');
+        $enlace = "{$frontend}/pagos/cuota?token={$primera['token_pago']}";
+        $totalCuotas = count($filasCuota);
+        $clienteNombre = trim("{$prospecto->nombre} {$prospecto->apellido}");
+
+        $lineasPlan = array_map(
+            fn ($c) => "· Cuota {$c['nro_cuota']} de {$totalCuotas}: Bs ".number_format((float) $c['monto'], 2, '.', '').' — vence '.Carbon::parse($c['fecha_vencimiento'])->format('d/m/Y'),
+            $filasCuota
+        );
+
+        $cuerpo = implode("\n", array_merge([
+            "Hola, {$clienteNombre}.",
+            '',
+            "Se generó tu orden de pago #{$orden->nro_orden} en UNEXO para {$tarjeta->programa_nombre}.",
+            'Total contratado: Bs '.number_format((float) $orden->total, 2, '.', '').' (BOB)',
+            '',
+            'Resumen de tu plan de pagos:',
+        ], $lineasPlan, [
+            '',
+            'Puedes completar el pago de tu primera cuota haciendo clic en «Completar pago».',
+            'Operación de demostración mediante Stripe Sandbox.',
+        ]));
+
+        try {
+            $res = $this->notificaciones->enviarCorreoSistema(
+                $correo,
+                "UNEXO — Enlace de pago y plan de cuotas (Orden #{$orden->nro_orden})",
+                $cuerpo,
+                $vendedorCorreo,
+                $enlace,
+                'Completar pago'
+            );
+
+            if ($res['notificacion']->estado === 'enviada') {
+                $this->pagos->marcarEnvioCuota($orden->nro_orden, 1, 'primer_envio_en');
+                if (Carbon::parse($primera['fecha_vencimiento'], $tz)->startOfDay()->isSameDay($hoy)) {
+                    $this->pagos->marcarEnvioCuota($orden->nro_orden, 1, 'recordatorio_vencimiento_en');
+                }
+
+                return null;
+            }
+
+            return 'La orden se generó correctamente, pero no se pudo enviar el correo inicial por SMTP. Puede compartir el enlace manualmente.';
+        } catch (\Throwable) {
+            return 'La orden se generó correctamente, pero ocurrió un error SMTP al enviar la notificación inicial. Puede reintentarlo manualmente.';
+        }
+    }
+
     /** Tras aprobar: interacción y, si es la 1.ª cuota, conversión (RF3.4). Devuelve lo que falte para convertir. */
     private function trasAprobar(OrdenPago $orden, int $cuota, Usuario $usuario, string $descripcion): array
     {
@@ -338,7 +548,7 @@ class NPago
         return $fila;
     }
 
-    private function metodoActivo(string $documento, int $numero, ?string $tipo, string $mensaje): MetodoPago
+    private function metodoActivo(string $documento, int $numero, string|array|null $tipo, string $mensaje): MetodoPago
     {
         return $this->pagos->metodoActivo($documento, $numero, $tipo)
             ?? throw ValidationException::withMessages(['nro_metodo' => $mensaje]);

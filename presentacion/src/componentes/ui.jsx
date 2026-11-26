@@ -12,12 +12,35 @@ function parsearFecha(v) {
     const [anio, mes, dia] = v.split('-').map(Number)
     return new Date(anio, mes - 1, dia, 12, 0, 0)
   }
+  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(v)) {
+    return new Date(`${v.replace(' ', 'T')}-04:00`)
+  }
   return new Date(v)
 }
 
 export const fecha = (v, conHora = false) => (v ? parsearFecha(v).toLocaleString('es-BO', conHora
   ? { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }
   : { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—')
+
+/** Formatea una marca de tiempo en horario oficial de Bolivia (America/La_Paz, UTC-4) como dd/MM/yyyy HH:mm:ss. */
+export function fechaHoraBolivia(v) {
+  if (!v) return '—'
+  const d = parsearFecha(v)
+  if (Number.isNaN(d.getTime())) return '—'
+  const partes = Object.fromEntries(
+    new Intl.DateTimeFormat('es-BO', {
+      timeZone: 'America/La_Paz',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(d).map((p) => [p.type, p.value]),
+  )
+  return `${partes.day}/${partes.month}/${partes.year} ${partes.hour}:${partes.minute}:${partes.second}`
+}
 export const hora = (v) => (v ? parsearFecha(v).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }) : '—')
 export const hoyLocal = (dias = 0) => {
   const d = new Date()
@@ -158,29 +181,85 @@ export function useAviso() {
     const t = setTimeout(() => setAviso(null), aviso.tipo === 'error' ? 7000 : 4500)
     return () => clearTimeout(t)
   }, [aviso])
-  const nodo = aviso && (
-    <div className="fixed right-5 bottom-5 z-90 max-w-[min(420px,calc(100vw-40px))] animate-subir shadow-capa">
+  const nodo = aviso && createPortal(
+    <div className="pointer-events-none fixed right-5 bottom-5 z-90 max-w-[min(420px,calc(100vw-40px))] animate-subir shadow-capa">
       <Aviso tipo={aviso.tipo}>{aviso.texto}</Aviso>
-    </div>
+    </div>,
+    document.body,
   )
   const ok = useCallback((texto) => setAviso({ tipo: 'ok', texto }), [])
   const error = useCallback((e, porDefecto) => setAviso({ tipo: 'error', texto: typeof e === 'string' ? e : apiErrorMessage(e, porDefecto) }), [])
   return { nodo, ok, error }
 }
 
-/** Carga datos de la API con estados de carga y error. */
-export function useDatos(cargar, deps = []) {
+/** Carga datos de la API con estados de carga y error, respuestas en orden y revalidación silenciosa opcional. */
+export function useDatos(cargar, deps = [], opciones = {}) {
+  const { intervaloMs = 0, refrescarAlEnfocar = false } = opciones
   const [estado, setEstado] = useState({ datos: null, cargando: true, error: null })
-  const recargar = useCallback(async () => {
-    setEstado((s) => ({ ...s, cargando: true, error: null }))
+  const secuencia = useRef(0)
+  const enVuelo = useRef(false)
+  const ultimaCarga = useRef(0)
+  const huella = useRef(null)
+  const montado = useRef(true)
+
+  useEffect(() => {
+    montado.current = true
+    return () => { montado.current = false }
+  }, [])
+
+  const recargar = useCallback(async (op = {}) => {
+    const silencioso = op?.silencioso === true
+    if (silencioso && enVuelo.current) return
+    const id = ++secuencia.current
+    enVuelo.current = true
+    ultimaCarga.current = Date.now()
+    if (!silencioso && montado.current) {
+      huella.current = null
+      setEstado((s) => ({ ...s, cargando: true, error: null }))
+    }
     try {
-      setEstado({ datos: await cargar(), cargando: false, error: null })
+      const datos = await cargar()
+      if (montado.current && id === secuencia.current) {
+        const nuevaHuella = JSON.stringify(datos)
+        if (!silencioso || nuevaHuella !== huella.current) {
+          huella.current = nuevaHuella
+          setEstado({ datos, cargando: false, error: null })
+        }
+      }
     } catch (e) {
-      setEstado({ datos: null, cargando: false, error: apiErrorMessage(e, 'No se pudo cargar la información.') })
+      if (montado.current && id === secuencia.current && !silencioso) {
+        huella.current = null
+        setEstado({ datos: null, cargando: false, error: apiErrorMessage(e, 'No se pudo cargar la información.') })
+      }
+    } finally {
+      if (id === secuencia.current) enVuelo.current = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps)
+
   useEffect(() => { recargar() }, [recargar])
+
+  useEffect(() => {
+    if (!intervaloMs && !refrescarAlEnfocar) return undefined
+    const sincronizar = () => {
+      if (document.visibilityState !== 'visible') return
+      if (Date.now() - ultimaCarga.current < 800) return
+      recargar({ silencioso: true })
+    }
+    const timer = intervaloMs > 0 ? setInterval(sincronizar, intervaloMs) : null
+    if (refrescarAlEnfocar) {
+      window.addEventListener('focus', sincronizar)
+      document.addEventListener('visibilitychange', sincronizar)
+    }
+    return () => {
+      if (timer) clearInterval(timer)
+      if (refrescarAlEnfocar) {
+        window.removeEventListener('focus', sincronizar)
+        document.removeEventListener('visibilitychange', sincronizar)
+      }
+    }
+  }, [recargar, intervaloMs, refrescarAlEnfocar])
+
   return { ...estado, recargar }
 }
 

@@ -11,6 +11,8 @@ presentacion/.env
 presentacion/.env.*
 !presentacion/.env.example
 !presentacion/.env.production.example
+negocio/.env (negocio).env
+presentacion/.env (presentacion).env
 
 # Dependencies and local toolchains
 node_modules/

@@ -31,4 +31,9 @@ class Prospecto extends Model
     {
         return $this->hasMany(MetodoPago::class, 'documento', 'documento');
     }
+
+    public function transaccionesStripe(): HasMany
+    {
+        return $this->hasMany(TransaccionStripe::class, 'documento', 'documento');
+    }
 }

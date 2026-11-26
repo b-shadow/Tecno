@@ -84,8 +84,9 @@ export default function PCatalogo() {
   return (
     <>
       {interno && <BarraInterna onSincronizado={recargar} puedeSincronizar={puede('gestion-anuncios', 'modificacion', sesion)} />}
-      <section data-zona="oferta" className={oferta} aria-labelledby="titulo-oferta">
-        <header className="mb-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+      <section data-zona="oferta" className={`relative ${oferta}`} aria-labelledby="titulo-oferta">
+        {!interno && <DecoracionCatalogo />}
+        <header className="relative z-1 mb-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
           <div>
             <h1 id="titulo-oferta" className="text-[clamp(2.25rem,1.5rem+2.4vw,3.5rem)] leading-none tracking-[-0.03em] text-navy dark:text-tinta">Malla de la oferta</h1>
             <p className="mt-2 max-w-[44ch] text-tinta-suave">
@@ -99,11 +100,44 @@ export default function PCatalogo() {
           </div>
         </header>
 
-        <Malla areas={areas} colores={colores} visibles={visibles} eleccion={eleccion} onElegir={setEleccion} />
+        <div className="relative z-1">
+          <Malla areas={areas} colores={colores} visibles={visibles} eleccion={eleccion} onElegir={setEleccion} />
+        </div>
 
         {!interno && <BarraEleccion eleccion={eleccion} onContinuar={() => setRegistrando(true)} />}
       </section>
     </>
+  )
+}
+
+/** Decoraciones en CSS puro para el catálogo público (visibles solo en temas Niños y Jóvenes). */
+function DecoracionCatalogo() {
+  return (
+    <div className="decoracion-tema" aria-hidden="true">
+      <div className="sol">
+        <span className="rayo rayo-1" />
+        <span className="rayo rayo-2" />
+        <span className="rayo rayo-3" />
+        <span className="rayo rayo-4" />
+      </div>
+      <div className="nube nube-1" />
+      <div className="nube nube-2" />
+      <div className="forma-pastel forma-pastel-1" />
+      <div className="forma-pastel forma-pastel-2" />
+
+      <div className="luna" />
+      <span className="estrella estrella-1" />
+      <span className="estrella estrella-2" />
+      <span className="estrella estrella-3" />
+      <span className="estrella estrella-4" />
+      <span className="estrella estrella-5" />
+
+      <div className="geo-circulo geo-circulo-1" />
+      <div className="geo-circulo geo-circulo-2" />
+      <div className="geo-triangulo" />
+      <div className="geo-rombo" />
+      <div className="geo-lineas" />
+    </div>
   )
 }
 

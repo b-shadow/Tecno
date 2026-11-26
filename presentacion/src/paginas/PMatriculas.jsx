@@ -10,8 +10,8 @@ import * as seguimientoApi from '../api/seguimiento'
 export default function PMatriculas() {
   const sesion = useAuth()
   const editable = puede('alumnos', 'modificacion', sesion)
-  const inscripciones = useDatos(async () => (await seguimientoApi.inscripciones()).data.inscripciones)
-  const pendientes = useDatos(async () => (await exportacionesApi.pendientes()).data)
+  const inscripciones = useDatos(async () => (await seguimientoApi.inscripciones()).data.inscripciones, [], { intervaloMs: 5000, refrescarAlEnfocar: true })
+  const pendientes = useDatos(async () => (await exportacionesApi.pendientes()).data, [], { intervaloMs: 5000, refrescarAlEnfocar: true })
   const [enviando, setEnviando] = useState(false)
   const aviso = useAviso()
 

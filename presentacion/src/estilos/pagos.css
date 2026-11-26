@@ -1,0 +1,52 @@
+/*
+ * Estilos del módulo refactorizado de pagos (UNEXO).
+ * Utiliza exclusivamente tokens semánticos de tokens.css para respetar los temas (niños/jóvenes/adultos),
+ * modo día/noche, alto contraste y escala tipográfica sin colores rígidos ni estilos inline.
+ */
+.pagos-progreso {
+  width: 100%;
+  height: 10px;
+  border: 1px solid var(--filete);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--niebla);
+  appearance: none;
+}
+
+.pagos-progreso::-webkit-progress-bar {
+  background: var(--niebla);
+  border-radius: 999px;
+}
+
+.pagos-progreso::-webkit-progress-value {
+  background: var(--acento-texto);
+  border-radius: 999px;
+  transition: width 260ms var(--curva);
+}
+
+.pagos-progreso::-moz-progress-bar {
+  background: var(--acento-texto);
+  border-radius: 999px;
+}
+
+.pagos-progreso-completa::-webkit-progress-value {
+  background: var(--exito);
+}
+
+.pagos-progreso-completa::-moz-progress-bar {
+  background: var(--exito);
+}
+
+.pagos-cifras > div {
+  padding: 0.9rem 1.15rem;
+}
+
+.pagos-cifras dd {
+  font-size: clamp(1.25rem, 0.95rem + 0.85vw, 1.85rem);
+}
+
+.pagos-tabla th,
+.pagos-tabla td {
+  padding: 0.5rem 0.6rem;
+  font-size: 0.8125rem;
+}

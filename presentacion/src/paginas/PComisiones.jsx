@@ -8,8 +8,8 @@ import * as seguimientoApi from '../api/seguimiento'
 export default function PComisiones() {
   const sesion = useAuth()
   const gestiona = puede('seguimiento', 'modificacion', sesion)
-  const comisiones = useDatos(async () => (await seguimientoApi.comisiones()).data)
-  const resumen = useDatos(async () => (gestiona ? (await seguimientoApi.resumenComisiones()).data.vendedores : []), [gestiona])
+  const comisiones = useDatos(async () => (await seguimientoApi.comisiones()).data, [], { intervaloMs: 5000, refrescarAlEnfocar: true })
+  const resumen = useDatos(async () => (gestiona ? (await seguimientoApi.resumenComisiones()).data.vendedores : []), [gestiona], { intervaloMs: 5000, refrescarAlEnfocar: true })
   const [porcentaje, setPorcentaje] = useState('')
   const aviso = useAviso()
   const recargar = () => { comisiones.recargar(); resumen.recargar() }

@@ -27,7 +27,7 @@ class DProspecto
     public function encontrarPorDocumentoOCorreoBloqueado(string $documento, string $correo): ?Prospecto
     {
         return Prospecto::query()->lockForUpdate()->find($documento)
-            ?? Prospecto::query()->whereRaw('lower(correo) = ?', [$correo])->lockForUpdate()->first();
+            ?? Prospecto::query()->whereRaw('lower(correo) = ?', [mb_strtolower(trim($correo))])->lockForUpdate()->first();
     }
 
     public function buscar(Usuario $usuario, string $texto, ?string $origen): Collection
@@ -92,7 +92,10 @@ class DProspecto
 
     public function vendedorExistente(Prospecto $prospecto): ?string
     {
-        return $prospecto->intereses()->whereNotNull('vendedor_correo')->value('vendedor_correo');
+        return $prospecto->intereses()
+            ->whereNotNull('vendedor_correo')
+            ->whereHas('vendedor', fn ($query) => $query->where('estado', 'activo'))
+            ->value('vendedor_correo');
     }
 
     public function crearInteres(Prospecto $prospecto, CatalogoCache $modulo, ?string $vendedor): Interes

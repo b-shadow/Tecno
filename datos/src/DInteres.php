@@ -29,11 +29,17 @@ class DInteres
                     ->orWhereHas('prospecto', fn ($prospecto) => $prospecto
                         ->where('nombre', 'ilike', $like)
                         ->orWhere('apellido', 'ilike', $like)
+                        ->orWhereRaw("trim(nombre || ' ' || apellido) ilike ?", [$like])
                         ->orWhere('documento', 'ilike', $like)
+                        ->orWhere('correo', 'ilike', $like)
                         ->orWhere('telefono', 'ilike', $like)));
             })
-            ->orderByRaw('vendedor_correo is not null')
-            ->orderByDesc('ultima_actividad_en')->orderByDesc('nro_tarjeta')->get();
+            ->when(
+                ($filtros['orden'] ?? null) === 'registro',
+                fn ($query) => $query->orderByDesc('fecha')->orderByDesc('nro_tarjeta'),
+                fn ($query) => $query->orderByRaw('vendedor_correo is not null')->orderByDesc('ultima_actividad_en')->orderByDesc('nro_tarjeta'),
+            )
+            ->get();
     }
 
     public function motivos(): Collection
@@ -54,6 +60,7 @@ class DInteres
             'movimientos' => fn ($query) => $query->with('usuario:correo,nombre,apellido')->orderByDesc('fecha'),
             'ordenesPago' => fn ($query) => $query->with('items', 'descuentos.descuento', 'pago.comprobantes', 'cuotas.metodo', 'anuladaPor:correo,nombre,apellido', 'transaccionesStripe')->orderByDesc('nro_orden'),
             'prospecto.metodosPago' => fn ($query) => $query->orderByDesc('nro_metodo'),
+            'prospecto.transaccionesStripe' => fn ($query) => $query->where('tipo', 'setup')->orderByDesc('nro_transaccion')->limit(3),
         ])->findOrFail($numero);
     }
 
