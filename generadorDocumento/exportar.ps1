@@ -16,7 +16,7 @@ try {
     $documento = $word.Documents.Open($Docx)
     foreach ($figura in @($documento.InlineShapes)) {
         $ruta = $figura.AlternativeText
-        if ($ruta -and $ruta.EndsWith('.png')) {
+        if ($ruta -and $ruta.EndsWith('.png') -and [IO.Path]::GetFileNameWithoutExtension($ruta) -ne 'organigrama') {
             $emf = [IO.Path]::ChangeExtension($ruta, '.emf')
             if (Test-Path -LiteralPath $emf) {
                 $rango = $figura.Range
@@ -75,6 +75,9 @@ try {
       }
     }
     $documento.Repaginate()
+    if ($documento.Content.Text -match 'Marcador no definido|Bookmark not defined') {
+        throw 'El índice conserva referencias rotas; no se publicarán los entregables.'
+    }
     $documento.Save()
     $documento.ExportAsFixedFormat("$base.pdf", 17)
     $paginas = $documento.ComputeStatistics(2)

@@ -3,6 +3,9 @@
 namespace App\Http\Requests\Usuario;
 
 use App\Http\Requests\ApiRequest;
+use Datos\DCatalogo;
+use Datos\DSeguridad;
+use Datos\DUsuario;
 use Datos\Modelos\Usuario;
 use Illuminate\Validation\Rule;
 
@@ -26,16 +29,16 @@ class UsuarioRequest extends ApiRequest
             'apellido' => ['required', 'string', 'max:120', "regex:/^[\\pL\\s'.-]+$/u"],
             'correo' => $actual !== null
                 ? ['required', Rule::in([$actual])]
-                : ['required', 'email', 'max:160', 'unique:usuarios,correo'],
+                : ['required', 'email', 'max:160', $this->segun(fn ($v) => ! app(DUsuario::class)->existeCorreo($v), 'validation.unique')],
             'telefono' => ['nullable', 'string', 'regex:/^\\+?[0-9 ]{7,20}$/'],
             'password' => [$actual === null ? 'required' : 'nullable', 'string', 'min:8', 'max:120', 'regex:/(?=.*[A-Za-z])(?=.*\\d)/'],
-            'rol' => ['required', Rule::exists('roles', 'nombre')],
+            'rol' => ['required', $this->segun(fn ($v) => app(DSeguridad::class)->existeRol($v))],
             'estado' => ['required', Rule::in(Usuario::ESTADOS)],
             'fecha_inicio' => ['required', 'date'],
             'fecha_fin' => ['required', 'date', 'after_or_equal:fecha_inicio'],
             'foto' => ['nullable', 'string'],
             'programas' => ['nullable', 'array'],
-            'programas.*' => ['string', 'exists:programas,codigo'],
+            'programas.*' => ['string', $this->segun(fn ($v) => app(DCatalogo::class)->existePrograma($v))],
         ];
     }
 

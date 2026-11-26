@@ -6,6 +6,8 @@
         después de acomodar cajas a mano en EA (abrir crm-p2.eapx, mover, guardar y cerrar EA): copia las posiciones a
         posiciones.json; las próximas regeneraciones las respetan. Para volver al acomodo automático de un diagrama,
         borrar su entrada de posiciones.json.
+  python ea/ea_p2.py --actualizar-conceptual
+        cambia solo los atributos del conceptual existente y exporta la figura, conservando las cajas acomodadas.
 
 Notación y reglas: REGLAS_DOCUMENTO_P2.md §4–§6. Datos: ../esquema.py (BD real) y ../navegacion.py.
 La clase EA y el acomodo de cajas están en ea_base.py (extraídos del P1; este generador no depende de otra carpeta)."""
@@ -56,9 +58,8 @@ def colocar(ea, d, elementos, medidas, guardadas):
 
 # ------------------------------------------------------------------------------------------------ 7.1 Conceptual
 def conceptual(ea, pkg):
-    """Una clase por tabla con sus atributos solo por nombre (sin tipos ni marcas PK/FK, como G07 pág. 63); la PK va
-    subrayada (docente, revisión del P1). Las FK no se
-    listan: son asociaciones con multiplicidad. Las N-N son clase de asociación con línea punteada (clase 06)."""
+    """Una clase por tabla, atributos en orden del esquema y PK indicada inline como «columna PK».
+    Las FK no se listan: son asociaciones con multiplicidad. Las N-N son clase de asociación con línea punteada."""
     T, F, NN, pk, uq = esquema.tablas(), esquema.fks(), esquema.intermedias(), esquema.pks(), esquema.unicas()
     fkcols = esquema.columnas_fk()
     attrs = {t: [c for c, *_ in cols if c in pk[t] or (t, c) not in fkcols] for t, cols in T.items()}
@@ -66,9 +67,8 @@ def conceptual(ea, pkg):
     for t in T:
         e = ea.elemento(pkg, t, 'Class')
         for i, c in enumerate(attrs[t]):
-            a = e.Attributes.AddNew(c, ''); a.Visibility = 'Public'; a.Pos = i
-            # PK subrayada (pedido del docente en la revisión del P1). EA solo subraya un atributo static: IsID pinta "{id}"
-            a.IsStatic = c in pk[t]
+            nombre = f'{c} PK' if c in pk[t] else c
+            a = e.Attributes.AddNew(nombre, ''); a.Visibility = 'Public'; a.Pos = i
             a.Update()
         e.Update(); ent[t] = e
     relaciones = []
@@ -87,7 +87,8 @@ def conceptual(ea, pkg):
         ea.conector(ent[h], ent[p], 'Association', rol, card=(hija, '0..1' if nulo else '1'))
         relaciones.append((h, p))
     d = ea.diagrama(pkg, 'Diseño Conceptual de Base de Datos', 'Logical')
-    medidas = {t: (int(44 + 5.0 * max(len(t), *(len(x) + 4 for x in attrs[t]))), 40 + 12 * len(attrs[t])) for t in T}
+    medidas = {t: (int(44 + 5.0 * max(len(t), *(len(x) + (7 if x in pk[t] else 4) for x in attrs[t]))),
+                   40 + 12 * len(attrs[t])) for t in T}
     guardadas = cargar_posiciones().get(d.Name, {})
     if all(t in guardadas for t in T):
         for t, (l, tp, r, b) in guardadas.items():
@@ -106,6 +107,49 @@ def conceptual(ea, pkg):
     # sin ea_base.colocar_asociaciones: el acomodo ya deja cada N-N junto a sus dos tablas (aristas inter-a, inter-b) y
     # reubicarla la ponía sobre otras relaciones
     # sin ea_base.rutar_enlaces: su ruta puede pasar por dentro de la caja de origen (pasó con roles → usuarios)
+    auditar_conceptual(ea, d)
+    ea.exportar(d, 'conceptual.png')
+
+
+def actualizar_conceptual_existente(ea):
+    """Actualiza solo los atributos del conceptual existente, sin reemplazar clases ni posiciones manuales."""
+    T, pk = esquema.tablas(), esquema.pks()
+
+    def buscar_paquete(paquete, nombre):
+        for p in paquete.Packages:
+            # El EAPX puede guardar «ñ» como «?» en el nombre del paquete al abrirlo con EA COM.
+            if p.Name == nombre or (nombre == 'Diseño de Datos' and p.Name.lower().startswith('dise') and p.Name.lower().endswith('datos')):
+                return p
+            encontrado = buscar_paquete(p, nombre)
+            if encontrado: return encontrado
+        return None
+
+    pkg = buscar_paquete(ea.modelo, 'Diseño de Datos')
+    if not pkg: raise RuntimeError('No se encontró el paquete Diseño de Datos en crm-p2.eapx.')
+    clases = {e.Name: e for e in pkg.Elements if e.Type == 'Class'}
+    faltan = set(T) - set(clases)
+    if faltan: raise RuntimeError(f'Faltan clases del esquema en el conceptual: {sorted(faltan)}')
+
+    for tabla, columnas in T.items():
+        clase = clases[tabla]
+        existentes = {a.Name.removesuffix(' PK'): a for a in clase.Attributes}
+        campos = [c for c, *_ in columnas if c in pk[tabla] or (tabla, c) not in esquema.columnas_fk()]
+        if set(existentes) != set(campos):
+            raise RuntimeError(f'Los atributos actuales de {tabla} no coinciden con el esquema: '
+                               f'{sorted(existentes)} vs {sorted(campos)}')
+        for i, campo in enumerate(campos):
+            atributo = existentes[campo]
+            atributo.Name = f'{campo} PK' if campo in pk[tabla] else campo
+            atributo.Stereotype = ''
+            atributo.StereotypeEx = ''
+            atributo.IsStatic = False
+            atributo.Pos = i
+            atributo.Update()
+        clase.Update()
+
+    d = next((d for d in pkg.Diagrams if d.Name == 'Diseño Conceptual de Base de Datos'), None)
+    if not d: raise RuntimeError('No se encontró el diagrama conceptual en Diseño de Datos.')
+    d.Update(); ea.r.ReloadDiagram(d.DiagramID)
     auditar_conceptual(ea, d)
     ea.exportar(d, 'conceptual.png')
 
@@ -223,10 +267,11 @@ def _miembro(texto):
     return vis, m.group(1), params, (m.group(3) or '').strip()
 
 
-def clases_cu(ea, raiz):
+def clases_cu(ea, raiz, solo_cu=None):
     """Un diagrama de clases por CU con las 3 capas reales (REGLAS §4 5.3.2 y §6b), leído del código por codigo.py:
     «client page» → «module» api/<area>.js → «controller» → «request» / «service» → «repository» → «model»."""
     for cu, titulo in contenido.CU.items():
+        if solo_cu and cu != solo_cu: continue
         clases, deps, errores = codigo.cadena(cu)
         assert not errores, errores
         pkg = ea.paquete(raiz, f'{cu} Clases')
@@ -394,6 +439,17 @@ PARTES = {'datos': lambda ea, m: conceptual(ea, ea.paquete(m, 'Diseño de Datos'
 
 def main():
     if '--guardar-posiciones' in sys.argv: return guardar_posiciones()
+    if '--actualizar-conceptual' in sys.argv:
+        SALIDA.mkdir(exist_ok=True)
+        ea = ea_base.EA.abrir_existente()
+        try: actualizar_conceptual_existente(ea)
+        finally: ea.cerrar()
+        print('Actualizado el diagrama conceptual existente; se conservaron las posiciones manuales.')
+        return
+    if EAPX.exists() and '--recrear' not in sys.argv:
+        raise SystemExit('El EAPX existente contiene diagramas y cambios manuales. '
+                         'Use ea_faltantes.py para completar/exportar los diagramas, '
+                         'o --recrear solo después de respaldar crm-p2.eapx.')
     solo = sys.argv[sys.argv.index('--solo') + 1].split(',') if '--solo' in sys.argv else list(PARTES)
     SALIDA.mkdir(exist_ok=True)
     ea = ea_base.EA('CRM vía web (P2, Grupo 05 SA)')

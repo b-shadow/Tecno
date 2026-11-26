@@ -14,21 +14,22 @@ el Proyecto 1** (`db_grupo05sa`, esquema `public`).
 presentacion/   CAPA 1 · React 18 + Vite + react-router-dom + axios (SPA)
       │  JSON sobre HTTP (Bearer token) a /api
       ▼
-negocio/        CAPA 2 · Laravel 13, solo API REST: rutas → middleware → FormRequest → Controller → Service
+negocio/        CAPA 2 · Laravel 13, solo API REST: ruta → middleware (token + matriz) → FormRequest → N<Area>
       │  usa el paquete grupo05sa/datos
       ▼
-datos/          CAPA 3 · Repositorios + modelos Eloquent + migraciones (tablas, triggers, contadores) → PostgreSQL
+datos/          CAPA 3 · D<Area> + modelos Eloquent + migraciones (tablas, triggers, contadores) → PostgreSQL
 ```
 
 Reglas que mantienen las capas separadas (se comprueban con `grep`, ver Pruebas):
 
 | Capa | Carpeta | Puede usar | No usa |
 |---|---|---|---|
-| Presentación | `presentacion/src/paginas/` | `componentes/`, `servicios/`, `api/<area>.js` | axios ni URLs `/api` directas |
-| | `presentacion/src/api/` | `api/cliente.js` (único cliente HTTP) | React |
-| Negocio | `negocio/app/Http/` | `Requests/`, `Services/` (modelos solo como tipo de la ruta) | `DB::`, repositorios |
-| | `negocio/app/Services/` | repositorios de `datos/`, `ReglaNegocioException` | `Request`, `response()`, `abort`, `DB::` |
-| Datos | `datos/src/Repositorios/`, `datos/src/Modelos/` | Eloquent, `DB::`, transacciones | nada de HTTP |
+| Presentación | `presentacion/src/paginas/P*.jsx` | `componentes/`, `servicios/`, `api/<area>.js` | axios, `api/cliente.js` ni URLs `/api` directas |
+| | `presentacion/src/api/<area>.js` | `api/cliente.js` (único cliente HTTP, axios) | React |
+| Negocio | `negocio/routes/api.php`, `app/Http/Middleware/` | token, matriz `acceso:<recurso>,<nivel>` | la BD (el middleware le pregunta a `NAuth`/`NAcceso`) |
+| | `negocio/app/Http/Requests/` | reglas de forma; existencia/unicidad con `$this->segun(fn ($v) => app(D*::class)->…)` | `exists:`/`unique:` de Laravel (irían directo a la BD) |
+| | `negocio/app/Negocio/N*.php` | toda regla de negocio: decisiones, cálculos (saldo), estados; métodos de `D*`; Stripe | `DB::`, consultas Eloquent, `save`/`load`, route-model binding |
+| Datos | `datos/src/D*.php`, `datos/src/Modelos/` | Eloquent, `DB::`, transacciones: **solo leer y escribir** | HTTP, `App\Negocio`, decisiones de negocio |
 
 ## Levantar el entorno local (Docker)
 
@@ -57,9 +58,9 @@ y `php artisan migrate --force`. Sin Docker: `cd negocio && composer install && 
 
 **Presentación (`presentacion/src/`)**
 - `rutas.jsx`: una ruta por página del diagrama de navegación (+ `*` → página de error).
-- `paginas/`: una página por pantalla (Catalogo, Login, Dashboard, MiDia, Embudo, Agenda, …, Error404).
 - `plantilla/AppShell.jsx`: plantilla base (pública e interna) con el menú leído de la BD.
-- `api/`: un módulo por controlador de la API (`pagos.js` ↔ `PagoController`, mismos nombres de método).
+- `paginas/P*.jsx`: una página por pantalla (`PCatalogo`, `PLogin`, `PDashboard`, `PAgenda`, `PPagoConfirmacion`, …, `PError404`).
+- `api/<area>.js`: un módulo por clase de negocio (`pagos.js` ↔ `NPago`, mismos nombres de método).
 - `servicios/`: sesión, permisos, tema/accesibilidad, validación en español del navegador.
 - Estilos con **Tailwind CSS v4**: `estilos/tokens.css` (variables de cada tema: día/noche, público, letra, contraste)
   y `estilos/app.css` (único CSS global: `@theme` que expone los tokens a Tailwind, variantes `dark:`/`contraste:`/`bajo:`,
@@ -71,38 +72,54 @@ y `php artisan migrate --force`. Sin Docker: `cd negocio && composer install && 
 - `routes/api.php`: las ~70 rutas; cada ruta de negocio lleva `auth.token` y `acceso:<recurso>,<nivel>` (matriz).
 - `app/Http/Middleware/`: `TokenAuthMiddleware` (token y vigencia) y `AccesoRecurso` (matriz + bitácora de denegados).
 - `app/Http/Requests/<Area>/`: validación de cada acción con mensajes en español (`lang/es/validation.php`).
-- `app/Http/Controllers/Api/`: un controlador por área; cada acción = FormRequest → Service → JSON.
-- `app/Services/`: reglas de negocio (`PagoService`, `ProspectoService`, …, `AccesoService`, `AlcanceService`,
-  `ConversionService`, `FotoService`); errores de negocio con `App\Exceptions\ReglaNegocioException`.
+- `app/Negocio/N*.php`: una clase por área (`NPago`, `NProspecto`, `NStripe`, …, `NAcceso`, `NAlcance`, `NConversion`,
+  `NFoto`); cada acción recibe su FormRequest y el identificador, aplica las reglas, pide y guarda los datos con su `D*`
+  y responde JSON; errores de negocio con `App\Exceptions\ReglaNegocioException`.
 
 **Datos (`datos/`, paquete Composer `grupo05sa/datos`)**
-- `src/Repositorios/`: todas las consultas y escrituras (un repositorio por área + `BitacoraRepository`).
+- `src/D*.php`: todas las consultas y escrituras (una clase por área + `DBitacora`, `DAlcance`); no deciden nada.
 - `src/Modelos/`: un modelo Eloquent por tabla, con la clave del diseño (`$primaryKey`/`$keyType`/`$incrementing`).
 - `migraciones/`: `000001` esquema compartido con el P1 · `000002` estados RF3.2 · `000003` recursos y permisos (menú)
-  · `000004` bitácora + trigger de visitas · `000005` métodos de pago y cuotas · `000006` foto · `000007` página de error.
+  · `000004` bitácora + trigger de visitas · `000005` métodos de pago y cuotas · `000006` foto · `000007` página de error
+  · `000008` Stripe Sandbox (transacciones, webhooks, cliente y método Stripe).
 - `semillas/`: datos de demostración (solo local).
 
 Cambiar algo de punta a punta (p. ej. un campo nuevo): migración en `datos/migraciones` → modelo (`$fillable`) →
-repositorio → regla del FormRequest → Service → página en `presentacion/src/paginas`. Una pantalla nueva además
+`D<Area>` → regla del FormRequest → `N<Area>` → `api/<area>.js` → página `P*.jsx`. Una pantalla nueva además
 necesita su fila en `recursos` y `permisos` (migración) para aparecer en el menú.
 
 ## Pruebas (siempre contra la base local, nunca contra producción)
 
+Las que escriben datos van contra una **copia** de la base (API en `:18001`, React en `:18002`), nunca contra la demo.
+`python scripts/qa_local.py start|test|stop` arma una desde cero (migraciones + seeder) y corre los scripts de `test`.
+En este orden (`verificar_fase_a.py` crea el usuario con foto que usa `verificar_fase_a_ui.mjs`; `verificar_auditoria.py`
+va al final porque llena un minuto el límite de intentos de login):
+
 ```sh
-python scripts/verificar_p2.py                                    # casos de la API (repetible)
-QA_BASE=http://localhost:5173 QA_ENGINES=chromium node scripts/verificar_navegadores.mjs   # 321 casos: 3 roles × 4 anchos × 2 temas
-psql ... -f scripts/verificar_integridad.sql                      # sin tablas sueltas, sin id extra, FK completas
+python scripts/verificar_p2.py http://localhost:18001             # enunciado y CU de punta a punta (repetible)
+python scripts/verificar_fase_a.py http://localhost:18001         # seguridad, IDOR, fotos, búsquedas ILIKE
+QA_BASE=http://localhost:18002 node scripts/verificar_fase_a_ui.mjs   # fechas, horas, temas, accesibilidad
+QA_PHP="docker exec -w /repo crm-web-app-1 php" python scripts/verificar_stripe_api.py http://localhost:18001
+QA_BASE=http://localhost:18002 QA_API=http://127.0.0.1:18001/api node scripts/verificar_stripe_e2e_ui.mjs   # pago real en Stripe Sandbox
+python scripts/verificar_seguridad.py                             # barrido por rol, comprobante ajeno, doble aprobación, logout
+python scripts/verificar_administradores.py                       # siempre queda un administrador (también con bajas simultáneas)
+python scripts/verificar_reenvio_comprobante.py                   # rechazo y reenvío de comprobante
+python scripts/verificar_correcciones.py                          # registro por programa, reparto, reasignación, comisión, exportación
+QA_BASE=http://localhost:18002 QA_ENGINES=chromium,firefox,webkit node scripts/verificar_navegadores.mjs   # 3 roles × 4 anchos × 2 temas
+python scripts/verificar_auditoria.py                             # actividades, sesiones, CSV, órdenes simultáneas, límite 429
+node scripts/verificar_sesion.mjs                                 # sesión del navegador (sin servidor)
+psql ... -f scripts/verificar_integridad.sql                      # sin tablas sueltas, sin id extra, FK completas (solo lectura)
 node scripts/capturas_p2.mjs                                      # capturas de cada página por rol
 ```
 
 En PowerShell: `$env:QA_BASE='http://localhost:5173'; $env:QA_ENGINES='chromium'; node scripts/verificar_navegadores.mjs`.
 Firefox y WebKit necesitan `npx playwright install firefox webkit` (desde `presentacion/`).
 
-Comprobación de capas (todas deben dar 0 líneas):
+Comprobación de capas (debe imprimir `[]` y los grep, 0 líneas):
 
 ```sh
+cd generadorDocumento && python -c "import codigo; print(codigo.errores_codigo())" && cd ..   # N sin BD, D sin N, sin exists/unique
 grep -rn "DB::" negocio/app
-grep -rlnE "Illuminate.Http|response\(|abort|::query\(" negocio/app/Services
 grep -rlnE "axios|api/cliente" presentacion/src/paginas presentacion/src/componentes
 grep -rn "style={{" presentacion/src                       # sin estilos en línea
 ```

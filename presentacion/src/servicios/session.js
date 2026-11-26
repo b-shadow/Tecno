@@ -12,16 +12,18 @@ function almacenes() {
   }
 }
 
-export function clearStoredSession() {
-  for (const storage of almacenes()) {
-    try {
-      storage.removeItem(tokenKey)
-      storage.removeItem(userKey)
-      storage.removeItem(menuKey)
-    } catch {
-      // Almacenamiento bloqueado: no hay nada que limpiar.
-    }
+function limpiar(storage) {
+  try {
+    storage.removeItem(tokenKey)
+    storage.removeItem(userKey)
+    storage.removeItem(menuKey)
+  } catch {
+    // Almacenamiento bloqueado: no hay nada que limpiar.
   }
+}
+
+export function clearStoredSession() {
+  almacenes().forEach(limpiar)
 }
 
 export function readSession() {
@@ -31,8 +33,9 @@ export function readSession() {
       const usuario = JSON.parse(storage.getItem(userKey) || 'null')
       const { menu = [], permisos = {} } = JSON.parse(storage.getItem(menuKey) || '{}')
       if (token && usuario) return { token, usuario, menu, permisos, remember: storage === localStorage }
+      if (token) limpiar(storage) // token sin usuario: sesión a medias, no se reutiliza
     } catch {
-      // Una entrada corrupta no debe impedir abrir el formulario de acceso.
+      limpiar(storage) // una entrada corrupta se descarta y no impide abrir el formulario de acceso
     }
   }
   return { token: null, usuario: null, menu: [], permisos: {}, remember: false }

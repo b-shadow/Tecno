@@ -103,13 +103,107 @@ De `CLASES_DOCENTE.md` (número de clase entre corchetes):
 
 ## 6. Despliegue en tecnoweb (sin SSH)
 
-Con las 3 carpetas: `~/laravel_app/negocio/` y `~/laravel_app/datos/` (vendor con `COMPOSER_MIRROR_PATH_REPOS=1
-composer install --no-dev`, para que `datos` quede copiado y no como enlace); `~/proyecto2/` = `negocio/public/`
-(`index.php` apuntando a `../laravel_app/negocio/`) **+** `presentacion/dist/` (`VITE_BASE=/inf513/grupo05sa/proyecto2/
-npm run build`), con `.htaccess`: archivo existente → se sirve; `^api/` y `^up$` → `index.php`; resto → `index.html`
-(SPA, mismo dominio, sin CORS); subida por FTP; migraciones desde fuera contra `db.tecnoweb.org.bo`;
-`chmod -R 775 storage bootstrap/cache`. Cambios de esquema en producción: respaldo comprobado, lector del P1 detenido y
-**≥3,2 s entre conexiones**: el docente bloquea conexiones más seguidas.
+**Regla de oro:** ≥3,2 s entre conexiones al servidor (BD o FTP); el docente bloquea conexiones más seguidas. Cada
+comando `artisan` abre su propia conexión: esperar entre uno y otro. Credenciales solo en `.secrets/credenciales.md`.
+
+**Estado de la base del servidor (revisado el 25/11/2026, solo lectura):** `db_grupo05sa.public` tiene las 24 tablas del
+P1 y coinciden columna por columna con `000001_crear_esquema_compartido` (los SQL pendientes del P1 ya están aplicados);
+no existe el esquema `laravel` (el P2 nunca se migró allá); `grupo05sa` es dueño de `public` y tiene `CREATE` sobre la
+base; la zona horaria de PostgreSQL es `America/La_Paz` (igual que `APP_TIMEZONE`).
+
+**¿Es seguro `crm:preparar-bd` contra la base del P1?** Sí: solo ejecuta `CREATE SCHEMA IF NOT EXISTS laravel`
+(`datos/src/DatosServiceProvider.php`), es idempotente y no toca `public`. Lo delicado es `migrate`: `000001` crea las
+tablas sin comprobar si existen, así que contra el servidor **primero se registra como aplicada** (paso 4); `000002`
+cambia los CHECK de `estado` (estados RF3.2) y por eso el **JAR nuevo del P1** debe subir a la vez.
+
+### Pasos
+
+1. **Respaldo comprobado** (desde la PC, una conexión):
+   `pg_dump -h db.tecnoweb.org.bo -U grupo05sa -Fc db_grupo05sa > backups/tecnoweb_antes_p2_AAAAMMDD.dump` y
+   `pg_restore -l backups/tecnoweb_antes_p2_AAAAMMDD.dump | grep -c "TABLE DATA"` (debe listar las 24 tablas).
+2. **Detener el lector del P1** (lee el correo cada 10 s y escribe en las mismas tablas).
+3. **`.env` de producción** (`proyecto2-app/negocio/.env`, a partir de `negocio/.env.production.example`; nunca al repositorio):
+   `APP_KEY` nuevo (`php artisan key:generate --show`), `APP_DEBUG=false`, `APP_URL`/`ASSET_URL`/`FRONTEND_URL` =
+   `https://www.tecnoweb.org.bo/inf513/grupo05sa/proyecto2`, runtime `DB_HOST=127.0.0.1`, `DB_DATABASE=db_grupo05sa`,
+   `DB_USERNAME=grupo05sa`, `DB_PASSWORD`, y Stripe (`STRIPE_KEY`/`STRIPE_SECRET` de prueba y `STRIPE_WEBHOOK_SECRET`
+   del paso 7). El `.env` runtime no se reutiliza desde la PC: las migraciones externas usan
+   `DB_HOST=db.tecnoweb.org.bo`, `DB_PORT=5432` (o el publicador, que pasa esas variables al proceso de migración).
+4. **Migrar** (un comando por vez, ≥3,2 s entre ellos):
+   ```sh
+   php artisan migrate:status              # sin esquema laravel: "Migration table not found" (esperado)
+   php artisan crm:preparar-bd             # CREATE SCHEMA IF NOT EXISTS laravel
+   php artisan migrate:install             # crea laravel.migrations
+   psql ... -c "INSERT INTO laravel.migrations (migration, batch) VALUES ('2026_11_21_000001_crear_esquema_compartido', 1)"
+   php artisan migrate:status              # 000001 Ran; 000002…000008 Pending
+   php artisan migrate --force             # cada migración corre en su transacción (si una falla, se revierte esa)
+   php artisan migrate:status              # todas Ran
+   ```
+   Comprobar después: `psql ... -f scripts/verificar_integridad.sql` (sin tablas sueltas ni `id` extra).
+   **Nunca** `migrate:fresh`, `db:wipe` ni `db:seed` en el servidor (el seeder se niega en producción).
+5. **Subir el JAR nuevo del P1** y reanudar su lector.
+6. **Código** (FTP, sin SSH): `proyecto2-app/` contiene `negocio/`, `datos/` y `presentacion/`; `proyecto2/` contiene
+   el `index.php` de entrada, `.htaccess` y el build de React. Instalar `vendor/` localmente con
+   `COMPOSER_MIRROR_PATH_REPOS=1 composer install --no-dev`, para que `datos` quede copiado y no enlazado; excluir los
+   caches `bootstrap/cache/*.php`. Compilar desde PowerShell con `$env:VITE_BASE='/inf513/grupo05sa/proyecto2/'; npm run build`
+   (Git Bash puede convertir esa ruta a `C:/Program Files/Git/...`). El `.htaccess` sirve archivos existentes, envía
+   `^api/` y `^up$` a `index.php` y el resto a `index.html` (SPA en el mismo dominio, sin CORS). Crear solo los
+   directorios de runtime necesarios con permisos de escritura; no aplicar `chmod -R` a miles de archivos. Comprobar
+   `https://www.tecnoweb.org.bo/inf513/grupo05sa/proyecto2/api/salud` → `"base_de_datos":"conectada"`.
+7. **Webhook de Stripe** (lo hace el dueño de la cuenta Stripe, en **modo prueba**):
+   Dashboard → Desarrolladores → Webhooks → *Agregar destino* → URL
+   `https://www.tecnoweb.org.bo/inf513/grupo05sa/proyecto2/api/stripe/webhook`, eventos `checkout.session.completed`,
+   `checkout.session.expired`, `payment_intent.succeeded` y `payment_intent.payment_failed` → crear → copiar el
+   **secreto de firma** (`whsec_…`). Ese valor va en `STRIPE_WEBHOOK_SECRET` del `.env` del servidor junto con las
+   claves de prueba de la misma cuenta (Desarrolladores → Claves de API: `pk_test_…` en `STRIPE_KEY`, `sk_test_…` en
+   `STRIPE_SECRET`). El `whsec_` que imprime `stripe listen` es otro y solo sirve en una PC local.
+8. **Pago de prueba en el servidor:** cuentas de prueba por rol (administrador, coordinador, vendedor) creadas desde
+   Usuarios; con el vendedor: Agenda → tarjeta → orden de 1 cuota → *Pagar con Stripe* → tarjeta `4242 4242 4242 4242`,
+   vencimiento futuro, CVC cualquiera → vuelve a `/pagos/confirmacion` con la cuota en "Pago aprobado". Luego en Stripe →
+   Webhooks → el destino muestra las entregas con respuesta 200, y en la BD
+   `select tipo, estado from webhook_eventos_stripe order by created_at desc limit 5` muestra los eventos `procesado`.
+   Repetir con `4000 0000 0000 0002` (rechazada): la cuota sigue pendiente.
+9. **Si algo falla:** el código se revierte volviendo a subir la versión anterior; la base, con
+   `pg_restore --clean --if-exists -d db_grupo05sa backups/tecnoweb_antes_p2_AAAAMMDD.dump` (lector del P1 detenido).
+
+### Estado real del despliegue (25/11/2026)
+
+- El FTP confirmó que `proyecto2/` y `proyecto2-app/` no existían; no había contenido anterior que eliminar. Las
+  carpetas de U4 y prácticas quedaron intactas.
+- Por instrucción explícita del usuario no se creó un respaldo. En `db_grupo05sa.public` ya estaban las 24 tablas P1;
+  se registró `000001` como aplicada y corrieron `000002`–`000008`. La comprobación de integridad terminó con **31 tablas,
+  46 claves foráneas, sin tablas desconectadas ni columnas `id` extra**. Los datos P1 existentes se conservaron; RF3.2
+  actualizó los nombres de estados antiguos.
+- El ZIP público se compiló con `VITE_BASE=/inf513/grupo05sa/proyecto2/`. Ningún ZIP contiene `.env`; su copia activa está
+  en `proyecto2-app/negocio/.env`, fuera de la raíz pública. La ruta privada respondió 403 y se eliminó la copia
+  adicional que había quedado en el directorio padre.
+- La primera extracción por `ZipArchive::extractTo()` dejó archivos vacíos. Se reparó con extracción por streams y
+  comprobación de bytes. La portada y `/api/salud` responden HTTP 200; el endpoint confirma PostgreSQL conectado.
+- El primer diagnóstico por DNS público encontró rechazo TCP desde el hosting web. Los apuntes del despliegue de
+  1-2026 indicaban `DB_HOST=127.0.0.1`; un `SELECT` de solo lectura desde PHP por `127.0.0.1:5432` confirmó la misma
+  base `db_grupo05sa`, esquema `public`. Se cambió el `.env` de ejecución de la web a loopback. Las migraciones desde
+  la PC continúan usando `db.tecnoweb.org.bo:5432`.
+- `STRIPE_KEY`, `STRIPE_SECRET` y `STRIPE_WEBHOOK_SECRET` están vacíos porque las claves de prueba no estaban en
+  `.secrets/credenciales.md`; checkout con Stripe queda pendiente de esa configuración.
+- No se crearon cuentas de acceso de prueba por rol en producción. Las cuentas de `DatabaseSeeder` son solo locales y
+  el seeder aborta en producción; no entregarlas como accesos válidos del sitio.
+
+#### Precauciones aprendidas en esta subida
+
+- **No usar `ZipArchive::extractTo()` en este hosting:** creó los archivos, pero quedaron en cero bytes. Extraer cada
+  entrada por stream y comparar los bytes escritos con el tamaño del ZIP.
+- **No usar el host DNS público desde PHP en este servidor:** `db.tecnoweb.org.bo:5432` fue rechazado desde el hosting.
+  La prueba de solo lectura confirmó que `127.0.0.1:5432` llega a la misma `db_grupo05sa.public`. En producción web usar
+  `DB_HOST=127.0.0.1`; desde la PC, las migraciones externas usan `db.tecnoweb.org.bo:5432`.
+- **No poner `.env` en el ZIP ni en `proyecto2/`:** va únicamente en `proyecto2-app/negocio/.env`; proteger esa carpeta
+  y confirmar HTTP 403 antes de transferir archivos privados.
+- **No volver a ejecutar migraciones ni seeders por el fallo HTTP:** `000001`–`000008` ya están aplicadas. No usar
+  `migrate:fresh`, `db:wipe` o `db:seed` sobre la base compartida.
+- **No borrar carpetas ajenas del FTP ni volver a ejecutar el alta inicial sobre carpetas existentes.** El primer
+  despliegue confirmó que las carpetas P2 no existían y dejó intactas las prácticas y carpetas de otros semestres.
+- El usuario pidió que esta subida no tuviera respaldos; no se creó ninguno. Durante esta operación se esperaron
+  4 segundos entre consultas remotas, por encima de los 3 segundos solicitados.
+- Tecnoweb se usa como hosting Apache/PHP por FTP, sin SSH confirmado. Docker no se ejecuta allí; sirve para desarrollo
+  local. No se configuró CI/CD ni se copiaron credenciales a GitHub.
 
 ## 7. Plan de trabajo (20–27/11)
 
