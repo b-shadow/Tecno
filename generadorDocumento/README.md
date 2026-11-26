@@ -26,7 +26,7 @@ texto o el diagrama (o el código, si el error está ahí) y se vuelve a correr.
 | `ea/ea_p2.py`, `ea/ea_base.py` | Diagramas en Enterprise Architect 15 Trial por COM → `diagramas/` (PNG + EMF) |
 | `ea/ea_faltantes.py` | Completa en el EAPX existente los 34 diagramas de requisitos, paquetes, comunicación, secuencia y despliegue; toma rutas y clases del código real |
 | `insertar_diagramas.py` | Sustituye solo los marcadores de diagramas del DOCX actual, conservando el resto de las ediciones manuales |
-| `actualizar_conceptual_docx.py` | Refresca solo la figura conceptual del DOCX actual, conservando el resto de las ediciones manuales |
+| `actualizar_figura_docx.py` | Refresca solo una figura del DOCX actual (`conceptual` 7.1 o `despliegue` 6.1), conservando el resto de las ediciones manuales |
 | `actualizar_secuencias.py` | Reemplaza solo las ocho figuras de secuencia del DOCX actual cuando cambian sus PNG/EMF, sin reconstruir el documento |
 | `ea/crm-p2.eapx`, `ea/posiciones.json` | Repositorio EA y posiciones acomodadas a mano |
 | `exportar.ps1` | Word real: índices, EMF en lugar de PNG, `.doc` y `.pdf` |
@@ -38,7 +38,8 @@ texto o el diagrama (o el código, si el error está ahí) y se vuelve a correr.
 ```
 python ea/ea_faltantes.py                          # abre el EAPX existente; conserva posiciones manuales
 python ea/ea_p2.py --actualizar-conceptual          # cambia solo los atributos y conserva las posiciones del conceptual
-python actualizar_conceptual_docx.py                # sustituye solo esa figura en el documento manual actual
+python ea/ea_faltantes.py --despliegue             # rehace solo 6.1 (calco G07, letra 11 pt; la corrida completa también lo hace así)
+python actualizar_figura_docx.py conceptual|despliegue   # sustituye solo esa figura en el documento manual actual
 python insertar_diagramas.py                       # sustituye solo diagramas pendientes del DOCX actual
 python actualizar_secuencias.py                    # si el DOCX ya tiene las figuras, refresca solo las ocho secuencias
 python ea/ea_p2.py --recrear [--solo datos|nav|clases|org]   # reconstruye el EAPX completo: usar solo tras respaldarlo
