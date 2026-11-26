@@ -23,7 +23,8 @@ PREFERIDAS = {
     'CU3': ['POST /prospectos', 'PATCH /intereses/{interes}/asignar'],
     'CU4': ['PATCH /intereses/{interes}/estado'],
     'CU5': ['PATCH /intereses/{interes}/estado', 'POST /motivos'],
-    'CU6': ['POST /intereses/{interes}/ordenes-pago', 'PATCH /ordenes-pago/{orden}/cuotas/{cuota}/aprobar', 'POST /exportaciones'],
+    'CU6': ['POST /intereses/{interes}/ordenes-pago', 'POST /ordenes-pago/{orden}/cuotas/{cuota}/checkout',
+            'GET /pagos/stripe/sesiones/{sessionId}', 'POST /exportaciones'],
     'CU7': ['POST /intereses/{interes}/interacciones', 'POST /intereses/{interes}/recordatorios', 'GET /notificaciones'],
     'CU8': ['GET /reportes/estadisticas', 'GET /comisiones/resumen'],
 }
@@ -36,7 +37,8 @@ PREFERIDAS_D = {
     'CU3': [['crear'], ['transaccion', 'refrescarDetalle']],
     'CU4': [['guardar', 'actualizarEstadoProspecto']],
     'CU5': [['guardar', 'actualizarEstadoProspecto'], ['crear']],
-    'CU6': [['crearOrden', 'insertarCuotas'], ['cambiarEstadoCuota'], ['exportarPendientes']],
+    'CU6': [['crearOrden', 'insertarCuotas'], ['ordenConDetalle', 'crearTransaccion'],
+            ['transaccionPorSesion'], ['exportarPendientes']],
     'CU7': [['registrarInteraccion'], ['crearRecordatorio'], ['listar']],
     'CU8': [['estadisticas'], ['resumenComisiones']],
 }
@@ -53,12 +55,16 @@ def elemento(ea, pkg, nombre, tipo):
     return next((e for e in pkg.Elements if e.Name == nombre and e.Type == tipo), None) or ea.elemento(pkg, nombre, tipo)
 
 
-def diagrama(ea, pkg, nombre, tipo, archivo):
-    """Si ya se creó en EA, solo vuelve a exportarlo: conserva su ubicación manual."""
+def diagrama(ea, pkg, nombre, tipo, archivo, refrescar=False):
+    """Conserva diagramas manuales salvo los recorridos cuyo código cambió."""
     anterior = next((d for d in pkg.Diagrams if d.Name == nombre), None)
     if anterior:
-        ea.exportar(anterior, archivo)
-        return None
+        if not refrescar:
+            ea.exportar(anterior, archivo)
+            return None
+        indice = next(i for i in range(pkg.Diagrams.Count) if pkg.Diagrams.GetAt(i).DiagramID == anterior.DiagramID)
+        pkg.Diagrams.DeleteAt(indice, False)
+        pkg.Diagrams.Refresh()
     return ea.diagrama(pkg, nombre, tipo)
 
 
@@ -125,6 +131,8 @@ def interacciones(cu):
     """Recorrido representativo P→N→D por área; cada método se extrae del código."""
     clases, deps, errores = codigo.cadena(cu)
     if errores: raise ValueError('; '.join(errores))
+    if cu == 'CU6':
+        clases['StripeClient'] = {'estereotipo': 'external', 'capa': 'Externa'}
     if cu == 'CU5':
         # Marcar Perdido se realiza en el embudo (ruta clasificada como CU4),
         # pero su formulario y NInteres implementan la pérdida con motivo.
@@ -161,14 +169,27 @@ def interacciones(cu):
         etiqueta = f'{r["verbo"]} {r["ruta"]}'
         if cu == 'CU5' and r['ruta'] == '/intereses/{interes}/estado': etiqueta += ' (Perdido + motivo)'
         pasos.append((api, n, etiqueta))
-        disponibles = [(dato, metodo) for dato, metodo in codigo._llamadas(n, r['metodo'], php)
+        origen_datos = n
+        if cu == 'CU6' and r['metodo'] in ('crearCheckout', 'confirmarCheckout'):
+            llamada_stripe = next(((dato, metodo) for dato, metodo in codigo._llamadas(n, r['metodo'], php)
+                                   if dato == 'NStripe'), None)
+            if llamada_stripe is None:
+                raise ValueError(f'{cu}: {n}::{r["metodo"]} ya no delega en NStripe')
+            pasos.append((n, 'NStripe', f'{llamada_stripe[1]}()'))
+            origen_datos = 'NStripe'
+        disponibles = [(dato, metodo) for dato, metodo in codigo._llamadas(origen_datos,
+                                                                            llamada_stripe[1] if origen_datos == 'NStripe' else r['metodo'], php)
                        if dato in clases and clases[dato]['estereotipo'] == 'datos']
         for nombre_metodo in PREFERIDAS_D[cu][indice]:
             real = next(((dato, metodo) for dato, metodo in disponibles if metodo == nombre_metodo), None)
             if real is None:
                 raise ValueError(f'{cu}: {n}::{r["metodo"]} ya no llama a {nombre_metodo}() en la capa D')
             dato, metodo = real
-            pasos.append((n, dato, f'{metodo}()'))
+            pasos.append((origen_datos, dato, f'{metodo}()'))
+            if cu == 'CU6' and r['metodo'] == 'crearCheckout' and metodo == 'ordenConDetalle':
+                pasos.append(('NStripe', 'StripeClient', 'checkout.sessions.create()'))
+            if cu == 'CU6' and r['metodo'] == 'confirmarCheckout' and metodo == 'transaccionPorSesion':
+                pasos.append(('NStripe', 'StripeClient', 'checkout.sessions.retrieve()'))
     if not pasos: raise ValueError(f'{cu} no tiene rutas de secuencia verificadas')
     return clases, pasos
 
@@ -176,7 +197,8 @@ def interacciones(cu):
 def diagrama_interaccion(ea, raiz, cu, tipo, archivo):
     clases, pasos = interacciones(cu)
     nombre = f'{cu}. {C.CU[cu]}: {tipo} (recorridos principales)'
-    d = diagrama(ea, raiz, nombre, 'Sequence' if tipo == 'Secuencia' else 'Collaboration', archivo)
+    d = diagrama(ea, raiz, nombre, 'Sequence' if tipo == 'Secuencia' else 'Collaboration', archivo,
+                 refrescar=(cu == 'CU6'))
     if not d: return
     d.StyleEx = 'SuppressBrackets=1;'; d.Update()
     if tipo == 'Secuencia':
@@ -188,10 +210,12 @@ def diagrama_interaccion(ea, raiz, cu, tipo, archivo):
         # clase y método concretos del código, aunque el CU use varias clases N/D.
         vidas = [('Pantalla React', 'boundary'), ('Cliente HTTP', 'boundary'),
                  ('Negocio Laravel', 'control'), ('Datos PostgreSQL', 'entity')]
+        if cu == 'CU6': vidas.append(('Pasarela Stripe', 'boundary'))
         objetos = {n: ea.elemento(raiz, n, 'Object', st) for n, st in vidas}
         def grupo(n):
             if n.startswith('@'): return actores[n[1:]]
             x = clases[n]
+            if x['estereotipo'] == 'external': return objetos['Pasarela Stripe']
             if x['estereotipo'] == 'client page': return objetos['Pantalla React']
             if x['capa'] == 'Presentacion': return objetos['Cliente HTTP']
             if x['capa'] == 'Negocio': return objetos['Negocio Laravel']
@@ -221,13 +245,19 @@ def diagrama_interaccion(ea, raiz, cu, tipo, archivo):
                     etiqueta = f'{b.rsplit("/", 1)[-1]}::{txt}'
                 else: etiqueta = txt
                 mensajes.append((a, b, etiqueta, 'call'))
-                if not a.startswith('@') and a in php and b in php and clases[b]['estereotipo'] == 'datos':
+                if not a.startswith('@') and b in clases and clases[b]['estereotipo'] == 'external':
+                    mensajes.append((b, a, 'Checkout Session', 'return'))
+                elif not a.startswith('@') and a in php and b in php and clases[b]['estereotipo'] == 'datos':
                     metodo = txt.partition('(')[0]
                     mensajes.append((b, a, retorno_php(b, metodo), 'return'))
             for a, b, txt in reversed(escena):
+                if not a.startswith('@') and b in clases and clases[b]['estereotipo'] == 'external':
+                    continue
                 if not a.startswith('@') and a in php and b in php and clases[b]['estereotipo'] == 'datos':
                     continue  # la clase D ya respondió justo después de su llamada
                 if a.startswith('@'): etiqueta = 'resultado mostrado'
+                elif a in php and b in php:
+                    etiqueta = retorno_php(b, txt.partition('(')[0])
                 elif a.startswith('api/'):
                     controlador = b
                     metodo = next((r['metodo'] for r in codigo.rutas_api() if
@@ -258,7 +288,7 @@ def diagrama_interaccion(ea, raiz, cu, tipo, archivo):
             descripcion = f'@PAR;Name={guarda};Size={h};GUID={guid};@ENDPAR;'
             ea.r.Execute(f"UPDATE t_xref SET Description='{descripcion}' "
                          f"WHERE Client='{fr.ElementGUID}' AND Name='Partitions'")
-            ea.poner(d, fr, 15, y, 1100, h, seq=60)
+            ea.poner(d, fr, 15, y, 1100 + (230 if cu == 'CU6' else 0), h, seq=60)
     else:
         # Una fila por recorrido evita cruces entre pantallas o actores cuando
         # el CU abarca varias acciones. Los objetos y enlaces son los del P1.
@@ -275,7 +305,7 @@ def diagrama_interaccion(ea, raiz, cu, tipo, archivo):
                 tipo_obj = 'Actor' if n.startswith('@') else 'Object'
                 st = '' if tipo_obj == 'Actor' else {
                     'client page': 'boundary', 'module': 'boundary', 'negocio': 'control',
-                    'datos': 'entity', 'model': 'entity'}.get(clases[n]['estereotipo'], 'control')
+                     'datos': 'entity', 'model': 'entity', 'external': 'boundary'}.get(clases[n]['estereotipo'], 'control')
                 e = ea.elemento(raiz, n.lstrip('@'), tipo_obj, st)
                 objetos[n] = e
                 ea.poner(d, e, 35 + col * 220, y, 65, 65)

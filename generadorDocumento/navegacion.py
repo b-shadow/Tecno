@@ -38,14 +38,16 @@ def bd(d, *claves):
          'recursos': 'codigo, nombre, ruta, orden, visitas', 'permisos': 'rol, recurso_codigo, acceso',
          'roles': 'nombre, descripcion',
          'intereses': 'nro_tarjeta, documento, modulo_nombre, estado, vendedor_correo, fecha_asignacion, motivo_perdida, observacion',
-         'prospectos': 'documento, nombre, apellido, telefono, correo, origen, profesion, ubicacion, estado',
+         'prospectos': 'documento, nombre, apellido, telefono, correo, origen, profesion, ubicacion, estado, stripe_cliente',
          'motivos_perdida': 'nombre, categoria',
          'recordatorios': 'nro_recordatorio, nro_tarjeta, fecha_programada, descripcion, estado, fecha_realizada',
          'interacciones': 'nro_interaccion, nro_tarjeta, tipo, descripcion, resultado, fecha',
          'programas': 'codigo, nombre', 'catalogo_cache': 'codigo, programa_codigo, nombre, descripcion, precio, estado',
-         'metodos_pago': 'nro_metodo, documento, tipo, titular, marca, ultimos_digitos, vencimiento, estado',
-         'ordenes_pago': 'nro_orden, nro_tarjeta, subtotal, descuento_total, total, vendedor_correo',
-         'cuotas': 'nro_orden, nro_cuota, monto, fecha_vencimiento, estado, fecha_pago',
+         'metodos_pago': 'nro_metodo, documento, tipo, titular, marca, ultimos_digitos, vencimiento, estado, proveedor, stripe_cliente, stripe_metodo, registrado_por',
+         'ordenes_pago': 'nro_orden, nro_tarjeta, subtotal, descuento_total, total, vendedor_correo, estado, motivo_anulacion, fecha_anulacion, anulada_por',
+         'cuotas': 'nro_orden, nro_cuota, monto, fecha_vencimiento, estado, fecha_pago, proveedor, moneda, stripe_sesion, stripe_pago_intent, stripe_metodo, stripe_recibo_url',
+         'transacciones_stripe': 'nro_transaccion, tipo, nro_orden, nro_cuota, documento, usuario_correo, stripe_sesion, stripe_pago_intent, estado_interno, monto_confirmado',
+         'webhook_eventos_stripe': 'stripe_evento, tipo, nro_transaccion, estado, procesado_en',
          'orden_pago_descuentos': 'nro_orden, descuento_codigo, porcentaje, monto', 'pagos': 'nro_orden, codigo_qr, estado',
          'descuentos': 'codigo, nombre, porcentaje, estado',
          'comprobantes_pago': 'nro_comprobante, nro_orden, nro_cuota, archivo, remitente, hora_pago, estado_revision, observacion',
@@ -212,6 +214,10 @@ def prospectos(d):   # CU3
         d.e('f_csv', 'ps_csv', 'submit', 'importar()')
         acceso(d, 'ps_csv', 'INSERT', 'prospectos', 'intereses')
         d.e('ps_csv', 'prospectos', 'build', 'redirect back')
+        d.p('ps_nuevo_interes', 'ps', 'ps Agregar Interes', 'documento, programa_codigo, modulo_codigo', 'crearInteres()')
+        d.e('prospectos', 'ps_nuevo_interes', 'submit', 'agregar interes')
+        acceso(d, 'ps_nuevo_interes', 'INSERT', 'intereses')
+        d.e('ps_nuevo_interes', 'prospectos', 'build', 'redirect back')
     ficha(d); d.e('prospectos', 'ficha', 'link', 'interes=nro_tarjeta')
 
 
@@ -252,8 +258,6 @@ def agenda(d):   # CU7 y pagos de CU6
          ('ordenes_pago', 'cuotas', 'orden_pago_descuentos', 'pagos')),
         ('f_comprob', 'Subir Comprobante', 'archivo, nro_metodo, remitente, hora_pago, observacion', 'link', 'comprobante',
          'ps_comprob', 'ps Registrar Comprobante', 'nro_orden, nro_cuota, archivo', 'registrarComprobante()', 'INSERT', ('comprobantes_pago',)),
-        ('f_tarjeta', 'Cobrar con Tarjeta', 'nro_metodo', 'link', 'cobrar con tarjeta',
-         'ps_tarjeta', 'ps Pagar con Tarjeta', 'nro_orden, nro_cuota, nro_metodo', 'pagarConTarjeta()', 'UPDATE', ('cuotas',)),
     ]
     for f, fn, fa, rel, txt, ps, psn, psa, op, sql, tablas in formularios:
         d.p(f, 'form', fn, fa, 'guardar()'); d.p(ps, 'ps', psn, psa, op)
@@ -264,6 +268,30 @@ def agenda(d):   # CU7 y pagos de CU6
     d.e('ficha', 'ps_estmetodo', 'submit', 'activar / desactivar')
     acceso(d, 'ps_estmetodo', 'UPDATE estado', 'metodos_pago')
     d.e('ps_estmetodo', 'ficha', 'build', 'redirect back')
+    d.p('ps_setup_stripe', 'ps', 'ps Preparar Tarjeta Stripe', 'documento, nro_tarjeta', 'crearSetupTarjeta()')
+    d.p('ps_checkout', 'ps', 'ps Iniciar Checkout Stripe', 'nro_orden, nro_cuota', 'crearCheckout()')
+    d.p('ps_anular_orden', 'ps', 'ps Anular Orden', 'nro_orden, motivo', 'anularOrden()')
+    d.e('ficha', 'ps_setup_stripe', 'submit', 'registrar tarjeta en Stripe')
+    d.e('ficha', 'ps_checkout', 'submit', 'pagar cuota en Stripe')
+    d.e('ficha', 'ps_anular_orden', 'submit', 'anular orden')
+    acceso(d, 'ps_setup_stripe', 'INSERT sesión', 'transacciones_stripe')
+    acceso(d, 'ps_checkout', 'INSERT sesión', 'transacciones_stripe')
+    acceso(d, 'ps_anular_orden', 'UPDATE estado', 'ordenes_pago', 'transacciones_stripe')
+    d.e('ps_anular_orden', 'ficha', 'build', 'redirect back')
+    d.p('pago_confirmacion', 'cliente', 'Confirmacion de Stripe', 'session_id, estado', 'consultar()')
+    d.p('pago_cancelado', 'cliente', 'Cancelacion de Stripe', 'session_id, estado', 'reintentar()')
+    d.p('ps_confirmar_checkout', 'ps', 'ps Confirmar Sesion Stripe', 'session_id', 'confirmarCheckout()')
+    d.p('ps_cancelar_checkout', 'ps', 'ps Cancelar Sesion Stripe', 'session_id', 'cancelarCheckout()')
+    for origen in ('ps_setup_stripe', 'ps_checkout'):
+        d.e(origen, 'pago_confirmacion', 'build', 'retorno correcto')
+        d.e(origen, 'pago_cancelado', 'build', 'retorno cancelado')
+    d.e('pago_confirmacion', 'ps_confirmar_checkout', 'submit', 'verificar sesión')
+    d.e('pago_cancelado', 'ps_cancelar_checkout', 'submit', 'consultar cancelación')
+    d.e('pago_cancelado', 'ps_checkout', 'submit', 'reintentar pago')
+    acceso(d, 'ps_confirmar_checkout', 'SELECT / UPDATE', 'transacciones_stripe', 'cuotas', 'metodos_pago')
+    acceso(d, 'ps_cancelar_checkout', 'UPDATE estado', 'transacciones_stripe')
+    d.e('pago_confirmacion', 'ficha', 'link', 'volver a la orden')
+    d.e('pago_cancelado', 'ficha', 'link', 'volver a la orden')
     d.p('ps_cancelar', 'ps', 'ps Cancelar Recordatorio', 'nro_recordatorio', 'cancelarRecordatorio()')
     d.e('ficha', 'ps_cancelar', 'submit', 'cancelar()')
     acceso(d, 'ps_cancelar', 'UPDATE estado', 'recordatorios')
@@ -421,6 +449,9 @@ def usuarios(d):   # CU1
         d.e('ps_usuario_g', 'usuarios', 'build', 'redirect back')
         d.e('usuarios', 'ps_estado', 'submit', 'cambiarEstado()')
         acceso(d, 'ps_estado', 'UPDATE estado', 'usuarios')
+        d.p('ps_foto_usuario', 'ps', 'ps Quitar Fotografia', 'correo', 'foto()')
+        d.e('usuarios', 'ps_foto_usuario', 'submit', 'quitar fotografía')
+        acceso(d, 'ps_foto_usuario', 'UPDATE foto', 'usuarios')
 
 
 def matriz(d):   # CU1
@@ -509,15 +540,20 @@ API = {
     'ps_login': 'auth.login', 'ps_me': 'auth.me', 'ps_perfil': 'auth.actualizarPerfil', 'ps_clave': 'auth.cambiarPassword',
     'ps_logout': 'auth.logout', 'ps_visita': 'sitio.visita', 'ps_buscar': 'sitio.buscar',
     'ps_usuarios': 'usuarios.index', 'ps_usuario_g': 'usuarios.store usuarios.update', 'ps_estado': 'usuarios.cambiarEstado',
+    'ps_foto_usuario': 'usuarios.foto',
     'ps_vend': 'usuarios.vendedores', 'ps_matriz': 'seguridad.matriz', 'ps_asig_perm': 'seguridad.asignar',
     'ps_bitacora': 'seguridad.bitacora', 'ps_bresumen': 'seguridad.resumen',
     'ps_catalogo': 'catalogo.programas', 'ps_sinc': 'catalogo.sincronizar', 'ps_registro': 'catalogo.registrarInteres',
     'ps_prosp': 'prospectos.index', 'ps_alta': 'prospectos.store', 'ps_csv': 'prospectos.importarCSV', 'ps_update': 'prospectos.update',
+    'ps_nuevo_interes': 'prospectos.crearInteres',
     'ps_intereses': 'intereses.index', 'ps_show': 'intereses.show', 'ps_mover': 'intereses.mover',
     'ps_asignar': 'intereses.asignar', 'ps_repartir': 'intereses.distribuir',
     'ps_motivos': 'motivos.index', 'ps_motivo_g': 'motivos.store motivos.update', 'ps_motivo_d': 'motivos.destroy',
     'ps_desc': 'pagos.descuentos', 'ps_metodo': 'pagos.registrarMetodo', 'ps_estmetodo': 'pagos.cambiarEstadoMetodo',
-    'ps_orden': 'pagos.crearOrden', 'ps_comprob': 'pagos.registrarComprobante', 'ps_tarjeta': 'pagos.pagarConTarjeta',
+    'ps_orden': 'pagos.crearOrden', 'ps_comprob': 'pagos.registrarComprobante',
+    'ps_setup_stripe': 'pagos.crearSetupTarjeta', 'ps_checkout': 'pagos.crearCheckout',
+    'ps_confirmar_checkout': 'pagos.confirmarCheckout', 'ps_cancelar_checkout': 'pagos.cancelarCheckout',
+    'ps_anular_orden': 'pagos.anularOrden',
     'ps_cuotas': 'pagos.cuotas', 'ps_comp': 'pagos.comprobante', 'ps_aprobar': 'pagos.aprobar', 'ps_rechazar': 'pagos.rechazar',
     'ps_insc': 'seguimiento.inscripciones', 'ps_pend': 'exportaciones.pendientes', 'ps_exportar': 'exportaciones.exportar',
     'ps_resultado': 'exportaciones.registrarResultado',
@@ -531,6 +567,7 @@ API = {
 }
 # client page -> archivo de presentacion/src. Las del menú salen de RECURSOS + rutas.jsx; estas no son un recurso propio:
 PAGINA_EXTRA = {'login': 'paginas/PLogin.jsx', 'catalogo': 'paginas/PCatalogo.jsx', 'error404': 'paginas/PError404.jsx',
+                'pago_confirmacion': 'paginas/PPagoConfirmacion.jsx', 'pago_cancelado': 'paginas/PPagoCancelado.jsx',
                 'ficha': 'paginas/PAgenda.jsx',            # /agenda?interes=n abre la ficha dentro de Agenda.jsx
                 'menu': 'plantilla/AppShell.jsx',         # menú, búsqueda, perfil y contador: AppShell + componentes/Shell
                 'error': 'paginas/PLogin.jsx', 'exito': 'paginas/PCatalogo.jsx'}   # «PC Message» dentro de su página

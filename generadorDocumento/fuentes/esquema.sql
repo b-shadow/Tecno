@@ -1,4 +1,4 @@
--- P1 correo: estructura PostgreSQL vigente, sin datos personales.
+-- P1 correo + migraci?n 000008 Stripe: estructura PostgreSQL vigente, sin datos personales.
 -- Destino de produccion: db_grupo05sa.public. Instalar SOLO en una base nueva y vacia.
 -- Ejecucion: psql -X -v ON_ERROR_STOP=1 --single-transaction -d BASE_NUEVA -f esquema.sql
 DO $$ BEGIN
@@ -11,10 +11,10 @@ END $$;
 -- PostgreSQL database dump
 --
 
-\restrict XrddyJecDWBw5nM5KYNjmFt0bvhd2JAFg8V1LXgMMU2j5g8eA2jt9LzciEcJqfz
+\restrict KFaEtLSVAxsKlKsdAOocAbYU3GsvBX0dFy6bugFkQ5hGPviD3jXIjbQxcchvL9g
 
--- Dumped from database version 18.6
--- Dumped by pg_dump version 18.4
+-- Dumped from database version 18.7
+-- Dumped by pg_dump version 18.7
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -32,8 +32,7 @@ SET row_security = off;
 -- Name: public; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA IF NOT EXISTS public;
-COMMENT ON SCHEMA public IS 'Proyecto CRM Grupo 05 SA: modelo compartido web y correo, gestion 2-2026';
+CREATE SCHEMA public;
 
 
 --
@@ -283,9 +282,16 @@ CREATE TABLE public.cuotas (
     observacion text,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
+    proveedor character varying(20) DEFAULT 'manual'::character varying NOT NULL,
+    moneda character varying(10) DEFAULT 'BOB'::character varying NOT NULL,
+    stripe_sesion character varying(160),
+    stripe_pago_intent character varying(160),
+    stripe_metodo character varying(160),
+    stripe_recibo_url text,
     CONSTRAINT cuotas_estado_check CHECK (((estado)::text = ANY (ARRAY[('Pendiente de pago'::character varying)::text, ('En revision'::character varying)::text, ('Pago aprobado'::character varying)::text, ('Pago rechazado'::character varying)::text]))),
     CONSTRAINT cuotas_monto_check CHECK ((monto > (0)::numeric)),
-    CONSTRAINT cuotas_nro_cuota_check CHECK (((nro_cuota >= 1) AND (nro_cuota <= 24)))
+    CONSTRAINT cuotas_nro_cuota_check CHECK (((nro_cuota >= 1) AND (nro_cuota <= 24))),
+    CONSTRAINT cuotas_proveedor_check CHECK (((proveedor)::text = ANY (ARRAY[('manual'::character varying)::text, ('stripe'::character varying)::text])))
 );
 
 
@@ -485,7 +491,12 @@ CREATE TABLE public.metodos_pago (
     estado character varying(10) DEFAULT 'activo'::character varying NOT NULL,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
+    proveedor character varying(20) DEFAULT 'manual'::character varying NOT NULL,
+    stripe_cliente character varying(120),
+    stripe_metodo character varying(120),
+    registrado_por character varying(255),
     CONSTRAINT metodos_pago_estado_check CHECK (((estado)::text = ANY (ARRAY[('activo'::character varying)::text, ('inactivo'::character varying)::text]))),
+    CONSTRAINT metodos_pago_proveedor_check CHECK (((proveedor)::text = ANY (ARRAY[('manual'::character varying)::text, ('stripe'::character varying)::text]))),
     CONSTRAINT metodos_pago_tarjeta_check CHECK ((((tipo)::text <> 'Tarjeta'::text) OR ((marca IS NOT NULL) AND ((ultimos_digitos)::text ~ '^[0-9]{4}$'::text) AND ((vencimiento)::text ~ '^(0[1-9]|1[0-2])/[0-9]{2}$'::text)))),
     CONSTRAINT metodos_pago_tipo_check CHECK (((tipo)::text = ANY (ARRAY[('Tarjeta'::character varying)::text, ('QR'::character varying)::text, ('Transferencia'::character varying)::text])))
 );
@@ -619,7 +630,12 @@ CREATE TABLE public.ordenes_pago (
     fecha_generacion timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
-    vendedor_correo character varying(255) NOT NULL
+    vendedor_correo character varying(255) NOT NULL,
+    estado character varying(20) DEFAULT 'Activa'::character varying NOT NULL,
+    motivo_anulacion text,
+    fecha_anulacion timestamp(0) without time zone,
+    anulada_por character varying(255),
+    CONSTRAINT ordenes_pago_estado_check CHECK (((estado)::text = ANY (ARRAY[('Activa'::character varying)::text, ('Anulada'::character varying)::text])))
 );
 
 
@@ -711,6 +727,7 @@ CREATE TABLE public.prospectos (
     profesion character varying(255),
     ubicacion character varying(255),
     origen character varying(20) DEFAULT 'Web'::character varying NOT NULL,
+    stripe_cliente character varying(120),
     CONSTRAINT prospectos_estado_check CHECK (((estado)::text = ANY (ARRAY[('Nuevo'::character varying)::text, ('En Contacto'::character varying)::text, ('Seguimiento'::character varying)::text, ('Promesa de Pago'::character varying)::text, ('Convertido'::character varying)::text, ('Perdido'::character varying)::text])))
 );
 
@@ -822,6 +839,63 @@ ALTER SEQUENCE public.solicitudes_compra_nro_solicitud_seq OWNED BY public.solic
 
 
 --
+-- Name: transacciones_stripe; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.transacciones_stripe (
+    nro_transaccion bigint NOT NULL,
+    tipo character varying(20) NOT NULL,
+    nro_orden bigint,
+    nro_cuota smallint,
+    documento character varying(255),
+    usuario_correo character varying(255),
+    stripe_sesion character varying(160) NOT NULL,
+    stripe_pago_intent character varying(160),
+    stripe_setup_intent character varying(160),
+    stripe_cliente character varying(120),
+    stripe_metodo character varying(120),
+    moneda character varying(10) DEFAULT 'bob'::character varying NOT NULL,
+    monto_esperado numeric(12,2),
+    monto_centavos integer,
+    monto_confirmado numeric(12,2),
+    estado_sesion character varying(40) DEFAULT 'open'::character varying NOT NULL,
+    estado_pago character varying(40) DEFAULT 'unpaid'::character varying NOT NULL,
+    estado_interno character varying(35) DEFAULT 'pendiente'::character varying NOT NULL,
+    livemode boolean DEFAULT false NOT NULL,
+    marca_tarjeta character varying(30),
+    ultimos_digitos character varying(4),
+    receipt_url text,
+    url_checkout text,
+    clave_idempotencia character varying(120),
+    detalle_error text,
+    confirmado_en timestamp(0) without time zone,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
+    CONSTRAINT transacciones_stripe_estado_interno_check CHECK (((estado_interno)::text = ANY (ARRAY[('pendiente'::character varying)::text, ('confirmado'::character varying)::text, ('rechazado'::character varying)::text, ('cancelado'::character varying)::text, ('expirado'::character varying)::text, ('reconciliacion_duplicada'::character varying)::text]))),
+    CONSTRAINT transacciones_stripe_tipo_check CHECK (((tipo)::text = ANY (ARRAY[('payment'::character varying)::text, ('setup'::character varying)::text])))
+);
+
+
+--
+-- Name: transacciones_stripe_nro_transaccion_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.transacciones_stripe_nro_transaccion_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: transacciones_stripe_nro_transaccion_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.transacciones_stripe_nro_transaccion_seq OWNED BY public.transacciones_stripe.nro_transaccion;
+
+
+--
 -- Name: usuarios; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -840,6 +914,26 @@ CREATE TABLE public.usuarios (
     foto character varying(255),
     CONSTRAINT usuarios_estado_check CHECK (((estado)::text = ANY (ARRAY[('activo'::character varying)::text, ('inactivo'::character varying)::text]))),
     CONSTRAINT usuarios_vigencia_check CHECK ((fecha_fin >= fecha_inicio))
+);
+
+
+--
+-- Name: webhook_eventos_stripe; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.webhook_eventos_stripe (
+    stripe_evento character varying(160) NOT NULL,
+    tipo character varying(100) NOT NULL,
+    nro_transaccion bigint,
+    stripe_sesion character varying(160),
+    stripe_pago_intent character varying(160),
+    livemode boolean DEFAULT false NOT NULL,
+    estado character varying(30) DEFAULT 'procesado'::character varying NOT NULL,
+    resumen text,
+    procesado_en timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
+    CONSTRAINT webhook_eventos_stripe_estado_check CHECK (((estado)::text = ANY (ARRAY[('procesado'::character varying)::text, ('ignorado'::character varying)::text, ('duplicado'::character varying)::text, ('error'::character varying)::text])))
 );
 
 
@@ -925,6 +1019,13 @@ ALTER TABLE ONLY public.recordatorios ALTER COLUMN nro_recordatorio SET DEFAULT 
 --
 
 ALTER TABLE ONLY public.solicitudes_compra ALTER COLUMN nro_solicitud SET DEFAULT nextval('public.solicitudes_compra_nro_solicitud_seq'::regclass);
+
+
+--
+-- Name: transacciones_stripe nro_transaccion; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.transacciones_stripe ALTER COLUMN nro_transaccion SET DEFAULT nextval('public.transacciones_stripe_nro_transaccion_seq'::regclass);
 
 
 --
@@ -1184,11 +1285,35 @@ ALTER TABLE ONLY public.solicitudes_compra
 
 
 --
+-- Name: transacciones_stripe transacciones_stripe_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.transacciones_stripe
+    ADD CONSTRAINT transacciones_stripe_pkey PRIMARY KEY (nro_transaccion);
+
+
+--
+-- Name: transacciones_stripe transacciones_stripe_sesion_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.transacciones_stripe
+    ADD CONSTRAINT transacciones_stripe_sesion_unique UNIQUE (stripe_sesion);
+
+
+--
 -- Name: usuarios usuarios_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.usuarios
     ADD CONSTRAINT usuarios_pkey PRIMARY KEY (correo);
+
+
+--
+-- Name: webhook_eventos_stripe webhook_eventos_stripe_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.webhook_eventos_stripe
+    ADD CONSTRAINT webhook_eventos_stripe_pkey PRIMARY KEY (stripe_evento);
 
 
 --
@@ -1220,6 +1345,13 @@ CREATE INDEX interacciones_usuario_fecha_idx ON public.interacciones USING btree
 
 
 --
+-- Name: metodos_pago_stripe_metodo_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX metodos_pago_stripe_metodo_unique ON public.metodos_pago USING btree (stripe_metodo) WHERE (stripe_metodo IS NOT NULL);
+
+
+--
 -- Name: movimientos_interes_nro_tarjeta_fecha_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1248,6 +1380,13 @@ CREATE UNIQUE INDEX prospectos_correo_lower_unique ON public.prospectos USING bt
 
 
 --
+-- Name: prospectos_stripe_cliente_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX prospectos_stripe_cliente_unique ON public.prospectos USING btree (stripe_cliente) WHERE (stripe_cliente IS NOT NULL);
+
+
+--
 -- Name: recordatorios_usuario_estado_fecha_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1259,6 +1398,27 @@ CREATE INDEX recordatorios_usuario_estado_fecha_idx ON public.recordatorios USIN
 --
 
 CREATE INDEX solicitudes_modulo_fecha_idx ON public.solicitudes_compra USING btree (modulo_codigo, fecha);
+
+
+--
+-- Name: transacciones_stripe_cuota_estado_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX transacciones_stripe_cuota_estado_idx ON public.transacciones_stripe USING btree (nro_orden, nro_cuota, estado_interno);
+
+
+--
+-- Name: transacciones_stripe_pi_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX transacciones_stripe_pi_unique ON public.transacciones_stripe USING btree (stripe_pago_intent) WHERE (stripe_pago_intent IS NOT NULL);
+
+
+--
+-- Name: transacciones_stripe_si_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX transacciones_stripe_si_unique ON public.transacciones_stripe USING btree (stripe_setup_intent) WHERE (stripe_setup_intent IS NOT NULL);
 
 
 --
@@ -1487,6 +1647,14 @@ ALTER TABLE ONLY public.metodos_pago
 
 
 --
+-- Name: metodos_pago metodos_pago_registrado_por_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metodos_pago
+    ADD CONSTRAINT metodos_pago_registrado_por_fk FOREIGN KEY (registrado_por) REFERENCES public.usuarios(correo) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
 -- Name: movimientos_interes movimientos_interes_nro_tarjeta_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1524,6 +1692,14 @@ ALTER TABLE ONLY public.orden_pago_descuentos
 
 ALTER TABLE ONLY public.orden_pago_descuentos
     ADD CONSTRAINT orden_pago_descuentos_nro_orden_fk FOREIGN KEY (nro_orden) REFERENCES public.ordenes_pago(nro_orden) ON DELETE CASCADE;
+
+
+--
+-- Name: ordenes_pago ordenes_pago_anulada_por_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ordenes_pago
+    ADD CONSTRAINT ordenes_pago_anulada_por_fk FOREIGN KEY (anulada_por) REFERENCES public.usuarios(correo) ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 --
@@ -1615,6 +1791,38 @@ ALTER TABLE ONLY public.solicitudes_compra
 
 
 --
+-- Name: transacciones_stripe transacciones_stripe_cuota_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.transacciones_stripe
+    ADD CONSTRAINT transacciones_stripe_cuota_fk FOREIGN KEY (nro_orden, nro_cuota) REFERENCES public.cuotas(nro_orden, nro_cuota) ON DELETE RESTRICT;
+
+
+--
+-- Name: transacciones_stripe transacciones_stripe_documento_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.transacciones_stripe
+    ADD CONSTRAINT transacciones_stripe_documento_fk FOREIGN KEY (documento) REFERENCES public.prospectos(documento) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: transacciones_stripe transacciones_stripe_orden_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.transacciones_stripe
+    ADD CONSTRAINT transacciones_stripe_orden_fk FOREIGN KEY (nro_orden) REFERENCES public.ordenes_pago(nro_orden) ON DELETE RESTRICT;
+
+
+--
+-- Name: transacciones_stripe transacciones_stripe_usuario_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.transacciones_stripe
+    ADD CONSTRAINT transacciones_stripe_usuario_fk FOREIGN KEY (usuario_correo) REFERENCES public.usuarios(correo) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
 -- Name: usuarios usuarios_rol_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1623,8 +1831,16 @@ ALTER TABLE ONLY public.usuarios
 
 
 --
+-- Name: webhook_eventos_stripe webhook_eventos_stripe_tx_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.webhook_eventos_stripe
+    ADD CONSTRAINT webhook_eventos_stripe_tx_fk FOREIGN KEY (nro_transaccion) REFERENCES public.transacciones_stripe(nro_transaccion) ON DELETE SET NULL;
+
+
+--
 -- PostgreSQL database dump complete
 --
 
-\unrestrict XrddyJecDWBw5nM5KYNjmFt0bvhd2JAFg8V1LXgMMU2j5g8eA2jt9LzciEcJqfz
+\unrestrict KFaEtLSVAxsKlKsdAOocAbYU3GsvBX0dFy6bugFkQ5hGPviD3jXIjbQxcchvL9g
 

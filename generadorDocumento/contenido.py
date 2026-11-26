@@ -294,15 +294,16 @@ ALCANCE = {      # ../P2_WEB.md §1, columna "Cómo se cumple en la web"
            '(lectura, modificación y eliminación por rol y recurso) y bitácora de accesos.',
     'CU2': 'Catálogo público por programas y módulos, con búsqueda y registro de interés del visitante; sincronización de '
            'la oferta académica desde el cliente API del catálogo, simulado hasta que el Grupo 06 publique su servicio.',
-    'CU3': 'Alta manual y carga masiva por CSV de prospectos con su origen; asignación manual y reparto Round-Robin por el '
-           'Coordinador o el Administrador.',
+    'CU3': 'Alta manual y carga masiva por CSV de prospectos con su origen; incorporación de nuevos intereses a un '
+            'prospecto existente; asignación manual y reparto Round-Robin por el Coordinador o el Administrador.',
     'CU4': 'Tablero Kanban con seis columnas (Nuevo, En Contacto, Seguimiento, Promesa de Pago, Convertido y Perdido), '
            'tarjetas que se arrastran y la opción "Mover a…" en el celular.',
     'CU5': 'Pasar una tarjeta a Perdido exige un motivo de la lista de motivos de pérdida, clasificados por categoría; el '
            'Administrador y el Coordinador gestionan esa lista.',
-    'CU6': 'Métodos de pago del prospecto (tarjeta simulada, QR y transferencia), orden de pago al contado o en cuotas, '
-           'comprobantes y su validación; la conversión exige datos completos y la primera cuota aprobada, y genera la '
-           'inscripción, la comisión del vendedor y la exportación al SIS.',
+    'CU6': 'Métodos de pago manuales (QR y transferencia) o tarjeta mediante Stripe Sandbox; orden de pago al contado '
+            'o en cuotas, anulación controlada, comprobantes con validación manual y conciliación de Stripe por sesión '
+            'o webhook firmado. La conversión exige datos completos y la primera cuota aprobada, y genera la inscripción, '
+            'la comisión del vendedor y la exportación al SIS.',
     'CU7': 'Historial cronológico por tarjeta, registro de interacciones y notas, recordatorios de contacto con la agenda '
            'del día y notificaciones internas.',
     'CU8': 'Dashboard con indicadores, reportes como listados, estadísticas porcentuales del embudo y de los accesos, y '
@@ -405,23 +406,35 @@ DETALLE = {
     'CU6': dict(
         gestionar='Gestionar Conversión a Matrícula', iniciador='Vendedor',
         proposito='Cobrar al prospecto y convertirlo en alumno matriculado con sus datos validados.',
-        descripcion='Desde la ficha del prospecto, el Vendedor registra métodos de pago, genera la orden de pago al '
-                    'contado o en cuotas y sube el comprobante o cobra con la tarjeta simulada; el Coordinador o el '
-                    'Administrador aprueban o rechazan la cuota. Con los datos completos y la primera cuota aprobada, la '
-                    'tarjeta pasa a Convertido, se registran la inscripción y la comisión, y la matrícula se exporta al SIS.',
+        descripcion='Desde la ficha del prospecto, el Vendedor crea una orden de pago único o en cuotas. Para una cuota '
+                    'pendiente puede iniciar Stripe Checkout Sandbox o registrar un comprobante de pago manual. Stripe '
+                    'confirma el pago mediante consulta de la sesión o webhook firmado; los comprobantes manuales son '
+                    'revisados por el Coordinador o Administrador. La primera cuota aprobada y los datos completos '
+                    'permiten convertir el interés, registrar inscripción y comisión y exportar la matrícula al SIS.',
         precondicion='El prospecto está en la cartera del vendedor y tiene un interés abierto.',
-        proceso=['El Vendedor abre la ficha del prospecto y registra un método de pago.',
-                 'El Vendedor genera la orden de pago con módulos, descuentos y número de cuotas.',
-                 'El Vendedor sube el comprobante de la cuota o la cobra con la tarjeta registrada, y la cuota queda en revisión.',
-                 'El Coordinador revisa el comprobante en Validación de Pagos y aprueba o rechaza la cuota.',
-                 'Con la primera cuota aprobada y los datos completos, el sistema pasa la tarjeta a Convertido y registra '
-                 'la inscripción y la comisión.',
-                 'El Coordinador exporta las matrículas pendientes al SIS en Matrículas y SIS y registra el resultado.'],
+        proceso=['El Vendedor abre la ficha del prospecto y genera una orden con módulos, descuentos y cuotas.',
+                 'El Vendedor selecciona una cuota pendiente e inicia Stripe Checkout Sandbox.',
+                 'El sistema valida la orden y el importe en BOB, registra la sesión y redirige a Stripe.',
+                 'Tras el pago, el sistema consulta la sesión de retorno o procesa el webhook firmado y verifica su importe.',
+                 'El sistema registra la transacción y marca la cuota como Pago aprobado de forma idempotente.',
+                 'Si es la primera cuota y los datos están completos, el sistema convierte el interés y registra la '
+                 'inscripción y la comisión.',
+                 'El Coordinador exporta las matrículas pendientes al SIS y registra el resultado.'],
+        alternativos=['A1. Pago manual: el Vendedor registra un método QR o transferencia y sube el comprobante; '
+                     'la cuota queda En revisión hasta que el Coordinador o Administrador la apruebe o rechace.',
+                     'A2. Registro previo de tarjeta: el Vendedor inicia Stripe Setup; el sistema consulta la sesión '
+                     'de retorno y, si Stripe la confirma, asocia el método al prospecto.',
+                     'A3. Checkout cancelado: el sistema consulta la sesión, conserva la cuota pendiente si no hubo '
+                     'confirmación y permite volver a intentar el pago.',
+                     'A4. Anulación de orden: el Vendedor indica el motivo; el sistema solo anula una orden sin cuotas '
+                     'pagadas o en revisión ni pagos Stripe confirmados.'],
         postcondicion='El prospecto queda convertido en alumno, con su inscripción, comisión y exportación registradas.',
         excepciones=['- Orden de otro vendedor: "Solo el vendedor asignado genera la orden de pago."',
                      '- Total inválido: "El total de la orden debe ser mayor a cero."',
-                     '- Tarjeta inválida: "El número de tarjeta no es válido."',
-                     '- Tarjeta vencida: "La tarjeta está vencida."',
+                     '- Orden anulada: "La orden de pago fue anulada y no admite cobros."',
+                     '- Cuota ya pagada: "Esta cuota ya fue pagada."',
+                     '- Cuota en revisión manual: "Esta cuota tiene un comprobante manual en revisión."',
+                     '- Confirmación manual indebida: "Las cuotas procesadas por Stripe solo se confirman mediante la pasarela oficial."',
                      '- Comprobante repetido: "Ya hay un comprobante en revisión para esta cuota."',
                      '- Aprobación fuera de revisión: "Solo se aprueba una cuota en revisión."',
                      '- Conversión sin pago: "La primera cuota de una orden de pago todavía no está aprobada."',
@@ -495,9 +508,11 @@ PAQUETES = {
                                               'movimientos y los motivos de pérdida.'),
     'Pagos y Matrícula': dict(cu=['CU6'], tablas=['metodos_pago', 'descuentos', 'ordenes_pago', 'orden_pago_descuentos',
                                                    'cuotas', 'pagos', 'comprobantes_pago', 'solicitudes_compra',
+                                                   'transacciones_stripe', 'webhook_eventos_stripe',
                                                    'inscripciones_comerciales', 'exportaciones'],
-                              descripcion='Gestiona los métodos de pago, las órdenes de pago y sus cuotas, los '
-                                          'comprobantes, la inscripción y la exportación de la matrícula al SIS.'),
+                               descripcion='Gestiona los métodos de pago, las órdenes y sus cuotas, los comprobantes '
+                                           'manuales y las transacciones y webhooks de Stripe Sandbox; también la '
+                                           'inscripción y la exportación de la matrícula al SIS.'),
     'Seguimiento Comercial': dict(cu=['CU7'], tablas=['interacciones', 'recordatorios', 'notificaciones'],
                                   descripcion='Gestiona las interacciones, los recordatorios de contacto y las notificaciones.'),
     'Ventas y Reportes': dict(cu=['CU8'], tablas=['comisiones', 'configuraciones'],
