@@ -26,7 +26,6 @@ class NStripe
     public function __construct(
         private readonly DStripe $datos,
         private readonly DPago $pagos,
-        private readonly NNotificacion $notificaciones,
     ) {
     }
 
@@ -659,7 +658,7 @@ class NStripe
                             'confirmado_en' => $tx->confirmado_en ?? now(),
                         ]);
 
-                        return ['faltantes' => NConversion::faltantes($orden->interes), 'recien_confirmado' => false];
+                        return ['faltantes' => NConversion::faltantes($orden->interes)];
                     }
 
                     // Segunda sesión paralela pagada sobre una cuota ya liquidada: registrar incidencia sin duplicar saldo.
@@ -683,7 +682,7 @@ class NStripe
                         'resultado' => 'Requiere reconciliación',
                     ]);
 
-                    return ['faltantes' => [], 'recien_confirmado' => false];
+                    return ['faltantes' => []];
                 }
 
                 $nroMetodo = null;
@@ -751,13 +750,10 @@ class NStripe
                     }
                 }
 
-                return ['faltantes' => $faltan, 'recien_confirmado' => true];
+                return ['faltantes' => $faltan];
             });
 
             $txConfirmada = $this->datos->transaccionPorSesion($sesion->id);
-            if ($resultado['recien_confirmado'] && $txConfirmada) {
-                $this->enviarNotificacionesPostPago($txConfirmada);
-            }
 
             return $this->armarRespuestaPago($txConfirmada, $resultado['faltantes'], 'Pago confirmado');
         }
@@ -1045,33 +1041,6 @@ class NStripe
             'fecha_confirmacion' => ($tx->confirmado_en ?? $tx->updated_at)?->toIso8601String(),
             'aviso_sandbox' => 'Operación de demostración mediante Stripe Sandbox (moneda BOB, sin movimiento real de dinero).',
         ];
-    }
-
-    private function enviarNotificacionesPostPago(TransaccionStripe $tx): void
-    {
-        try {
-            $orden = $tx->orden;
-            $interes = $orden?->interes;
-            $prospecto = $interes?->prospecto ?? $tx->prospecto;
-            $vendedor = $orden?->vendedor;
-            $cuotas = $orden?->cuotas ?? collect();
-
-            $this->notificaciones->notificarPagoConfirmado([
-                'cliente_correo' => $prospecto?->correo,
-                'cliente_nombre' => $prospecto ? trim("{$prospecto->nombre} {$prospecto->apellido}") : 'Cliente',
-                'vendedor_correo' => $orden?->vendedor_correo ?? $tx->usuario_correo,
-                'vendedor_nombre' => $vendedor ? trim("{$vendedor->nombre} {$vendedor->apellido}") : '',
-                'programa' => $interes?->programa_nombre,
-                'modulo' => $interes?->modulo_nombre,
-                'nro_orden' => $tx->nro_orden,
-                'nro_cuota' => $tx->nro_cuota,
-                'total_cuotas' => max($cuotas->count(), 1),
-                'monto' => $tx->monto_confirmado ?? $tx->monto_esperado ?? 0,
-                'referencia' => $tx->stripe_pago_intent ?: $tx->stripe_sesion,
-            ]);
-        } catch (\Throwable) {
-            // Un error en correo electrónico nunca debe revertir ni fallar una confirmación de pago ya guardada.
-        }
     }
 
     private function generarTokenPublico(string $semilla): string

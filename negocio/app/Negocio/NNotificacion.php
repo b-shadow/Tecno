@@ -7,10 +7,9 @@ use App\Http\Requests\ConsultaRequest;
 use App\Http\Requests\Notificacion\EnviarNotificacionRequest;
 use Datos\DNotificacion;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 
-/** Capa de negocio — CU7: correos SMTP enviados desde el CRM y su registro (incluye avisos de pago Stripe). */
+/** Capa de negocio — CU7: correos SMTP enviados desde el CRM y su registro. */
 class NNotificacion
 {
     public function __construct(private readonly DNotificacion $notificaciones)
@@ -51,68 +50,6 @@ class NNotificacion
             'mensaje' => 'Correo aceptado por el servidor SMTP y registrado en el historial.',
             'notificacion' => $resultado['notificacion'],
         ], 201);
-    }
-
-    /** Envía confirmación al cliente y aviso al vendedor cuando Stripe confirma un pago (nunca revierte el cobro si SMTP falla). */
-    public function notificarPagoConfirmado(array $datos): void
-    {
-        $monto = number_format((float) ($datos['monto'] ?? 0), 2, '.', '');
-        $orden = (int) ($datos['nro_orden'] ?? 0);
-        $cuota = (int) ($datos['nro_cuota'] ?? 1);
-        $totalCuotas = (int) ($datos['total_cuotas'] ?? 1);
-        $referencia = (string) ($datos['referencia'] ?? '');
-        $programa = (string) ($datos['programa'] ?? 'Programa educativo');
-        $modulo = (string) ($datos['modulo'] ?? '');
-        $clienteNombre = (string) ($datos['cliente_nombre'] ?? 'Cliente');
-        $clienteCorreo = trim((string) ($datos['cliente_correo'] ?? ''));
-        $vendedorCorreo = trim((string) ($datos['vendedor_correo'] ?? ''));
-        $fecha = Carbon::now('America/La_Paz')->format('d/m/Y H:i');
-
-        if ($clienteCorreo !== '' && filter_var($clienteCorreo, FILTER_VALIDATE_EMAIL)) {
-            $asuntoCliente = "UNEXO — Confirmación de pago (Orden #{$orden} · Cuota {$cuota})";
-            if (! $this->notificaciones->existeNotificacionEnviada($clienteCorreo, $asuntoCliente, $referencia ?: "Orden #{$orden}")) {
-                $cuerpoCliente = implode("\n", [
-                    "Hola, {$clienteNombre}.",
-                    '',
-                    'Te confirmamos que tu pago fue procesado correctamente mediante Stripe Sandbox.',
-                    '',
-                    "Programa: {$programa}" . ($modulo ? " — {$modulo}" : ''),
-                    "Orden: #{$orden}",
-                    "Cuota: {$cuota} de {$totalCuotas}",
-                    "Importe: Bs {$monto} (BOB)",
-                    "Referencia de pago: {$referencia}",
-                    "Fecha: {$fecha}",
-                    '',
-                    'Operación de demostración mediante Stripe Sandbox (sin cobro de dinero real).',
-                    'Gracias por confiar en UNEXO.',
-                ]);
-                $this->enviarCorreo($clienteCorreo, $asuntoCliente, $cuerpoCliente, $vendedorCorreo ?: null);
-            }
-        }
-
-        if ($vendedorCorreo !== '' && filter_var($vendedorCorreo, FILTER_VALIDATE_EMAIL)) {
-            $asuntoVendedor = "UNEXO — Pago confirmado de {$clienteNombre} (Orden #{$orden} · Cuota {$cuota})";
-            if (! $this->notificaciones->existeNotificacionEnviada($vendedorCorreo, $asuntoVendedor, $referencia ?: "Orden #{$orden}")) {
-                $cuerpoVendedor = implode("\n", [
-                    "El cliente {$clienteNombre} completó el pago mediante Stripe Sandbox.",
-                    '',
-                    "Programa: {$programa}" . ($modulo ? " — {$modulo}" : ''),
-                    "Orden: #{$orden} · Cuota {$cuota} de {$totalCuotas}",
-                    "Importe confirmado: Bs {$monto} (BOB)",
-                    "Referencia Stripe: {$referencia}",
-                    "Fecha: {$fecha}",
-                    '',
-                    'La cuota y el saldo en UNEXO ya fueron actualizados automáticamente.',
-                ]);
-                $this->enviarCorreo($vendedorCorreo, $asuntoVendedor, $cuerpoVendedor, $vendedorCorreo);
-            }
-        }
-    }
-
-    /** Método reutilizable interno para envíos programados y avisos iniciales de pago vía SMTP. */
-    public function enviarCorreoSistema(string $destinatario, string $asunto, string $mensajeTexto, ?string $usuarioCorreo, ?string $enlace = null, string $textoBoton = 'Completar pago'): array
-    {
-        return $this->enviarCorreo($destinatario, $asunto, $mensajeTexto, $usuarioCorreo, $enlace, $textoBoton);
     }
 
     private function enviarCorreo(string $destinatario, string $asunto, string $mensajeTexto, ?string $usuarioCorreo, ?string $enlace = null, string $textoBoton = 'Completar pago'): array

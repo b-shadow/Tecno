@@ -24,10 +24,6 @@ class Cuota extends Model
             'monto' => 'decimal:2',
             'fecha_vencimiento' => 'date:Y-m-d',
             'fecha_pago' => 'datetime',
-            'primer_envio_en' => 'datetime',
-            'recordatorio_previo_en' => 'datetime',
-            'recordatorio_vencimiento_en' => 'datetime',
-            'recordatorio_mora_en' => 'datetime',
             'nro_cuota' => 'integer',
         ];
     }

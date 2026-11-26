@@ -97,7 +97,6 @@ Route::middleware('auth.token')->group(function (): void {
     Route::patch('/metodos-pago/{metodo}/estado', [NPago::class, 'cambiarEstadoMetodo'])->middleware('acceso:agenda');
     Route::get('/ordenes-pago', [NPago::class, 'ordenes'])->middleware('acceso:agenda|validacion-pagos,lectura');
     Route::post('/intereses/{interes}/ordenes-pago', [NPago::class, 'crearOrden'])->middleware('acceso:agenda');
-    Route::patch('/ordenes-pago/{orden}/envio-automatico', [NPago::class, 'configurarEnvioAutomatico'])->middleware('acceso:agenda')->whereNumber('orden');
     Route::patch('/ordenes-pago/{orden}/anular', [NPago::class, 'anularOrden'])->middleware('acceso:agenda')->whereNumber('orden');
     Route::post('/ordenes-pago/{orden}/cuotas/{cuota}/comprobante', [NPago::class, 'registrarComprobante'])->middleware('acceso:agenda')->whereNumber('cuota');
     Route::post('/ordenes-pago/{orden}/cuotas/{cuota}/checkout', [NPago::class, 'crearCheckout'])->middleware('acceso:agenda')->whereNumber('cuota');

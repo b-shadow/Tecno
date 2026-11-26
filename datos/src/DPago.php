@@ -82,36 +82,6 @@ class DPago
         return $fila;
     }
 
-    public function cuotasPendientesParaRecordatorio(): Collection
-    {
-        return Cuota::query()
-            ->join('ordenes_pago as o', 'o.nro_orden', '=', 'cuotas.nro_orden')
-            ->join('intereses as i', 'i.nro_tarjeta', '=', 'o.nro_tarjeta')
-            ->join('prospectos as p', 'p.documento', '=', 'i.documento')
-            ->where('o.estado', 'Activa')
-            ->where('o.envio_automatico', true)
-            ->where('cuotas.estado', 'Pendiente de pago')
-            ->where('i.estado', '!=', 'Perdido')
-            ->orderBy('cuotas.fecha_vencimiento')
-            ->orderBy('cuotas.nro_orden')
-            ->orderBy('cuotas.nro_cuota')
-            ->get([
-                'cuotas.nro_orden', 'cuotas.nro_cuota', 'cuotas.monto', 'cuotas.fecha_vencimiento', 'cuotas.token_pago',
-                'cuotas.primer_envio_en', 'cuotas.recordatorio_previo_en', 'cuotas.recordatorio_vencimiento_en', 'cuotas.recordatorio_mora_en',
-                'o.vendedor_correo', 'i.programa_nombre', 'i.modulo_nombre',
-                'p.nombre as prospecto_nombre', 'p.apellido as prospecto_apellido', 'p.correo as prospecto_correo',
-                DB::raw('(SELECT count(*) FROM cuotas c2 WHERE c2.nro_orden = cuotas.nro_orden) as total_cuotas'),
-            ]);
-    }
-
-    public function marcarEnvioCuota(int $nroOrden, int $nroCuota, string $columna): void
-    {
-        if (! in_array($columna, ['primer_envio_en', 'recordatorio_previo_en', 'recordatorio_vencimiento_en', 'recordatorio_mora_en'], true)) {
-            return;
-        }
-        Cuota::query()->where('nro_orden', $nroOrden)->where('nro_cuota', $nroCuota)->update([$columna => now(), 'updated_at' => now()]);
-    }
-
     public function cuotas(Usuario $usuario, ?string $estado): Collection
     {
         return Cuota::query()->join('ordenes_pago as o', 'o.nro_orden', '=', 'cuotas.nro_orden')

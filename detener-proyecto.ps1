@@ -27,7 +27,7 @@ function Buscar-PgBin {
     return $null
 }
 
-foreach ($clave in @('vite', 'laravel', 'stripe', 'scheduler')) {
+foreach ($clave in @('vite', 'laravel', 'stripe')) {
     $procId = $pids.$clave
     if ($procId) {
         $p = Get-Process -Id $procId -ErrorAction SilentlyContinue

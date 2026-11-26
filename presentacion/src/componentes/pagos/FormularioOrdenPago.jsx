@@ -17,25 +17,17 @@ function sumarMesesSinDesborde(fechaIso, meses) {
   return `${destino.getFullYear()}-${String(destino.getMonth() + 1).padStart(2, '0')}-${String(destino.getDate()).padStart(2, '0')}`
 }
 
-function esCorreoValido(correo) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(correo || '').trim())
-}
-
-/** Modal limpio y organizado para configurar módulos, descuentos, plan de cuotas y envíos automáticos. */
+/** Configura módulos, descuentos y condiciones de pago. */
 export default function FormularioOrdenPago({ t, onCerrar, onListo }) {
   const catalogo = useDatos(async () => (await catalogoApi.programas()).data.programas)
   const descuentos = useDatos(async () => (await pagosApi.descuentos()).data.descuentos)
   const programa = catalogo.datos?.find((p) => p.modulos.some((m) => m.codigo === t.modulo_codigo))
-
-  const correoProspecto = String(t.prospecto?.correo || '').trim()
-  const tieneCorreoValido = esCorreoValido(correoProspecto)
 
   const [modulos, setModulos] = useState([t.modulo_codigo])
   const [dctos, setDctos] = useState([])
   const [formaPago, setFormaPago] = useState('unico')
   const [cuotas, setCuotas] = useState(3)
   const [vence, setVence] = useState(() => hoyLocal(1))
-  const [envioAutomatico, setEnvioAutomatico] = useState(tieneCorreoValido)
   const [error, setError] = useState(null)
   const [enviando, setEnviando] = useState(false)
 
@@ -108,9 +100,8 @@ export default function FormularioOrdenPago({ t, onCerrar, onListo }) {
         descuentos: dctos,
         cuotas: cantidadCuotas,
         primer_vencimiento: vence,
-        envio_automatico: tieneCorreoValido ? envioAutomatico : false,
       })
-      onListo(data.mensaje, data.aviso_correo)
+      onListo(data.mensaje)
     } catch (err) {
       setError(apiErrorMessage(err))
       setEnviando(false)
@@ -118,7 +109,7 @@ export default function FormularioOrdenPago({ t, onCerrar, onListo }) {
   }
 
   return (
-    <Modal ancho titulo="Generar orden de pago" descripcion="Configura módulos, descuentos, forma de pago y recordatorios." onCerrar={onCerrar}>
+    <Modal ancho titulo="Generar orden de pago" descripcion="Configura módulos, descuentos, forma de pago y vencimientos." onCerrar={onCerrar}>
       {!programa ? <Cargando /> : (
         <form className="grid gap-5" onSubmit={generarOrden}>
           {/* A. Información comercial */}
@@ -267,28 +258,10 @@ export default function FormularioOrdenPago({ t, onCerrar, onListo }) {
             </div>
           )}
 
-          {/* H. Envío automático */}
-          <section className="rounded-ui border border-filete p-3.5 grid gap-1">
-            <label className={`check font-semibold ${!tieneCorreoValido ? 'opacity-60' : ''}`}>
-              <input
-                type="checkbox"
-                disabled={!tieneCorreoValido}
-                checked={tieneCorreoValido && envioAutomatico}
-                onChange={(e) => setEnvioAutomatico(e.target.checked)}
-              />
-              Enviar solicitudes y recordatorios automáticamente por correo electrónico
-            </label>
-            <small className="pl-7 text-xs text-tinta-suave">
-              {tieneCorreoValido
-                ? 'UNEXO enviará automáticamente las solicitudes según los vencimientos. También podrás enviar cualquier cuota manualmente.'
-                : 'El cliente no tiene un correo válido registrado. Puedes crear la orden y compartir los enlaces por WhatsApp o copia manual.'}
-            </small>
-          </section>
-
           {!modulos.length && <Aviso tipo="error">Selecciona al menos un módulo para generar la orden.</Aviso>}
           <Aviso tipo="error">{error}</Aviso>
 
-          {/* I. Botones finales */}
+          {/* H. Botones finales */}
           <div className="acciones">
             <button type="button" className="btn btn-secundario" disabled={enviando} onClick={onCerrar}>Cancelar</button>
             <Boton type="submit" className="btn-primario" cargando={enviando} disabled={!modulos.length || total <= 0}>
