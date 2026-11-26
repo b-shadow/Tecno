@@ -26,6 +26,7 @@ texto o el diagrama (o el código, si el error está ahí) y se vuelve a correr.
 | `ea/ea_p2.py`, `ea/ea_base.py` | Diagramas en Enterprise Architect 15 Trial por COM → `diagramas/` (PNG + EMF) |
 | `ea/ea_faltantes.py` | Completa en el EAPX existente los 34 diagramas de requisitos, paquetes, comunicación, secuencia y despliegue; toma rutas y clases del código real |
 | `insertar_diagramas.py` | Sustituye solo los marcadores de diagramas del DOCX actual, conservando el resto de las ediciones manuales |
+| `actualizar_conceptual_docx.py` | Refresca solo la figura conceptual del DOCX actual, conservando el resto de las ediciones manuales |
 | `actualizar_secuencias.py` | Reemplaza solo las ocho figuras de secuencia del DOCX actual cuando cambian sus PNG/EMF, sin reconstruir el documento |
 | `ea/crm-p2.eapx`, `ea/posiciones.json` | Repositorio EA y posiciones acomodadas a mano |
 | `exportar.ps1` | Word real: índices, EMF en lugar de PNG, `.doc` y `.pdf` |
@@ -36,12 +37,14 @@ texto o el diagrama (o el código, si el error está ahí) y se vuelve a correr.
 
 ```
 python ea/ea_faltantes.py                          # abre el EAPX existente; conserva posiciones manuales
+python ea/ea_p2.py --actualizar-conceptual          # cambia solo los atributos y conserva las posiciones del conceptual
+python actualizar_conceptual_docx.py                # sustituye solo esa figura en el documento manual actual
 python insertar_diagramas.py                       # sustituye solo diagramas pendientes del DOCX actual
 python actualizar_secuencias.py                    # si el DOCX ya tiene las figuras, refresca solo las ocho secuencias
 python ea/ea_p2.py --recrear [--solo datos|nav|clases|org]   # reconstruye el EAPX completo: usar solo tras respaldarlo
 python ea/ea_p2.py --guardar-posiciones             # tras mover cajas a mano en EA (abrir, mover, guardar, cerrar)
 python documento_p2.py                              # reconstruye el DOCX completo: no conserva ediciones manuales
-powershell -ExecutionPolicy Bypass -File exportar.ps1   # → documento/*.doc y *.pdf (sobrescribe)
+  powershell -ExecutionPolicy Bypass -File exportar.ps1   # → documento/*.doc y *.pdf (sobrescribe)
 ```
 
 ## Chequeos: el documento no puede contradecir al código
@@ -70,8 +73,14 @@ También avisa (sin fallar) de las rutas de `api.php` que ninguna pantalla llama
 - **Matriz de acceso/menú:** sale de las migraciones (`…_crear_matriz_acceso.php` y las que agregan recursos).
 - **Navegación:** si una pantalla llama a una función nueva de `api/`, agregarla en `navegacion.py` (nodo `ps` + `API`).
 - **crm-web se movió:** cambiar `CRM_WEB` en `rutas.py`.
-- **Organización:** misión, visión, objetivo y organigrama son propuesta del grupo (`contenido.POR_CONFIRMAR`); al
-  confirmarlos con la clienta, vaciar esa lista.
+- **Organización:** misión, visión, objetivo y organigrama describen el proceso comercial modelado para UNEXO;
+  no son declaraciones institucionales de la FICCT. Su texto y fuentes quedan en `contenido.py` y no requieren
+  `proyectocorreo/` para regenerarse. La ubicación física e infraestructura se reproducen desde el P1 aprobado;
+  el mapa de OpenStreetMap está guardado localmente en `diagramas/ubicacion.png`. El organigrama conserva su
+  proporción al exportarse.
+- **Prioridades:** `contenido.PRIORIDAD` debe contener exactamente los ocho CU; el generador rechaza claves faltantes
+  y valores fuera de Alta/Media/Baja.
+- **Índice:** `exportar.ps1` actualiza la tabla de contenido con Word y detiene la entrega si quedan marcadores rotos.
 
 ## Restricciones
 
@@ -79,6 +88,6 @@ También avisa (sin fallar) de las rutas de `api.php` que ninguna pantalla llama
   **PostgreSQL** (datos). Nunca MVC, Vue, Inertia ni JWT (eso era G07).
 - Nada inventado: cada dato sale de crm-web, de la BD o de `../P2_WEB.md` / `../PRODUCT.md`; lo que falta queda `[PENDIENTE]`.
 - Diagramas solo en EA 15 Trial real por COM; nunca una copia crackeada. UML exacto: cada elemento existe de verdad.
-- Conceptual con el atributo de clave primaria identificado como «PK» y subrayado; las FK se representan mediante asociaciones. Navegación en franjas apaisadas (como G07); 5.3.2 en 3 capas, no MVC.
+- Conceptual con los atributos en orden de la BD y la PK marcada en la misma línea (`+ codigo PK`); las FK se representan mediante asociaciones. Para actualizar solo el diagrama EA existente y conservar su distribución manual: `python ea/ea_p2.py --actualizar-conceptual`. Navegación en franjas apaisadas (como G07); 5.3.2 en 3 capas, no MVC.
 - Organización: UNEXO. No reutilizar textos del P1 (Unidad de Capacitación de la FICCT).
 - Nombre del entregable: `P2-INF513-GRUPO05SA` (.doc). Credenciales jamás en el documento ni en esta carpeta.

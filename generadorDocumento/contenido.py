@@ -37,8 +37,39 @@ INTRODUCCION = [
     'El acceso se controla por roles (Administrador, Coordinador y Vendedor) con una matriz de acceso guardada en la base '
     'de datos, de la que se arma el menú de cada usuario, y cada acceso queda registrado en una bitácora. El desarrollo '
     'sigue el Proceso Unificado de Desarrollo de Software (PUDS) y se modela con UML en Enterprise Architect.']
-ANTECEDENTES = None          # 3 párrafos; el 3.º: justificación teórica, metodológica y práctica
-PROBLEMA = None              # situación, causas, pronóstico, solución
+ANTECEDENTES = [
+    'El Grupo 05 SA abordó primero el dominio de captación y seguimiento de prospectos en el Proyecto 1 de INF513. '
+    'Aquel sistema utilizó comandos enviados por correo electrónico para registrar interesados, asignarlos a vendedores, '
+    'seguir sus oportunidades en un embudo y tramitar la conversión a matrícula. El Proyecto 2 conserva los ocho casos de '
+    'uso del proceso comercial y la base de datos compartida, pero ofrece una interfaz web y una API RESTful '
+    '(Grupo 05 SA, 2026).',
+    'El alcance web responde a cuatro formas de trabajo documentadas para este proyecto: el visitante consulta programas '
+    'y módulos y comunica su interés; el vendedor atiende su cartera desde el celular; coordinación distribuye prospectos '
+    'y revisa pagos; y administración gestiona cuentas, permisos y auditoría. Cada interés se trata como una oportunidad '
+    'con estado, historial, contactos y condiciones de pago, de modo que las acciones de estos actores se consulten '
+    'desde un mismo sistema (Grupo 05 SA, «Product», 2026).',
+    'La justificación teórica se apoya en la separación entre presentación, lógica de negocio y persistencia, con '
+    'validación y autorización en el servidor. En lo metodológico, el PUDS y los modelos UML permiten relacionar '
+    'requisitos, casos de uso, diseño, implementación y pruebas. En lo práctico, la interfaz web reúne catálogo, '
+    'asignación, seguimiento, pagos y reportes en un flujo accesible según el rol, sin depender de comandos de correo '
+    'para cada operación (Grupo 05 SA, «P2_WEB», 2026).',
+]
+PROBLEMA = [
+    'El escenario comercial descrito en el Proyecto 1 requería registrar cada contacto y conocer la etapa de cada '
+    'interesado. Cuando esa información permanece repartida entre planillas, mensajes y la memoria de cada vendedor, '
+    'resulta difícil identificar prospectos sin atención, reconstruir una conversación o conocer por qué se perdió '
+    'una oportunidad. El canal de correo del P1 resolvió el registro transaccional, pero el Proyecto 2 necesita '
+    'presentar el mismo proceso mediante vistas web para visitantes, vendedores, coordinación y administración '
+    '(Grupo 05 SA, 2026).',
+    'La causa funcional es la falta de una vista compartida del prospecto que reúna interés, asignación, etapa del '
+    'embudo, interacciones, recordatorios y pagos con permisos diferenciados. Si el canal web no integra estos datos, '
+    'el seguimiento puede quedar fragmentado, la distribución del trabajo no resulta visible y coordinación carece '
+    'de información consistente para revisar conversiones y motivos de pérdida.',
+    'El problema se formula así: ¿cómo ofrecer, sobre la base de datos compartida, un sistema web de tres capas que '
+    'permita captar, asignar y acompañar prospectos hasta su matrícula, con control de acceso por rol y trazabilidad '
+    'de las operaciones? La solución desarrollada usa React para la interfaz, Laravel para la API y las reglas de '
+    'negocio, y PostgreSQL para conservar el estado y el historial del proceso.',
+]
 OBJETIVO_GENERAL = ('Desarrollar un sistema web de control de prospectos para UNEXO, con arquitectura de 3 capas '
                     '(React, Laravel API RESTful y PostgreSQL), que gestione la captación, asignación, seguimiento y '
                     'conversión a matrícula de los prospectos de sus programas de formación.')
@@ -203,7 +234,12 @@ BIBLIOGRAFIA = [
     'React. (s. f.). Quick Start. https://react.dev/learn (consulta: 25 de noviembre de 2026).',
     'React Router. (s. f.). createBrowserRouter. https://reactrouter.com/api/data-routers/createBrowserRouter (consulta: 25 de noviembre de 2026).',
     'Tailwind Labs. (s. f.). Styling with utility classes. https://tailwindcss.com/docs/styling-with-utility-classes (consulta: 25 de noviembre de 2026).',
-    'UNEXO. (s. f.). Campus virtual. FICCT-UAGRM. https://cicit.ficct.uagrm.edu.bo/moodle/?lang=es&redirect=0 (consulta: 25 de noviembre de 2026).',
+    'Grupo 05 SA. (2026). Sistema CRM de captación de prospectos vía e-mail: Proyecto 1 de INF513. Documento interno del proyecto.',
+    'Grupo 05 SA. (2026). Product: alcance y contexto operativo del CRM web. Documento del repositorio, PRODUCT.md.',
+    'Grupo 05 SA. (2026). P2_WEB: requisitos y decisiones de implementación del Proyecto 2. Documento del repositorio, P2_WEB.md.',
+    'OpenStreetMap. (2026, 13 de octubre). Mapa de Santa Cruz de la Sierra y Ciudad Universitaria de la UAGRM [Mapa]. https://www.openstreetmap.org/ (© colaboradores de OpenStreetMap, licencia ODbL).',
+    'UAGRM. (s. f.). Facultad de Ingeniería en Ciencias de la Computación y Telecomunicaciones: contacto y ubicación. https://www.uagrm.edu.bo/facultades/ficct (consulta: 25 de noviembre de 2026).',
+    'UNEXO. (s. f.). Campus virtual. FICCT-UAGRM. https://unexo.ficct.uagrm.edu.bo/academia/ (consulta: 25 de noviembre de 2026).',
 ]
 
 # Dónde está cada tema / herramienta en crm-web. documento_p2.py no genera el documento si un tema o herramienta no
@@ -228,24 +264,37 @@ EVIDENCIA = {
 STACK_AJENO = ('inertia', 'vue', 'jwt', 'livewire', 'blade')   # nada de esto puede estar en composer.json / package.json
 
 # ---------------------------------------------------------------- Capítulo III: Organización (UNEXO)
-# Los textos del P1 eran de la Unidad de Capacitación de la FICCT: no se reutilizan. Misión, visión, objetivo y organigrama
-# son PROPUESTA DEL GRUPO a partir de ../PRODUCT.md (propósito, usuarios y criterio de éxito); confirmarlos con la clienta
-# y vaciar POR_CONFIRMAR. Ubicación: dato de UNEXO que no está en ninguna fuente.
-ORGANIZACION_CONTEXTO = ('UNEXO dispone de un campus virtual para cursos, módulos y perfiles, según su portal académico. '
-                        'Este proyecto documenta el proceso comercial de captación, seguimiento y matrícula de esa oferta; '
-                        'el organigrama presentado corresponde al alcance funcional del CRM y no se presenta como '
-                        'estructura institucional oficial (UNEXO, «Campus virtual», s. f.).')
-MISION = ('Propuesta del equipo de desarrollo: formar profesionales mediante programas de formación y módulos independientes, acompañando a cada interesado '
-          'desde su primer contacto hasta su matrícula.')
-VISION = ('Propuesta del equipo de desarrollo: ser una institución de formación reconocida por convertir el interés de cada persona en una matrícula, con un '
-          'proceso comercial ordenado, medible y sin interesados olvidados.')
-OBJETIVO_EMPRESA = ('Propuesta del equipo de desarrollo: captar, dar seguimiento y matricular a los interesados en sus programas de formación, con la '
-                    'coordinación al tanto de cada prospecto y de los motivos por los que se pierde.')
-UBICACION = None
-ORGANIGRAMA = 'Organigrama del área comercial de UNEXO'
+# El P1 aporta literalmente la ubicación y la infraestructura; su mapa queda incluido como recurso local del generador.
+# Las declaraciones Misión, Visión, Objetivo y el organigrama de este P2 describen el proceso comercial del CRM.
+ORGANIZACION_CONTEXTO = ('UNEXO ofrece un campus virtual de cursos y módulos en el entorno académico de la FICCT-UAGRM '
+                        '(UNEXO, «Campus virtual», s. f.). Este capítulo describe el servicio comercial que modela el CRM: '
+                        'sus funciones y roles de sistema. La misión, visión, objetivo y estructura siguientes corresponden '
+                        'a ese alcance funcional; no se presentan como declaraciones institucionales ni como organigrama '
+                        'oficial de la facultad.')
+MISION = ('Acompañar a las personas interesadas en programas y módulos desde la consulta inicial hasta la matrícula, '
+          'registrando cada contacto, ofreciendo información clara sobre la oferta y conservando la trazabilidad de '
+          'la atención comercial.')
+VISION = ('Mantener un proceso comercial en el que cada interesado tenga seguimiento oportuno y en el que coordinación '
+          'pueda conocer el avance, las conversiones y los motivos de pérdida a partir de información compartida y verificable.')
+OBJETIVO_EMPRESA = ('Organizar la captación, asignación, seguimiento y conversión a matrícula de los interesados en la '
+                    'oferta de formación, con responsabilidades diferenciadas para administración, coordinación y vendedores.')
+UBICACION = ('La unidad funciona en el edificio de la FICCT, módulo 236 de la Ciudad Universitaria de la UAGRM, sobre la avenida '
+             'Dr. Enrique Aponte Canseco, entre la avenida Busch y la avenida 26 de Febrero (segundo anillo), en la ciudad de Santa Cruz de '
+             'la Sierra, Bolivia (17°46\'34" S, 63°11\'42" O).')
+UBICACION_FIGURA = 'Ubicación de la FICCT en Santa Cruz de la Sierra y en la Ciudad Universitaria'
+UBICACION_FUENTE = ('Elaboración propia sobre mapas de OpenStreetMap (© colaboradores de OpenStreetMap, licencia ODbL). Coordenadas del '
+                    'edificio según OpenStreetMap, consultado el 13 de octubre de 2026.')
+INFRAESTRUCTURA = ('Por ser una unidad pequeña, ocupa una oficina con tres áreas de trabajo y comparte el resto de la infraestructura de la facultad:')
+INFRAESTRUCTURA_AREAS = [
+    'Oficina de la jefatura y de la coordinación, donde también se atiende a los interesados que llegan en persona.',
+    'Área del equipo comercial; los asesores trabajan casi siempre fuera de ella, desde el celular.',
+    'Laboratorios de computación de la FICCT, donde se dictan los módulos en horarios que no chocan con las materias de la carrera.',
+    'Servicios de red y correo de la facultad (tecnoweb.org.bo), sobre los que funciona el sistema de este proyecto.',
+]
+ORGANIGRAMA = 'Organigrama funcional del proceso comercial modelado para UNEXO'
 # área comercial según los usuarios del sistema (../PRODUCT.md): (cargo, depende de)
 ORGANIGRAMA_CARGOS = [('Administración', None), ('Coordinación', 'Administración'), ('Vendedores', 'Coordinación')]
-POR_CONFIRMAR = ['Misión', 'Visión', 'Objetivo de la organización', 'Organigrama']   # propuesta del grupo, no dato de UNEXO
+POR_CONFIRMAR = []  # los textos anteriores describen el alcance del CRM, sin atribución institucional
 
 # ---------------------------------------------------------------- Capítulo IV: Requerimientos (P2_WEB.md §2)
 REQUERIMIENTOS = [   # (título, párrafo "El sistema permitirá…"); fuente: ../P2_WEB.md §2 (RF1.1 … RF4.3, ajustes del 20/11)
@@ -287,7 +336,14 @@ CU = {   # nombres aprobados por el docente (foro, 5/10/2026)
     'CU5': 'Gestión de Pérdida de Prospectos y Clasificación de Motivos',
     'CU6': 'Gestión de Validar Datos y Procesar Conversión a Matrícula',
     'CU7': 'Gestión de Bitácora, Interacciones y Recordatorios', 'CU8': 'Reportes y Estadísticas'}
-PRIORIDAD = {}   # {'CU1': 'Alta', …}: decisión del grupo, no está en ninguna fuente
+PRIORIDAD = {
+    'CU1': 'Alta', 'CU2': 'Alta', 'CU3': 'Alta', 'CU4': 'Alta',
+    'CU5': 'Media', 'CU6': 'Alta', 'CU7': 'Media', 'CU8': 'Media',
+}
+PRIORIDAD_CRITERIO = ('La prioridad Alta corresponde a las funciones necesarias para acceder, captar y asignar '
+                      'prospectos, seguir su avance y convertirlos en matrícula. La prioridad Media corresponde a '
+                      'la clasificación de pérdidas, el seguimiento complementario y la consulta de indicadores. '
+                      'La prioridad expresa el orden de implementación del grupo; no elimina ningún caso de uso.')
 ALCANCE = {      # ../P2_WEB.md §1, columna "Cómo se cumple en la web"
     'CU1': 'Registro, modificación y cambio de estado de usuarios con rol, vigencia (fecha de inicio y de fin) y foto con '
            'nombre legible; inicio y cierre de sesión con token; perfil y cambio de contraseña; matriz de acceso editable '
@@ -611,6 +667,21 @@ PRUEBAS_NEGRA = [
     ('Cierre de sesión', 'Comprobar que cerrar sesión elimina el token.',
      'Vuelve al login y no queda token guardado en el navegador.', ' cierre de sesion'),
 ]
-CONCLUSIONES = []           # una por objetivo específico, mismo orden
+CONCLUSIONES = [
+    'Se identificaron los actores del proceso comercial, sus permisos y los ocho casos de uso que abarcan desde la '
+    'consulta pública de la oferta hasta los reportes de gestión. Esta definición permite relacionar cada función '
+    'con una necesidad y un responsable.',
+    'El análisis distribuyó las responsabilidades en paquetes y documentó las colaboraciones y clases de los casos '
+    'de uso. Los diagramas permiten comprobar cómo se conectan las acciones de los usuarios con la lógica del sistema.',
+    'El diseño dejó definidos el modelo conceptual, el mapeo y el esquema físico de la base de datos, además del '
+    'despliegue, las secuencias y la navegación por actor. Los modelos se contrastaron con las tablas, rutas y '
+    'pantallas de la implementación.',
+    'La implementación separa la presentación React, la API RESTful y las reglas de negocio Laravel, y la '
+    'persistencia PostgreSQL. La autorización por rol y la bitácora se resuelven en el servidor y se reflejan '
+    'en el menú y las operaciones disponibles para cada usuario.',
+    'Se prepararon verificaciones de caja blanca y caja negra para los flujos principales y las restricciones de '
+    'acceso. La publicación en el servidor de la facultad sigue siendo una actividad de transición; este documento '
+    'no la presenta como realizada sin evidencia de despliegue.',
+]
 ANEXOS = []                 # (título, ruta de imagen); solo documentos que existan
 URL_GITHUB = None   # se lee de .git/config de crm-web al generar (documento_p2.py)

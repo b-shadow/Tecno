@@ -77,7 +77,7 @@ Generador: esta carpeta, `crm-web/generadorDocumento/` (autosuficiente; cómo re
 | Colaboración (5.3.1) | Por CU, marco `sd CU-0n - …`: actor → «boundary» = página React (`Pages/*.jsx`, capa 1) → «control» = controlador de la API (`Api\*Controller`, capa 2) → «entity» con el nombre de la tabla (capa 3); mensajes numerados `1: accion()`, `1.1: store()`, `1.2: create()` con los métodos reales |
 | Análisis de clases (5.3.2) | Mismo lugar que G07, pero **3 capas** en vez de su trío MVC (interface / Controller / Entity): por CU, un diagrama de clases con las capas Presentación, Negocio y Datos (§6b), leído del código por `codigo.py` y dibujado por `ea_p2.py --solo clases`; una página por CU |
 | Despliegue (6.1) | `deployment`: «device» con «executionEnvironment» y artefactos **reales**, mostrando las 3 capas del enunciado: navegador del cliente con el bundle React (capa 1) —HTTPS 443, JSON/HTTP— servidor `www.tecnoweb.org.bo` con Apache + PHP 8.4 + Laravel (API RESTful, `/inf513/grupo05sa/proyecto2`, capa 2) —TCP 5432, SQL— `db.tecnoweb.org.bo` PostgreSQL 18, `db_grupo05sa.public` (capa 3); un valor por elemento, nada "X / Y" |
-| Conceptual (7.1) | `class`: una caja por tabla con todos sus atributos por nombre y sin tipos ni métodos; cada atributo de clave primaria lleva el estereotipo visible «PK» y va subrayado, manteniendo el nombre real de la columna. Las FK se expresan por asociaciones con multiplicidad. N-N: asociación entre las dos fuertes y la intermedia unida con línea punteada. Ninguna tabla suelta. `ea_p2.py` audita los cruces sobre cajas. |
+| Conceptual (7.1) | `class`: una caja por tabla con los atributos en el orden del esquema, sin tipos ni métodos. La clave primaria se marca en la misma línea del atributo, por ejemplo `+ codigo PK`; no se crea un estereotipo ni una línea separada. Las FK se expresan por asociaciones con multiplicidad. N-N: asociación entre las dos fuertes y la intermedia unida con línea punteada. Ninguna tabla suelta. `ea_p2.py` audita los cruces sobre cajas. |
 | Lógico = Mapeo (7.2 Diseño Lógico → 7.2.1 Mapeo) | Tablas Word (§3); aquí sí PK/FK |
 | Físico (7.3) | `CREATE TABLE nombre ( col tipo NULL/NOT NULL DEFAULT … );` en TNR Bold 12, columnas alineadas, orden alfabético, sintaxis del volcado de PostgreSQL (como G07: solo las columnas) |
 | Secuencia (7.4) | Por CU, una página, `sd CU-0n - …`: actor → página React (capa 1) → controlador de la API vía Axios/HTTP (capa 2) → tablas (capa 3), con los middleware `auth.token` y `acceso:` donde correspondan; fragmentos `alt` |
@@ -120,10 +120,13 @@ Generador: esta carpeta, `crm-web/generadorDocumento/` (autosuficiente; cómo re
 ## 6a. Título y organización
 
 Título: **Sistema de Control de Prospectos (CRM Educativo)**. Organización: **UNEXO** (marca y logo del sistema). Los
-textos de organización del P1 (Unidad de Capacitación de la FICCT) **no** se usan. Misión, visión, objetivo y
-organigrama (área comercial: Administración → Coordinación → Vendedores, de `../PRODUCT.md`) son **propuesta del grupo**
-a confirmar con la clienta: `contenido.POR_CONFIRMAR` los lista al generar. Ubicación, antecedentes y problema necesitan
-datos de UNEXO que no están en ninguna fuente: quedan `[PENDIENTE]`.
+textos institucionales del P1 (Unidad de Capacitación de la FICCT) **no** se atribuyen a UNEXO. El P1 solo aporta el
+antecedente del proceso y la estructura documental. Misión, visión, objetivo y organigrama describen el **alcance
+funcional del CRM**, no declaraciones institucionales; están fijados en `contenido.py` sin dependencia de `proyectocorreo`.
+La ubicación e infraestructura se transcriben del P1 aprobado: edificio FICCT, módulo 236, dirección y coordenadas.
+El mapa de referencia queda como recurso local `diagramas/ubicacion.png`, con crédito y fuente en el documento.
+El organigrama funcional se inserta sin deformar su proporción. La prioridad de los ocho CU es una decisión del grupo
+y se valida al generar. Solo las capturas de interfaces siguen marcadas `[PENDIENTE]`.
 
 ## 6b. Stack real (verificado en el código, 24/11/2026)
 
