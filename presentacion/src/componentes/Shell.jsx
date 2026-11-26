@@ -136,7 +136,7 @@ export function Apariencia() {
           <fieldset className="min-w-0">
             <legend className={LEYENDA}>Día o noche</legend>
             <div className={SEGMENTOS}>{seg('modo', 'auto', 'Según la hora')}{seg('modo', 'light', 'Día')}{seg('modo', 'dark', 'Noche')}</div>
-            <small className="text-tinta-suave">Automático: día de 07:00 a 19:00 (hora Bolivia).</small>
+            <small className="text-tinta-suave">Automático: día de 07:00 a 19:00 (hora de tu dispositivo).</small>
           </fieldset>
           <fieldset className="min-w-0">
             <legend id="letra-leyenda" className={LEYENDA}>Tamaño de letra</legend>

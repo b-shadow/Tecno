@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react'
 
 /*
- * Apariencia (enunciado 5): público (niños, jóvenes, adultos), día/noche automático según hora de Bolivia (UTC-4)
+ * Apariencia (enunciado 5): público (niños, jóvenes, adultos), día/noche automático según la hora local del dispositivo
  * o manual, tamaño de letra y alto contraste. Se aplica como atributos en <html> y se recuerda en localStorage.
  */
 const CLAVE = 'crm_apariencia'
@@ -45,19 +45,9 @@ function leer() {
   }
 }
 
-/** Hora actual en Bolivia (America/La_Paz, UTC-4), sin depender de la zona horaria del navegador. */
-export function horaEnBolivia(fecha = new Date()) {
-  const texto = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/La_Paz',
-    hour: 'numeric',
-    hourCycle: 'h23',
-  }).format(fecha)
-  return Number(texto) % 24
-}
-
-/** 'light' entre las 07:00 y antes de las 19:00 hora de Bolivia; 'dark' el resto. */
+/** 'light' entre las 07:00 y antes de las 19:00 según el reloj del dispositivo del usuario; 'dark' el resto. */
 export function temaPorHora(fecha = new Date()) {
-  const hora = horaEnBolivia(fecha)
+  const hora = fecha.getHours()
   return hora >= DIA_DESDE && hora < NOCHE_DESDE ? 'light' : 'dark'
 }
 
@@ -97,7 +87,7 @@ export function useApariencia() {
   }, () => preferencias)
 }
 
-// En modo automático, revisa cada minuto si cambió la hora en Bolivia para alternar día/noche en vivo.
+// En modo automático, revisa cada minuto si cambió la hora del dispositivo para alternar día/noche en vivo.
 aplicar()
 setInterval(() => {
   if (preferencias.modo === 'auto') {
