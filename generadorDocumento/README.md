@@ -63,6 +63,10 @@ El mantenimiento incremental utiliza:
   Para reemplazar las cuatro vistas juntas, regenere primero los EMF y el manifiesto con
   `python ea/navegacion_hojas.py` y ejecute `python insertar_navegacion.py`.
 - `exportar.ps1`: actualiza campos con Microsoft Word y produce DOC y PDF.
+- `python insertar_interfaces.py`: actualiza en el maestro las ocho capturas
+  `recursos/interfaces/cu1.png` a `cu8.png` de la sección 7.6, dos por página,
+  y la carta `recursos/carta-proyecto.jpg` en 13.1. Ejecutar `exportar.ps1`
+  después de actualizar el maestro.
 
 Respaldar el maestro y el EAPX antes de editar. No ejecutar dos escritores COM
 sobre el proyecto al mismo tiempo. Cerrar EA antes de versionar; excluir `.ldb`,
@@ -146,7 +150,7 @@ También avisa (sin fallar) de las rutas de `api.php` que ninguna pantalla llama
 
 ## Actualizar
 
-- **Texto:** `contenido.py`. Versiones `composer:`/`npm:` se leen solas de los lock de crm-web; la URL de GitHub, de `.git/config`.
+- **Texto:** `contenido.py`. Las versiones `composer:`/`npm:` se leen de los lock de crm-web. `URL_GITHUB` contiene la URL de entrega en el formato del enunciado.
 - **BD — fuente de verdad: las migraciones** (`../datos/migraciones`). `fuentes/esquema.sql` es su volcado (lo usan el
   conceptual, el mapeo y el físico porque trae tipos, PK y FK exactos). Si el chequeo dice que difieren: correr las
   migraciones en una base local vacía y `pg_dump --schema-only --no-owner --schema=public <base> > fuentes/esquema.sql`

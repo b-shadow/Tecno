@@ -30,6 +30,7 @@ El **rombo** señala pertenencia. La **flecha abierta de una asociación** indic
 
 - **Formulario integrado.** En `Login`, el rombo negro va del lado de la pantalla y la flecha apunta a `Iniciar sesión`. El formulario apunta con `«submit»` a `ps Login`. En el Administrador, los formularios de contacto, agenda y correo integrados en sus vistas también usan composición.
 - **Diálogo que abre una acción.** Usa `«link»` desde la pantalla y rotula la acción, como `Mi perfil`, `Importar CSV` o `Editar`. El diálogo conserva sus propias relaciones de envío y respuesta.
+- **Diálogo que recibe datos del servidor.** Representa el diálogo como página cliente y el formulario como una parte integrada, con el rombo negro del lado del diálogo. El `«build»` llega al diálogo que muestra los datos. El `«submit»` sale del formulario que los envía.
 - **Varios controles en un diálogo.** El docente enseña un `«submit»` por formulario. Identifica cada envío y su receptor. Revisa qué llamada ejecuta cada botón y distingue el envío del formulario de las acciones auxiliares.
 
 ## Distribución y lectura

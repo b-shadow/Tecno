@@ -11,6 +11,7 @@ import contenido as C  # noqa: E402
 import codigo  # noqa: E402
 import esquema  # noqa: E402
 import navegacion  # noqa: E402
+from insertar_interfaces import TITULO_INTERFACES, insertar_capturas, insertar_carta  # noqa: E402
 from formato_g07 import G07, PENDIENTES, MARGEN_NAV, ALTO_SD, hoja_53  # noqa: E402
 from docx.enum.text import WD_ALIGN_PARAGRAPH  # noqa: E402
 from docx.shared import Cm  # noqa: E402
@@ -153,8 +154,8 @@ for i, actor in enumerate(navegacion.ACTORES, 1):   # 7.5 va en la primera pági
     d.franjas(DIAG / f'nav-{actor.lower()}.png', titulos + [(f'7.5.{i}. Diagrama de Navegación del {actor}', 4)], FRANJAS,
               primero=i == 1)
 d.seccion(False)
-d.h('7.6. Diagrama de interfaces', 3)
-d.pendiente('Capturas de pantalla: "Diagrama de Interfaz CUn. Nombre", 2 por página (crm-web/scripts/capturas_p2.mjs)')
+d.h(TITULO_INTERFACES, 3)
+insertar_capturas(d.doc)
 
 # ------------------------------------------------------------------ Capítulos VIII–X y cierre
 d.h('Capítulo VIII: Implementación', 1)
@@ -188,11 +189,10 @@ for ref in sorted(C.BIBLIOGRAFIA):
     pf = d.p(ref).paragraph_format; pf.left_indent, pf.first_line_indent = Cm(1.27), Cm(-1.27)
 if not C.BIBLIOGRAFIA: d.pendiente('Bibliografía')
 d.h('13. Anexo', 1).alignment = IZQ
-for i, (t, img) in enumerate(C.ANEXOS, 1):
+insertar_carta(d.doc)
+for i, (t, img) in enumerate(C.ANEXOS, 2):
     d.h(f'13.{i}. Anexo # {i}: {t}', 2); d.imagen(img)
-_git = (CRM_WEB / '.git' / 'config').read_text(encoding='utf-8') if (CRM_WEB / '.git' / 'config').exists() else ''
-URL_GITHUB = C.URL_GITHUB or next(iter(re.findall(r'url = (https://github\.com/\S+?)(?:\.git)?\s', _git)), None)
-d.p(f'**URL Proyecto GitHub:** {URL_GITHUB}') if URL_GITHUB else d.pendiente('URL del repositorio GitHub')
+d.p(f'**URL Proyecto GitHub:** {C.URL_GITHUB}')
 
 # ------------------------------------------------------------------ coherencia del documento (falla si algo no cuadra)
 def coherencia():

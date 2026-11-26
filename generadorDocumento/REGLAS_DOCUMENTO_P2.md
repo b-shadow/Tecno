@@ -144,7 +144,7 @@ funcional del CRM**, no declaraciones institucionales; están fijados en `conten
 La ubicación e infraestructura se transcriben del P1 aprobado: edificio FICCT, módulo 236, dirección y coordenadas.
 El mapa de referencia queda como recurso local `diagramas/ubicacion.png`, con crédito y fuente en el documento.
 El organigrama funcional se inserta sin deformar su proporción. La prioridad de los ocho CU es una decisión del grupo
-y se valida al generar. Solo las capturas de interfaces siguen marcadas `[PENDIENTE]`.
+y se valida al generar. La sección 7.6 usa capturas del CRM local, sin la barra del navegador.
 
 ## 6b. Stack real (verificado en el código, 24/11/2026)
 

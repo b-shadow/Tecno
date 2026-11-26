@@ -63,7 +63,8 @@ def _puertos(caja):
         yield (x + w, j), (x + w + 1, j), 0
 
 
-def _trazar(a, b, cajas, libres, ocupadas, segmentos, transitos, bordes, altura_preferida=None):
+def _trazar(a, b, cajas, libres, ocupadas, segmentos, transitos, bordes, altura_preferida=None,
+            cruzar_puertos=False):
     """Busca un camino corto con puertos exclusivos y penalización por cruces y quiebres."""
     salida = [(p, q, d) for p, q, d in _puertos(cajas[a]) if q in libres and q not in ocupadas and q not in transitos]
     llegada = {q: (p, (d + 2) % 4) for p, q, d in _puertos(cajas[b])
@@ -114,11 +115,16 @@ def _trazar(a, b, cajas, libres, ocupadas, segmentos, transitos, bordes, altura_
             continue
         for nd, (dx, dy) in enumerate(DIRECCIONES):
             vecino = (x + dx, y + dy)
-            if vecino not in libres or vecino in ocupadas:
+            if vecino not in libres:
+                continue
+            if vecino in ocupadas and not cruzar_puertos:
+                continue
+            if (x, y) in ocupadas and d != nd:
                 continue
             if ((x, y), vecino) in segmentos:
                 continue
             actual = costo + 1 + (d != nd) * 2 + 12 * transitos[vecino] + 5 * (vecino in bordes and vecino not in llegada)
+            actual += 40 * (vecino in ocupadas)
             nuevo = (*vecino, nd)
             if actual < costos.get(nuevo, float('inf')):
                 anterior[nuevo], costos[nuevo] = estado, actual
@@ -343,8 +349,9 @@ def _acercar_rotulos(lineas_rotuladas, rectangulos, cajas, trazos, ancho, alto, 
 
 
 def armar(paginas, enlaces, filas=FILAS, desfases=DESFASES, tamanos=TAMANOS, cortes=ALTURAS_DE_CORTE,
-          paso_fila=13, mensajes=None, alturas=None, rutas=None):
-    claves = [k for fila in filas for k in fila.split() if k != '-']
+          paso_fila=13, mensajes=None, alturas=None, rutas=None, cajas_adicionales=None):
+    cajas_adicionales = cajas_adicionales or {}
+    claves = [k for fila in filas for k in fila.split() if k != '-'] + list(cajas_adicionales)
     assert len(claves) == len(paginas) and set(claves) == set(paginas), (
         f'Actualizar posiciones del diagrama: {set(claves) ^ set(paginas)}')
     cajas = {}
@@ -360,6 +367,11 @@ def armar(paginas, enlaces, filas=FILAS, desfases=DESFASES, tamanos=TAMANOS, cor
             dx, dy = desfases.get(k, (0, 0))
             cajas[k] = (6 + 13 * columna + (13 - w) // 2 + dx,
                         4 + paso_fila * fila + (10 - h) // 2 + dy, w, h)
+    for k, (x, y) in cajas_adicionales.items():
+        w, h = ((valor + PASO - 1) // PASO for valor in medir(*paginas[k]))
+        assert all(x + w < a or a + c < x or y + h < b or b + d < y
+                   for a, b, c, d in cajas.values()), f'La caja {k} invade otra caja'
+        cajas[k] = x, y, w, h
     limite_x = max(x + w for x, y, w, h in cajas.values()) + 7
     limite_y = max(y + h for x, y, w, h in cajas.values()) + 5
     bordes = {(i, j) for x, y, w, h in cajas.values()
@@ -387,8 +399,14 @@ def armar(paginas, enlaces, filas=FILAS, desfases=DESFASES, tamanos=TAMANOS, cor
             puntos = _pasos_ruta(rutas[e[:2]])
             assert all(p in libres for p in puntos[1:-1]), f'La ruta de {a} a {b} invade una caja'
         else:
-            puntos = _trazar(a, b, cajas, libres, ocupadas, segmentos, transitos, bordes,
-                             altura_preferida=altura // PASO if altura is not None else None)
+            preferida = altura // PASO if altura is not None else None
+            try:
+                puntos = _trazar(a, b, cajas, libres, ocupadas, segmentos, transitos, bordes, altura_preferida=preferida)
+            except ValueError:
+                # Si el corredor está cerrado, permite cruzar un tramo junto a un puerto,
+                # conservando la exclusividad de las puntas y evitando compartir segmentos.
+                puntos = _trazar(a, b, cajas, libres, ocupadas, segmentos, transitos, bordes,
+                                 altura_preferida=preferida, cruzar_puertos=True)
         ocupadas.update((puntos[1], puntos[-2]))
         transitos.update(puntos[1:-1])
         for u, v in pairwise(puntos):

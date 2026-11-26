@@ -82,6 +82,12 @@ class Diagrama:
         """Registra la acción que abre el diálogo."""
         self.e(pagina, formulario, 'link', accion)
 
+    def abrir_dialogo(self, pagina, dialogo, formulario, accion, atributos, operaciones):
+        """Vista cliente con estado propio que contiene un formulario de envío."""
+        self.p(dialogo, 'cliente', f'Diálogo: {accion}', atributos, operaciones)
+        self.e(pagina, dialogo, 'link', accion)
+        self.e(dialogo, formulario, 'contiene')
+
     def ps(self, clave, nombre, atributos, operaciones):
         """Server page con sus «access» (y «include») leídos del código."""
         accesos(self, self.p(clave, 'ps', nombre, atributos, operaciones))
@@ -345,14 +351,14 @@ def usuarios(d):   # CU1
     if not d.puede('usuarios', 'modificacion'): return   # PUsuarios.jsx: editable
     d.p('f_usuario', 'form', 'Registrar / Editar Usuario',
         'nombre, apellido, correo, telefono, password, rol, fecha_inicio, fecha_fin, estado, foto, programas', 'guardar(), quitarFoto()')
-    d.abrir_formulario('usuarios', 'f_usuario', 'Nuevo / Editar')
+    d.abrir_dialogo('usuarios', 'dlg_usuario', 'f_usuario', 'Nuevo / Editar', 'fotoActual, errores', 'guardar(), quitarFoto()')
     d.ps('ps_usuario_g', 'ps Guardar Usuario', 'usuario, nombre, apellido, correo, telefono, password, rol, estado, fecha_inicio, fecha_fin, foto, programas',
          'store(), update()')
     d.e('f_usuario', 'ps_usuario_g', 'submit', 'POST /usuarios | PUT /usuarios/{usuario}')
     d.e('ps_usuario_g', 'usuarios', 'build', 'usuario')
     d.ps('ps_foto_usuario', 'ps Quitar Fotografia', 'usuario', 'foto()')
-    d.e('f_usuario', 'ps_foto_usuario', 'link', url('usuarios.foto', ' (Editar > Quitar foto > Confirmar)'))
-    d.e('ps_foto_usuario', 'f_usuario', 'build', 'foto eliminada, editor abierto')
+    d.e('dlg_usuario', 'ps_foto_usuario', 'link', url('usuarios.foto', ' (Editar > Quitar foto > Confirmar)'))
+    d.e('ps_foto_usuario', 'dlg_usuario', 'build', 'foto eliminada, editor abierto')
     d.ps('ps_estado', 'ps Cambiar Estado', 'usuario, estado', 'cambiarEstado()')
     d.e('usuarios', 'ps_estado', 'link', url('usuarios.cambiarEstado'))
     d.e('ps_estado', 'usuarios', 'build', 'mensaje')
@@ -407,7 +413,7 @@ def prospectos(d):
     ficha(d, 'prospectos')
     if d.puede('interesados', 'modificacion'):   # PProspectos.jsx: puedeAlta
         d.p('f_prospecto', 'form', 'Registrar Prospecto', 'documento, origen, nombre, apellido, telefono, correo, profesion, ubicacion, interes', 'guardar()')
-        d.abrir_formulario('prospectos', 'f_prospecto', 'Registrar prospecto')
+        d.abrir_dialogo('prospectos', 'dlg_prospecto', 'f_prospecto', 'Registrar prospecto', 'catalogo, errores', 'guardar()')
         d.ps('ps_alta', 'ps Registrar Prospecto', 'documento, nombre, apellido, telefono, correo, origen, profesion, ubicacion, modulo_codigo, programa_codigo', 'store()')
         d.e('f_prospecto', 'ps_alta', 'submit', url('prospectos.store'))
         d.e('ps_alta', 'prospectos', 'build', 'mensaje, prospecto')
@@ -422,13 +428,13 @@ def prospectos(d):
         d.hoja('CU3 Prospectos: nuevo interés')
         entrada(d, 'prospectos')
         d.p('f_nuevo_interes', 'form', 'Agregar Interes', 'interes', 'guardar()')
-        d.abrir_formulario('prospectos', 'f_nuevo_interes', 'Agregar interés')
+        d.abrir_dialogo('prospectos', 'dlg_interes', 'f_nuevo_interes', 'Agregar interés', 'catalogo, errores', 'guardar()')
         d.ps('ps_catalogo', 'ps Catalogo', 'buscar', 'programas()')
-        d.e('f_nuevo_interes', 'ps_catalogo', 'link', url('catalogo.programas'))
-        d.e('ps_catalogo', 'f_nuevo_interes', 'build', 'programas')
-        if 'f_prospecto' in d.paginas:
-            d.e('f_prospecto', 'ps_catalogo', 'link', url('catalogo.programas'))
-            d.e('ps_catalogo', 'f_prospecto', 'build', 'programas')
+        d.e('dlg_interes', 'ps_catalogo', 'link', url('catalogo.programas'))
+        d.e('ps_catalogo', 'dlg_interes', 'build', 'programas')
+        if 'dlg_prospecto' in d.paginas:
+            d.e('dlg_prospecto', 'ps_catalogo', 'link', url('catalogo.programas'))
+            d.e('ps_catalogo', 'dlg_prospecto', 'build', 'programas')
         d.ps('ps_nuevo_interes', 'ps Agregar Interes', 'prospecto, modulo_codigo, programa_codigo', 'crearInteres()')
         d.e('f_nuevo_interes', 'ps_nuevo_interes', 'submit', url('prospectos.crearInteres'))
         d.e('ps_nuevo_interes', 'prospectos', 'build', 'mensaje')
@@ -548,13 +554,13 @@ def pagos_ficha(d):   # CU6 dentro de la ficha (componentes/pagos)
     ficha(d, 'agenda')
     if d.actor == 'Vendedor':
         d.p('f_orden', 'form', 'Generar Orden de Pago', 'modulos, dctos, formaPago, cuotas, vence', 'generarOrden(), seleccionarModulo(), alternarDescuento()')
-        d.abrir_formulario('ficha', 'f_orden', 'Generar orden de pago')
+        d.abrir_dialogo('ficha', 'dlg_orden', 'f_orden', 'Generar orden de pago', 'catalogo, descuentos', 'seleccionarModulo(), generarOrden()')
         d.ps('ps_catalogo', 'ps Catalogo', 'buscar', 'programas()')
-        d.e('f_orden', 'ps_catalogo', 'link', url('catalogo.programas'))
-        d.e('ps_catalogo', 'f_orden', 'build', 'programas')
+        d.e('dlg_orden', 'ps_catalogo', 'link', url('catalogo.programas'))
+        d.e('ps_catalogo', 'dlg_orden', 'build', 'programas')
         d.ps('ps_desc', 'ps Listar Descuentos', 'token', 'descuentos()')
-        d.e('f_orden', 'ps_desc', 'link', url('pagos.descuentos'))
-        d.e('ps_desc', 'f_orden', 'build', 'descuentos')
+        d.e('dlg_orden', 'ps_desc', 'link', url('pagos.descuentos'))
+        d.e('ps_desc', 'dlg_orden', 'build', 'descuentos')
         d.ps('ps_orden', 'ps Crear Orden', 'interes, modulos, descuentos, cuotas, primer_vencimiento', 'crearOrden()')
         d.e('f_orden', 'ps_orden', 'submit', url('pagos.crearOrden', ' (vendedor asignado; tarjeta abierta; sin orden activa)'))
         d.e('ps_orden', 'ficha', 'build', 'orden')
@@ -590,7 +596,10 @@ def pagos_ficha(d):   # CU6 dentro de la ficha (componentes/pagos)
     d.e('compartir', 'f_correo', 'contiene')
     d.ps('ps_enviar', 'ps Enviar Notificacion', 'destinatario, tipo, mensaje, enlace, texto_boton', 'enviar()')
     d.e('f_correo', 'ps_enviar', 'submit', url('notificaciones.enviar'))
-    d.e('ps_enviar', 'compartir', 'build', 'mensaje')
+    d.e('ps_enviar', 'ficha', 'build', 'correo enviado, cierra el diálogo y actualiza la ficha')
+    d.e('ps_enviar', 'compartir', 'build', 'error de envío, el diálogo sigue abierto')
+    d.p('whatsapp', 'externo', 'WhatsApp (externo)')
+    d.e('compartir', 'whatsapp', 'link', 'Compartir enlace por WhatsApp (requiere URL y teléfono válido)')
     d.hoja('CU6 Retorno de Stripe')
     retorno_stripe(d)
 
@@ -1022,10 +1031,11 @@ FUENTE = {
     'catalogo': 'paginas/PCatalogo.jsx componentes/ui.jsx', 'registro_interes': 'paginas/PCatalogo.jsx',
     'gestion-anuncios': 'paginas/PCatalogo.jsx componentes/ui.jsx',
     'f_interes': 'paginas/PCatalogo.jsx',
-    'usuarios': 'paginas/PUsuarios.jsx componentes/ui.jsx', 'f_usuario': 'paginas/PUsuarios.jsx',
+    'usuarios': 'paginas/PUsuarios.jsx componentes/ui.jsx', 'f_usuario': 'paginas/PUsuarios.jsx', 'dlg_usuario': 'paginas/PUsuarios.jsx',
     'matriz': 'paginas/PMatriz.jsx', 'f_permiso': 'paginas/PMatriz.jsx', 'bitacora': 'paginas/PBitacora.jsx',
     'prospectos': 'paginas/PProspectos.jsx componentes/ui.jsx', 'f_prospecto': 'paginas/PProspectos.jsx',
     'f_csv': 'paginas/PProspectos.jsx', 'f_nuevo_interes': 'paginas/PProspectos.jsx',
+    'dlg_prospecto': 'paginas/PProspectos.jsx', 'dlg_interes': 'paginas/PProspectos.jsx',
     'interesados': 'paginas/PAsignacion.jsx componentes/ui.jsx', 'f_asignar': 'paginas/PAsignacion.jsx api/intereses.js',
     'embudo': 'paginas/PEmbudo.jsx componentes/ui.jsx', 'f_perdida': 'paginas/PEmbudo.jsx',
     'motivos': 'paginas/PMotivos.jsx componentes/ui.jsx', 'f_motivo': 'paginas/PMotivos.jsx',
@@ -1033,6 +1043,7 @@ FUENTE = {
     'alumnos': 'paginas/PMatriculas.jsx', 'agenda': 'paginas/PAgenda.jsx componentes/ui.jsx', 'ficha': 'paginas/PAgenda.jsx',
     'f_contacto': 'paginas/PAgenda.jsx', 'f_record': 'paginas/PAgenda.jsx', 'f_realizada': 'paginas/PAgenda.jsx',
     'f_editar': 'paginas/PAgenda.jsx', 'f_orden': 'componentes/pagos/FormularioOrdenPago.jsx',
+    'dlg_orden': 'componentes/pagos/FormularioOrdenPago.jsx',
     'f_anular': 'componentes/pagos/PlanPagos.jsx', 'compartir': 'componentes/pagos/ModalCompartirPago.jsx',
     'f_correo': 'componentes/pagos/ModalCompartirPago.jsx',
     'inicio-vendedor': 'paginas/PMiDia.jsx', 'f_realizada_dia': 'paginas/PMiDia.jsx',
@@ -1046,7 +1057,7 @@ SHELL = ('plantilla/AppShell.jsx', 'componentes/Shell.jsx')   # envuelven toda p
 ESTEREOTIPO_VALIDO = {   # (tipo origen, tipo destino) admitidos por cada estereotipo (Conallen; REGLAS §5)
     'link': {('actor', 'cliente'), ('actor', 'externo'), ('cliente', 'cliente'), ('cliente', 'form'), ('cliente', 'ps'), ('form', 'ps'), ('form', 'externo'),
              ('cliente', 'externo'), ('externo', 'cliente')},
-    'submit': {('form', 'ps')}, 'build': {('ps', 'cliente'), ('ps', 'form')}, 'include': {('ps', 'ps')}, 'access': {('ps', 'bd')},
+    'submit': {('form', 'ps')}, 'build': {('ps', 'cliente')}, 'include': {('ps', 'ps')}, 'access': {('ps', 'bd')},
     'contiene': {('cliente', 'form'), ('cliente', 'cliente')},
 }
 

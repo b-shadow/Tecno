@@ -532,4 +532,4 @@ CONCLUSIONES = [
     'no la presenta como realizada sin evidencia de despliegue.',
 ]
 ANEXOS = []                 # (título, ruta de imagen); solo documentos que existan
-URL_GITHUB = None   # se lee de .git/config de crm-web al generar (documento_p2.py)
+URL_GITHUB = 'https://www.github.com/b-shadow/inf513-proyecto2'  # URL de entrega según el enunciado

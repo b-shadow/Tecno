@@ -107,7 +107,10 @@
    "ps Cancelar Retorno": 5668,
    "ps Ver Retorno Público": 5668,
    "ps Cancelar Sesion Stripe": 5844,
-   "ps Confirmar Sesion Stripe": 5844
+   "ps Confirmar Sesion Stripe": 5844,
+   "Diálogo: Nuevo / Editar": 1224,
+   "Diálogo: Registrar prospecto": 2940,
+   "Diálogo: Agregar interés": 2632
   }
  },
  "Coordinador": {
@@ -191,7 +194,9 @@
    "ps Confirmar Sesion Stripe": 6174,
    "Cancelacion de Stripe": 6482,
    "ps Cancelar Retorno": 6482,
-   "ps Cancelar Sesion Stripe": 6504
+   "ps Cancelar Sesion Stripe": 6504,
+   "Diálogo: Registrar prospecto": 3050,
+   "Diálogo: Agregar interés": 2720
   }
  },
  "Vendedor": {
@@ -255,7 +260,9 @@
    "ps Confirmar Sesion Stripe": 5162,
    "Cancelacion de Stripe": 5492,
    "ps Cancelar Retorno": 5492,
-   "ps Cancelar Sesion Stripe": 5514
+   "ps Cancelar Sesion Stripe": 5514,
+   "Diálogo: Agregar interés": 2544,
+   "Diálogo: Generar orden de pago": 3908
   }
  }
 }

@@ -60,13 +60,19 @@ MENSAJES_STRIPE = {
     ('pago_cancelado', 'ps_cancelar_publico', 'link'): 'Con token',
 }
 
-MENSAJES_INTERNOS = {
+MENSAJES_PAGOS = {
+    ('compartir', 'whatsapp', 'link'): 'Compartir enlace por WhatsApp',
+    ('ps_enviar', 'ficha', 'build'): 'Correo enviado',
+    ('ps_enviar', 'compartir', 'build'): 'Error de envío',
+}
+
+MENSAJES_INTERNOS = MENSAJES_PAGOS | {
     ('embudo', 'ps_mover', 'link'): 'Mover tarjeta',
     ('ficha', 'ps_mover', 'link'): 'Convertir',
     ('ps_mover', 'embudo', 'build'): '422: faltantes',
     ('pago_confirmacion', 'ps_confirmar_checkout', 'link'): 'Sesión sin token',
     ('pago_cancelado', 'ps_cancelar_checkout', 'link'): 'Sesión sin token',
-    ('f_nuevo_interes', 'ps_catalogo', 'link'): 'Cargar opciones',
+    ('dlg_interes', 'ps_catalogo', 'link'): 'Cargar opciones',
     ('menu', 'notificaciones', 'link'): 'Notificaciones',
     ('notificaciones', 'ps_notif', 'link'): 'Listar avisos',
     ('notificaciones', 'ps_leida', 'link'): 'Marcar leída',
@@ -78,33 +84,43 @@ MENSAJES_REVISION_Y_PROSPECTOS = {
     ('f_revisar', 'ps_aprobar', 'link'): 'Aprobar pago',
     ('f_revisar', 'ps_rechazar', 'link'): 'Rechazar + motivo',
     ('validacion-pagos', 'f_revisar', 'link'): 'Revisar / Ver',
-    ('f_prospecto', 'ps_catalogo', 'link'): 'Cargar catálogo',
+    ('dlg_prospecto', 'ps_catalogo', 'link'): 'Cargar catálogo',
     ('f_csv', 'plantilla_csv', 'link'): 'Descargar plantilla',
 }
 
-MENSAJES_ADMINISTRADOR = MENSAJES_STRIPE | MENSAJES_REVISION_Y_PROSPECTOS | {
+MENSAJES_ADMINISTRADOR = MENSAJES_STRIPE | MENSAJES_REVISION_Y_PROSPECTOS | MENSAJES_PAGOS | {
     ('error404', 'catalogo', 'link'): 'Ir al catálogo',
-    ('prospectos', 'f_prospecto', 'link'): 'Registrar',
-    ('f_nuevo_interes', 'ps_catalogo', 'link'): 'Cargar opciones',
-    ('f_usuario', 'ps_foto_usuario', 'link'): 'Confirmar quitar foto',
-    ('ps_foto_usuario', 'f_usuario', 'build'): 'Foto eliminada',
+    ('prospectos', 'dlg_prospecto', 'link'): 'Registrar',
+    ('dlg_interes', 'ps_catalogo', 'link'): 'Cargar opciones',
+    ('dlg_usuario', 'ps_foto_usuario', 'link'): 'Confirmar quitar foto',
+    ('ps_foto_usuario', 'dlg_usuario', 'build'): 'Foto eliminada',
     ('pago_confirmacion', 'ps_confirmar_checkout', 'link'): 'Sesión sin token',
     ('pago_cancelado', 'ps_cancelar_checkout', 'link'): 'Sesión sin token',
     ('agenda', 'ficha', 'link'): '?interes',
     ('ficha', 'ps_estmetodo', 'link'): 'PATCH estado',
+    ('ficha', 'ps_mover', 'link'): 'Convertir',
     ('agenda', 'ps_intereses', 'link'): '?buscar&estado',
     ('prospectos', 'ps_prosp', 'link'): '?buscar&origen',
 }
 
 # Separa los conectores cercanos para dejar espacio a sus rótulos.
 RUTAS_ADMINISTRADOR = {
+    ('dlg_usuario', 'ps_foto_usuario'): ((440, 1166), (286, 1166), (286, 1100)),
+    ('ps_foto_usuario', 'dlg_usuario'): ((330, 1100), (330, 1210), (440, 1210)),
     ('agenda', 'ficha'): ((1034, 3674), (968, 3674)),
-    ('agenda', 'ps_intereses'): ((1122, 3586), (1122, 3410)),
+    ('agenda', 'ps_intereses'): ((1078, 3586), (1078, 3410)),
     ('ficha', 'ps_estmetodo'): ((902, 3696), (902, 3850)),
     ('f_revisar', 'ps_comp'): ((484, 4224), (418, 4224), (418, 4488), (374, 4488)),
     ('ps_comp', 'f_revisar'): ((374, 4466), (396, 4466), (396, 4246), (484, 4246)),
     ('pago_cancelado', 'ps_cancelar_publico'): ((924, 5566), (924, 5522), (1122, 5522), (1122, 5588)),
     ('ps_cancelar_publico', 'pago_cancelado'): ((1012, 5654), (946, 5654)),
+}
+
+# Inserta los diálogos en los huecos entre filas y conserva las cajas de formulario.
+POSICIONES_DIALOGOS = {
+    'Administrador': {'dlg_usuario': (20, 52), 'dlg_prospecto': (32, 130), 'dlg_interes': (60, 116)},
+    'Coordinador': {'dlg_prospecto': (45, 135), 'dlg_interes': (20, 120)},
+    'Vendedor': {'dlg_interes': (8, 112), 'dlg_orden': (19, 174)},
 }
 
 MENSAJES_POR_ROL = {
@@ -125,7 +141,7 @@ MENSAJES_POR_ROL = {
 ALTURAS_CONECTORES = {
     'Coordinador': {
         ('embudo', 'ps_mover'): 3454, ('ps_mover', 'embudo'): 3498,
-        ('f_prospecto', 'ps_catalogo'): 2816, ('ps_catalogo', 'f_prospecto'): 2860,
+        ('dlg_prospecto', 'ps_catalogo'): 3014, ('ps_catalogo', 'dlg_prospecto'): 2970,
         ('pago_confirmacion', 'ps_retorno_publico'): 6138, ('ps_retorno_publico', 'pago_confirmacion'): 6160,
         ('pago_cancelado', 'ps_cancelar_publico'): 6468, ('ps_cancelar_publico', 'pago_cancelado'): 6490,
     },
@@ -150,9 +166,10 @@ RUTAS_NOTIFICACIONES = {
 }
 
 def armar(actor, paginas, enlaces):
+    dialogos = POSICIONES_DIALOGOS.get(actor)
     if actor == 'Administrador':
         return trazado.armar(paginas, enlaces, cortes=(), mensajes=MENSAJES_ADMINISTRADOR,
-                             rutas=RUTAS_ADMINISTRADOR)
+                             rutas=RUTAS_ADMINISTRADOR, cajas_adicionales=dialogos)
     desfases = {'actor': (1, 0), 'ps_login': (0, 1), 'error': (-1, 0),
                 'f_perfil': (0, -1), 'stripe': (0, 1), 'agenda': (0, 1)}
     tamanos = {'ficha': (12, 10), 'ps_est': (8, 6), 'ps_listado': (7, 6)} if actor == 'Vendedor' else {}
@@ -162,7 +179,12 @@ def armar(actor, paginas, enlaces):
     if actor != 'Visitante':
         mensajes |= MENSAJES_INTERNOS
     rutas = {('menu', 'notificaciones'): RUTAS_NOTIFICACIONES[actor]} if actor in RUTAS_NOTIFICACIONES else {}
+    if actor == 'Coordinador':
+        rutas['ps_enviar', 'compartir'] = ((1364, 5742), (1364, 5632), (858, 5632), (858, 5544))
+    if actor == 'Vendedor':
+        rutas['ps_enviar', 'compartir'] = ((1364, 4708), (1364, 4598), (858, 4598), (858, 4488))
+        rutas['dlg_interes', 'ps_catalogo'] = ((396, 2508), (440, 2508), (440, 2420), (1364, 2420), (1364, 2354))
     return trazado.armar(paginas, enlaces, filas=FILAS[actor], desfases=desfases,
                          tamanos=tamanos, cortes=(), paso_fila=16 if actor == 'Vendedor' else 15,
                          mensajes=mensajes, alturas=ALTURAS_CONECTORES[actor],
-                         rutas=rutas)
+                         rutas=rutas, cajas_adicionales=dialogos)
