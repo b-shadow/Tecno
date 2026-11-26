@@ -16,7 +16,7 @@ Guía para la sección 7.5 del P2. El docente y Conallen fijan la notación y el
 
 | Relación | Sentido y significado | Dibujo en el Administrador |
 | --- | --- | --- |
-| `«link»` | El actor entra a una página. Una página navega a otra, abre un diálogo o llama a un endpoint fuera del envío de un formulario. | Línea **discontinua** con flecha hacia el destino. Indica la ruta, los parámetros o la acción que origina el enlace. |
+| `«link»` | El actor entra a una página. Una página navega a otra, abre un diálogo o llama a un endpoint fuera del envío de un formulario. | Asociación dirigida con línea **continua** y flecha abierta hacia el destino. Indica la ruta, los parámetros o la acción que origina el enlace. |
 | `«submit»` | El formulario envía sus datos al endpoint que los procesa. | Línea **continua** con flecha del formulario a la página servidor. Conserva el método y la ruta reales en el modelo. |
 | `«build»` | La respuesta del servidor permite mostrar una vista, actualizar su contenido o presentar un aviso. | Línea **continua** con flecha del servidor a la vista que consume la respuesta. Rotula el resultado cuando distingue una rama relevante. |
 | `«access»` | Una página servidor consulta o escribe en una tabla real. | Línea **continua** con flecha hacia la tabla. Indica `SELECT`, `INSERT`, `UPDATE` o `DELETE` de acuerdo con el acceso. |
@@ -24,7 +24,7 @@ Guía para la sección 7.5 del P2. El docente y Conallen fijan la notación y el
 | Agregación | El modelo declara una relación entre un todo y una parte compartida. | Línea **continua** con rombo vacío del lado del todo. Comprueba que la relación estructural esté justificada. |
 | `«include»` | Una página servidor llama a una parte compartida del servidor. | Flecha hacia la parte incluida cuando se representa esa llamada. Conserva el estereotipo y el sentido del flujo. |
 
-El **rombo** señala pertenencia. La **flecha abierta de una asociación** indica navegabilidad. El **puente** señala un cruce de líneas que siguen su recorrido por separado. La línea discontinua del `«link»` distingue el tipo de relación.
+El **rombo** señala pertenencia. La **flecha abierta de una asociación** indica navegabilidad. El **puente** señala un cruce de líneas que siguen su recorrido por separado. El estereotipo `«link»` identifica la navegación en una asociación.
 
 ### Formularios integrados y diálogos
 

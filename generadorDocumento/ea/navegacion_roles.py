@@ -55,7 +55,7 @@ FILAS = {
 MENSAJES_STRIPE = {
     ('stripe', 'pago_confirmacion', 'link'): 'success_url',
     ('stripe', 'pago_cancelado', 'link'): 'cancel_url',
-    ('pago_cancelado', 'stripe', 'link'): 'Reintentar',
+    ('pago_cancelado', 'stripe', 'link'): 'Reintentar con URL, sin confirmar ni expirar',
     ('pago_confirmacion', 'ps_retorno_publico', 'link'): 'Con token',
     ('pago_cancelado', 'ps_cancelar_publico', 'link'): 'Con token',
 }

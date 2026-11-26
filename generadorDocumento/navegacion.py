@@ -614,7 +614,7 @@ def retorno_stripe(d):
     d.e('pago_cancelado', 'ps_cancelar_publico', 'link', url('pagos.cancelarRetornoPublico', ' token (cuerpo)'))
     d.e('ps_cancelar_publico', 'pago_cancelado', 'build', 'estado, url_checkout')
     d.e('pago_cancelado', 'catalogo', 'link', ir_catalogo)
-    d.e('pago_cancelado', 'stripe', 'link', 'url_checkout (reintentar)')
+    d.e('pago_cancelado', 'stripe', 'link', 'Reintentar si hay url_checkout y la operación sigue sin confirmar ni expirar')
     d.e('pago_cancelado', 'pago_confirmacion', 'link', 'Ver confirmación (si Stripe ya confirmó)')
     if d.actor != 'Visitante':
         d.hoja('CU6 Retorno autenticado sin token público')

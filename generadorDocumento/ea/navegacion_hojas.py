@@ -88,10 +88,9 @@ def sincronizar(r, pkg, paginas, enlaces, nombres_visibles=None):
         else:   # el texto en renglones cortos: su rótulo va junto a la caja (franjas_navegacion)
             import franjas_navegacion as F
             entre_paginas = paginas[a][0] in F.PAGINA and paginas[b][0] in F.PAGINA   # pasillo izquierdo: un renglón
-            tipo_relacion = 'Dependency' if st == 'link' else 'Association'
             nombre = (texto if entre_paginas else '\r\n'.join(F.renglones(texto))) if nombres_visibles is None else \
                 nombres_visibles[(a, b, st, texto)]
-            clave = (el[a].ElementID, el[b].ElementID, tipo_relacion, st, nombre)
+            clave = (el[a].ElementID, el[b].ElementID, 'Association', st, nombre)
         deseadas[clave] = (a, b, st, texto)
     conector = {}
     if nombres_visibles is not None:
@@ -116,6 +115,8 @@ def sincronizar(r, pkg, paginas, enlaces, nombres_visibles=None):
             c.Direction = 'Source -> Destination'
         if nombres_visibles is not None:
             c.Notes = enlace[3]
+            if enlace[2] == 'link':
+                c.Direction = 'Source -> Destination'
             if enlace[2] == 'contiene' and paginas[enlace[1]][0] == 'form':
                 c.SupplierEnd.Aggregation = 2   # composición en el extremo de la página
         c.Update(); conector[enlace] = c.ConnectorID
