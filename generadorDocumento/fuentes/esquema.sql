@@ -1,6 +1,6 @@
--- P1 correo + migraci?n 000008 Stripe: estructura PostgreSQL vigente, sin datos personales.
--- Destino de produccion: db_grupo05sa.public. Instalar SOLO en una base nueva y vacia.
--- Ejecucion: psql -X -v ON_ERROR_STOP=1 --single-transaction -d BASE_NUEVA -f esquema.sql
+-- UNEXO: esquema documental verificado contra PostgreSQL local 17.4, sin datos ni credenciales.
+-- Conserva la proteccion original para impedir su aplicacion sobre un esquema existente.
+-- No se ejecuto este archivo durante la actualizacion documental.
 DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
              WHERE n.nspname='public' AND c.relkind IN ('r','p','v','m','S','f')) THEN
@@ -11,10 +11,8 @@ END $$;
 -- PostgreSQL database dump
 --
 
-\restrict KFaEtLSVAxsKlKsdAOocAbYU3GsvBX0dFy6bugFkQ5hGPviD3jXIjbQxcchvL9g
-
--- Dumped from database version 18.7
--- Dumped by pg_dump version 18.7
+-- Dumped from database version 17.4
+-- Dumped by pg_dump version 17.4
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -288,6 +286,7 @@ CREATE TABLE public.cuotas (
     stripe_pago_intent character varying(160),
     stripe_metodo character varying(160),
     stripe_recibo_url text,
+    token_pago character varying(80),
     CONSTRAINT cuotas_estado_check CHECK (((estado)::text = ANY (ARRAY[('Pendiente de pago'::character varying)::text, ('En revision'::character varying)::text, ('Pago aprobado'::character varying)::text, ('Pago rechazado'::character varying)::text]))),
     CONSTRAINT cuotas_monto_check CHECK ((monto > (0)::numeric)),
     CONSTRAINT cuotas_nro_cuota_check CHECK (((nro_cuota >= 1) AND (nro_cuota <= 24))),
@@ -871,6 +870,8 @@ CREATE TABLE public.transacciones_stripe (
     confirmado_en timestamp(0) without time zone,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
+    token_publico character varying(80),
+    expira_en timestamp(0) without time zone,
     CONSTRAINT transacciones_stripe_estado_interno_check CHECK (((estado_interno)::text = ANY (ARRAY[('pendiente'::character varying)::text, ('confirmado'::character varying)::text, ('rechazado'::character varying)::text, ('cancelado'::character varying)::text, ('expirado'::character varying)::text, ('reconciliacion_duplicada'::character varying)::text]))),
     CONSTRAINT transacciones_stripe_tipo_check CHECK (((tipo)::text = ANY (ARRAY[('payment'::character varying)::text, ('setup'::character varying)::text])))
 );
@@ -1082,6 +1083,14 @@ ALTER TABLE ONLY public.configuraciones
 
 ALTER TABLE ONLY public.cuotas
     ADD CONSTRAINT cuotas_pkey PRIMARY KEY (nro_orden, nro_cuota);
+
+
+--
+-- Name: cuotas cuotas_token_pago_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cuotas
+    ADD CONSTRAINT cuotas_token_pago_unique UNIQUE (token_pago);
 
 
 --
@@ -1298,6 +1307,14 @@ ALTER TABLE ONLY public.transacciones_stripe
 
 ALTER TABLE ONLY public.transacciones_stripe
     ADD CONSTRAINT transacciones_stripe_sesion_unique UNIQUE (stripe_sesion);
+
+
+--
+-- Name: transacciones_stripe transacciones_stripe_token_publico_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.transacciones_stripe
+    ADD CONSTRAINT transacciones_stripe_token_publico_unique UNIQUE (token_publico);
 
 
 --
@@ -1841,6 +1858,4 @@ ALTER TABLE ONLY public.webhook_eventos_stripe
 --
 -- PostgreSQL database dump complete
 --
-
-\unrestrict KFaEtLSVAxsKlKsdAOocAbYU3GsvBX0dFy6bugFkQ5hGPviD3jXIjbQxcchvL9g
 

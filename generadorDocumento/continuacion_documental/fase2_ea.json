@@ -1,0 +1,19 @@
+{
+  "cu": [
+    "CU1",
+    "CU2",
+    "CU3",
+    "CU4",
+    "CU5",
+    "CU6",
+    "CU7",
+    "CU8"
+  ],
+  "actores": {
+    "Administrador": 198,
+    "Coordinador": 199,
+    "Vendedor": 200,
+    "Visitante": 201
+  },
+  "actor_diagram_9_editado": false
+}

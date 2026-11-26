@@ -16,6 +16,10 @@ try {
     $documento = $word.Documents.Open($Docx)
     foreach ($figura in @($documento.InlineShapes)) {
         $ruta = $figura.AlternativeText
+        if ($ruta -and -not [IO.Path]::IsPathRooted($ruta)) {
+            $candidata = Join-Path (Split-Path -Parent $PSScriptRoot) $ruta
+            if (Test-Path -LiteralPath $candidata) { $ruta = (Resolve-Path -LiteralPath $candidata).Path }
+        }
         if ($ruta -and $ruta.EndsWith('.png') -and [IO.Path]::GetFileNameWithoutExtension($ruta) -ne 'organigrama') {
             $emf = [IO.Path]::ChangeExtension($ruta, '.emf')
             if (Test-Path -LiteralPath $emf) {
@@ -24,16 +28,18 @@ try {
                 $alto = $figura.Height
                 $figura.Delete()
                 $nueva = $documento.InlineShapes.AddPicture($emf, $false, $true, $rango)
-                $nueva.LockAspectRatio = -1
+                $nueva.LockAspectRatio = 0
                 $nueva.Width = $ancho
-                if ($nueva.Height -gt $alto) { $nueva.Height = $alto }
+                $nueva.Height = $alto
+                $nueva.LockAspectRatio = -1
                 $nueva.AlternativeText = $emf
             }
         }
     }
     $documento.Fields.Update() | Out-Null
-    $documento.SaveAs2("$base.doc", 0)
-    # La conversión al formato .doc puede cambiar la paginación: actualizar después de convertir.
+    # El maestro permanece en DOCX. No hacerlo pasar por el formato binario
+    # antiguo antes de producir su PDF ni de conservar sus ediciones manuales.
+    $documento.SaveAs2("$base.docx", 16)
     for ($pasada = 0; $pasada -lt 3; $pasada++) {
         $documento.Repaginate()
         foreach ($indice in $documento.TablesOfContents) { $indice.Update() }
@@ -81,8 +87,8 @@ try {
     $documento.Save()
     $documento.ExportAsFixedFormat("$base.pdf", 17)
     $paginas = $documento.ComputeStatistics(2)
-    # Entregar también el DOCX con las figuras vectoriales y los campos ya actualizados.
-    $documento.SaveAs2("$base.docx", 16)
+    # La copia DOC se produce al final; su conversión no vuelve al maestro.
+    $documento.SaveAs2("$base.doc", 0)
     $documento.Close(0)
     $documento = $null
 } finally {
