@@ -1,0 +1,1 @@
+import{c as e}from"./index-3QzTTyBH.js";var t=t=>e.get(`/prospectos`,{params:t}),n=t=>e.post(`/prospectos`,t),r=(t,n)=>e.put(`/prospectos/${t}`,n),i=(t,n)=>e.post(`/prospectos/${encodeURIComponent(t)}/intereses`,n),a=t=>e.post(`/prospectos/importar`,{csv:t});export{r as a,n as i,a as n,t as r,i as t};

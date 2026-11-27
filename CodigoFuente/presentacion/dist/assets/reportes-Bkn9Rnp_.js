@@ -1,0 +1,1 @@
+import{c as e}from"./index-3QzTTyBH.js";var t=()=>e.get(`/dashboard`),n=()=>e.get(`/estadisticas/vendedor`),r=t=>e.get(`/reportes/estadisticas`,{params:t}),i=t=>e.get(`/reportes/listado`,{params:t});export{i,r as n,n as r,t};

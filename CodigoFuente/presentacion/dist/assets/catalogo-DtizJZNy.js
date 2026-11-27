@@ -1,0 +1,1 @@
+import{c as e}from"./index-3QzTTyBH.js";var t=()=>e.get(`/catalogo`),n=()=>e.post(`/catalogo/sincronizar`),r=t=>e.post(`/registro-interes`,t);export{r as n,n as r,t};

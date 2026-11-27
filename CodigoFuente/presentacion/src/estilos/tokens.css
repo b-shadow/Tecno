@@ -1,0 +1,222 @@
+/*
+ * UNEXO — Variables compartidas del sistema de diseño.
+ * Los estilos visuales específicos de cada público están separados en estilos/temas/{adultos,niños,jovenes}.css.
+ * Atributos activos en <html>:
+ *   data-theme="light|dark"                día o noche (hora local del dispositivo o manual)
+ *   data-audiencia="adultos|jovenes|niños" tema según público objetivo
+ *   data-letra="-1..3"                     tamaño de fuente accesible
+ *   data-contraste="alto"                  alto contraste prioritario (WCAG AAA en texto)
+ */
+:root {
+  /* Colores primitivos compartidos */
+  --navy: #083456;
+  --navy-700: #0b4268;
+  --navy-950: #041d31;
+  --turquesa: #10aeb5;
+  --turquesa-700: #0a7c82;
+  --turquesa-100: #dcf4f4;
+
+  /* Alias semánticos fáciles de ubicar (sincronizados en cada tema) */
+  --color-primario: #083456;
+  --color-secundario: #10aeb5;
+  --color-fondo: #f4f7f9;
+  --color-superficie: #ffffff;
+  --color-texto: #1d2733;
+
+  /* Superficies, tinta y encabezado/riel compartidos */
+  --papel: var(--color-superficie);
+  --niebla: #e9eef2;
+  --niebla-2: var(--color-fondo);
+  --tinta: var(--color-texto);
+  --tinta-suave: #4e5d6b;
+  --filete: #cfd9e0;
+  --filete-fuerte: #9fb1bf;
+  --portada: var(--navy);
+  --portada-tinta: #ffffff;
+  --portada-suave: #c7d6e3;
+  --enlace: var(--navy-700);
+  --acento: var(--turquesa);
+  --acento-texto: var(--turquesa-700);
+  --acento-suave: var(--turquesa-100);
+  --sobre-acento: var(--navy-950);
+  --foco: #0a7c82;
+
+  /* Encabezado, pie y menú lateral (riel) */
+  --header-bg: var(--papel);
+  --header-borde: var(--filete);
+  --footer-bg: var(--papel);
+  --riel: var(--navy-950);
+  --riel-marca: #ffffff;
+  --riel-tinta: #dbe7f0;
+  --riel-suave: #8fa9bd;
+  --riel-borde: rgb(255 255 255 / 0.1);
+  --riel-hover: rgb(255 255 255 / 0.08);
+  --riel-activo: var(--turquesa);
+  --riel-activo-tinta: var(--navy-950);
+
+  /* Estados semánticos */
+  --exito: #1d7547;
+  --exito-suave: #e1f3e8;
+  --aviso: #94540a;
+  --aviso-suave: #fcefd9;
+  --peligro: #b42318;
+  --peligro-suave: #fde8e6;
+
+  /* Etapas del embudo */
+  --etapa-nuevo: #52677a;
+  --etapa-contacto: #0a7c82;
+  --etapa-seguimiento: #2f5d9c;
+  --etapa-promesa: #94540a;
+  --etapa-convertido: #1d7547;
+  --etapa-perdido: #b42318;
+
+  /* Áreas del catálogo */
+  --programa-1: #083456;
+  --programa-2: #0a7c82;
+  --programa-3: #2f5d9c;
+  --programa-4: #43407f;
+  --programa-5: #2d5f5a;
+
+  /* Tipografía base */
+  --fuente-titulo: 'Source Serif 4 Variable', 'Source Serif 4', Georgia, serif;
+  --fuente-ui: 'Public Sans Variable', 'Public Sans', 'Segoe UI', system-ui, sans-serif;
+  --titulo-peso: 650;
+  --titulo-optico: 60;
+  --escala: 1;
+
+  /* Forma y densidad */
+  --radio: 4px;
+  --radio-grande: 6px;
+  --densidad: 1;
+  --acento-2: var(--turquesa);
+  --acento-2-texto: var(--turquesa-700);
+
+  /* Espaciado base */
+  --e-1: calc(4px * var(--densidad));
+  --e-2: calc(8px * var(--densidad));
+  --e-3: calc(12px * var(--densidad));
+  --e-4: calc(16px * var(--densidad));
+  --e-5: calc(24px * var(--densidad));
+  --e-6: calc(32px * var(--densidad));
+  --e-7: calc(48px * var(--densidad));
+  --e-8: calc(64px * var(--densidad));
+
+  /* Escala tipográfica */
+  --t-xs: 0.75rem;
+  --t-s: 0.875rem;
+  --t-m: 1rem;
+  --t-l: 1.125rem;
+  --t-xl: 1.375rem;
+  --t-2xl: 1.75rem;
+  --t-3xl: 2.375rem;
+  --t-4xl: clamp(2.5rem, 1.6rem + 3.2vw, 4.5rem);
+
+  --sombra: 0 1px 2px rgb(4 29 49 / 0.06), 0 8px 24px -12px rgb(4 29 49 / 0.18);
+  --sombra-capa: 0 2px 6px rgb(4 29 49 / 0.08), 0 24px 48px -16px rgb(4 29 49 / 0.32);
+  --curva: cubic-bezier(0.16, 1, 0.3, 1);
+  color-scheme: light;
+}
+
+/* ---------- Tamaño de letra accesible (A- / deslizador / A+ / Restablecer) ---------- */
+:root[data-letra='-1'] { --paso-letra: 0.9; }
+:root[data-letra='0']  { --paso-letra: 1; }
+:root[data-letra='1']  { --paso-letra: 1.12; }
+:root[data-letra='2']  { --paso-letra: 1.25; }
+:root[data-letra='3']  { --paso-letra: 1.4; }
+
+/* ---------- Alto contraste prioritario (especificidad superior a cualquier tema) ---------- */
+html:root[data-contraste='alto'] {
+  --fuente-ui: 'Atkinson Hyperlegible', 'Public Sans Variable', 'Segoe UI', system-ui, sans-serif;
+  --color-fondo: #ffffff;
+  --color-superficie: #ffffff;
+  --color-texto: #000000;
+  --navy: #001a33;
+  --navy-700: #00294f;
+  --navy-950: #000000;
+  --papel: #ffffff;
+  --niebla: #ffffff;
+  --niebla-2: #ffffff;
+  --tinta: #000000;
+  --tinta-suave: #1a1a1a;
+  --filete: #000000;
+  --filete-fuerte: #000000;
+  --portada: #001a33;
+  --enlace: #001a8c;
+  --acento: #005b61;
+  --acento-texto: #00494d;
+  --acento-suave: #ffffff;
+  --sobre-acento: #ffffff;
+  --foco: #c4005a;
+  --header-bg: #ffffff;
+  --header-borde: #000000;
+  --footer-bg: #ffffff;
+  --riel: #000000;
+  --riel-marca: #ffffff;
+  --riel-tinta: #ffffff;
+  --riel-suave: #e5e5e5;
+  --riel-borde: #ffffff;
+  --riel-hover: #222222;
+  --riel-activo: #ffffff;
+  --riel-activo-tinta: #000000;
+  --exito: #00501f;
+  --aviso: #5c3300;
+  --peligro: #8a0000;
+  --programa-1: #001a33;
+  --programa-2: #00494d;
+  --programa-3: #001a8c;
+  --programa-4: #2d0059;
+  --programa-5: #004d26;
+}
+
+html:root[data-contraste='alto'][data-theme='dark'] {
+  --color-fondo: #000000;
+  --color-superficie: #000000;
+  --color-texto: #ffffff;
+  --navy: #00ffff;
+  --navy-700: #66ffff;
+  --navy-950: #000000;
+  --papel: #000000;
+  --niebla: #000000;
+  --niebla-2: #000000;
+  --tinta: #ffffff;
+  --tinta-suave: #f0f0f0;
+  --filete: #ffffff;
+  --filete-fuerte: #ffffff;
+  --portada: #000000;
+  --enlace: #ffff66;
+  --acento: #00ffff;
+  --acento-texto: #00ffff;
+  --acento-suave: #003336;
+  --sobre-acento: #000000;
+  --foco: #ffff00;
+  --header-bg: #000000;
+  --header-borde: #ffffff;
+  --footer-bg: #000000;
+  --riel: #000000;
+  --riel-marca: #ffffff;
+  --riel-tinta: #ffffff;
+  --riel-suave: #d4d4d4;
+  --riel-borde: #ffffff;
+  --riel-hover: #1f1f1f;
+  --riel-activo: #00ffff;
+  --riel-activo-tinta: #000000;
+  --exito: #7dff9e;
+  --aviso: #ffd166;
+  --peligro: #ff8f8f;
+  --programa-1: #00ffff;
+  --programa-2: #7dff9e;
+  --programa-3: #ffd166;
+  --programa-4: #ff99ff;
+  --programa-5: #99d6ff;
+}
+
+/* En alto contraste se ocultan decoraciones y degradados llamativos para priorizar legibilidad */
+html:root[data-contraste='alto'] .decoracion-tema {
+  display: none !important;
+}
+html:root[data-contraste='alto'] .hoja,
+html:root[data-contraste='alto'] .btn-primario,
+html:root[data-contraste='alto'] .btn-acento {
+  background-image: none !important;
+  box-shadow: none !important;
+}

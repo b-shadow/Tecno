@@ -1,0 +1,1 @@
+import{c as e}from"./index-3QzTTyBH.js";var t=()=>e.get(`/notificaciones`),n=t=>e.post(`/notificaciones`,t),r=t=>e.patch(`/notificaciones/${t}/leida`);export{t as n,r,n as t};

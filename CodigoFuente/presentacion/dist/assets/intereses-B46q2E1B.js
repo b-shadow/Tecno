@@ -1,0 +1,1 @@
+import{c as e}from"./index-3QzTTyBH.js";var t=t=>e.get(`/intereses`,{params:t}),n=t=>e.get(`/intereses/${t}`),r=(t,n)=>e.patch(`/intereses/${t}/estado`,n),i=(t,n)=>e.patch(`/intereses/${t}/asignar`,{vendedor_correo:n}),a=()=>e.post(`/intereses/distribuir`);export{n as a,r as i,a as n,t as r,i as t};

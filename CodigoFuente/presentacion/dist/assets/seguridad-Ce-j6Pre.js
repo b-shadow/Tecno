@@ -1,0 +1,1 @@
+import{c as e}from"./index-3QzTTyBH.js";var t=()=>e.get(`/matriz`),n=t=>e.put(`/matriz`,t),r=t=>e.get(`/bitacora`,{params:t}),i=()=>e.get(`/bitacora/resumen`);export{i,r as n,t as r,n as t};

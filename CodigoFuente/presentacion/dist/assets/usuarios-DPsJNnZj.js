@@ -1,0 +1,1 @@
+import{c as e}from"./index-3QzTTyBH.js";var t=e=>`/usuarios/${encodeURIComponent(e)}`,n=t=>e.get(`/usuarios`,{params:t}),r=t=>e.post(`/usuarios`,t),i=(n,r)=>e.put(t(n),r),a=(n,r)=>e.patch(`${t(n)}/estado`,{estado:r}),o=n=>e.delete(`${t(n)}/foto`),s=()=>e.get(`/vendedores`);export{i as a,r as i,o as n,s as o,n as r,a as t};
