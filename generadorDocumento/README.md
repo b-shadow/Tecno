@@ -3,20 +3,29 @@
 ## Mantenimiento del maestro con ediciones manuales
 
 Tras integrar `respaldo-documentacion-leonardo` con `main`, el maestro es el
-DOCX ampliado del respaldo. Sus 79 tablas incluyen un mapeo detallado de las
-31 tablas y 287 columnas del esquema. Las ocho secuencias actualizadas de 7.4
+DOCX ampliado del respaldo. El mapeo 7.2 representa horizontalmente las 31
+tablas y 287 atributos del esquema, en bloques de hasta ocho columnas para
+conservar su lectura dentro de los márgenes. Cada tabla lleva un subtítulo en
+negrita una sola vez; cada bloque conserva el nombre de la tabla en su franja azul.
+Las ocho secuencias actualizadas de 7.4
 se generaron en el subpaquete EA `Secuencias 7.4 integradas`, preservando los
 diagramas originales, y se insertaron en este maestro. El conceptual se
 sincronizó con el esquema y el DOCX se exportó a DOC y PDF.
 
-`actualizar_datos_docx.py` corresponde al mapeo compacto anterior y no reconoce
-el formato detallado del maestro integrado. Para un cambio posterior de esquema,
-revisar `actualizar_documento.py bd` y conservar una copia del DOCX antes de
-aplicarlo. El mapeo integrado se comprobó columna por columna contra
+`actualizar_datos_docx.py` corresponde a un formato anterior. Para un cambio
+posterior de esquema, revisar `actualizar_documento.py bd` y conservar una copia
+del DOCX antes de aplicarlo. El mapeo se comprobó columna por columna contra
 `fuentes/esquema.sql`.
 
-Las tablas detalladas de 7.2 y 7.3 tienen ancho fijo para que Word no las
+Las tablas de 7.2 y 7.3 tienen ancho fijo para que Word no las
 expanda fuera de la página. La sección 7.3 utiliza 1 cm de margen lateral.
+`python actualizar_documento.py mapeo` actualiza solo 7.2.1 a partir de los
+atributos y claves presentes en el maestro; el formato horizontal queda fijo también
+en `actualizar_documento.py bd` para futuras regeneraciones del esquema.
+El diccionario 7.3.1 usa seis columnas: Atributo, Tipo de dato, Descripción,
+Tamaño, Nulo y Llave. `python actualizar_documento.py diccionario` actualiza
+solo ese apartado usando los datos ya presentes en el DOCX maestro; conserva
+las demás secciones y deja un respaldo en `tmp/actualizacion_documental/`.
 Después de editar el DOCX, `python actualizar_documento.py margenes` restaura
 solo esos anchos y márgenes; luego `exportar.ps1` actualiza el DOC y el PDF.
 La opción `actualizar_documento.py bd` aplica el mismo ajuste al regenerar

@@ -118,11 +118,280 @@ def data_table(headers,rows,widths):
             for line in str(value).splitlines() or ['']:cell.append(paragraph(line,bold=index==0))
     return table
 
+ANCHO_DICCIONARIO = [2000, 1750, 3600, 900, 850, 1600]
+ANCHO_MAXIMO_MAPEO = 10700
+ATRIBUTOS_POR_BLOQUE = 8
+
+def tabla_mapeo(nombre, columnas):
+    """Modelo horizontal con nombre en la franja azul, claves y dos filas vacías."""
+    cantidad = len(columnas)
+    ancho = min(ANCHO_MAXIMO_MAPEO, max(6000, cantidad * 1450))
+    anchos = [ancho // cantidad] * cantidad
+    anchos[-1] += ancho - sum(anchos)
+    tabla = E.Element(q('tbl')); propiedades = E.SubElement(tabla, q('tblPr'))
+    E.SubElement(propiedades, q('tblW'), {q('w'):str(ancho), q('type'):'dxa'})
+    E.SubElement(propiedades, q('tblInd'), {q('w'):'80', q('type'):'dxa'})
+    E.SubElement(propiedades, q('tblLayout'), {q('type'):'fixed'})
+    margen = E.SubElement(propiedades, q('tblCellMar'))
+    for lado in ('top','bottom'):E.SubElement(margen, q(lado), {q('w'):'55', q('type'):'dxa'})
+    for lado in ('left','right'):E.SubElement(margen, q(lado), {q('w'):'60', q('type'):'dxa'})
+    bordes = E.SubElement(propiedades, q('tblBorders'))
+    for lado in ('top','left','bottom','right','insideH','insideV'):
+        E.SubElement(bordes, q(lado), {q('val'):'single', q('sz'):'4', q('color'):'9DBED9'})
+    grilla = E.SubElement(tabla, q('tblGrid'))
+    for medida in anchos:E.SubElement(grilla, q('gridCol'), {q('w'):str(medida)})
+
+    for indice in range(5):
+        fila = E.SubElement(tabla, q('tr'))
+        reglas_fila = E.SubElement(fila, q('trPr'))
+        E.SubElement(reglas_fila, q('cantSplit'))
+        if indice == 0:E.SubElement(reglas_fila, q('tblHeader'))
+        valores = ([nombre] if indice == 0 else
+                   [', '.join(m.lower() for m in ('PK','FK') if m in clave.split(', '))
+                    for _, clave in columnas] if indice == 1 else
+                   [atributo for atributo, _ in columnas] if indice == 2 else
+                   [''] * cantidad)
+        for posicion, valor in enumerate(valores):
+            celda = E.SubElement(fila, q('tc'))
+            reglas_celda = E.SubElement(celda, q('tcPr'))
+            E.SubElement(reglas_celda, q('tcW'), {q('w'):str(ancho if indice == 0 else anchos[posicion]), q('type'):'dxa'})
+            if indice == 0:E.SubElement(reglas_celda, q('gridSpan'), {q('val'):str(cantidad)})
+            if indice in (0, 1, 3):
+                E.SubElement(reglas_celda, q('shd'), {q('fill'):'5B9BD5' if indice == 0 else 'DCEAF6'})
+            parrafo = paragraph(valor, bold=(indice in (0, 1) or
+                                              indice == 2 and 'PK' in columnas[posicion][1]),
+                                size=23 if indice == 0 else 17)
+            espaciado = parrafo.find('w:pPr/w:spacing', NS)
+            espaciado.set(q('after'), '0')
+            if indice < 4:E.SubElement(parrafo.find('w:pPr', NS), q('keepNext'))
+            if indice == 0:
+                E.SubElement(parrafo.find('w:pPr', NS), q('jc'), {q('val'):'center'})
+            if indice == 2 and len(valor) > 14 and '_' in valor:
+                # Saltos visibles en los guiones bajos; el nombre extraído sigue siendo idéntico.
+                segmentos = valor.split('_'); lineas = []; linea = ''
+                for i, segmento in enumerate(segmentos):
+                    pieza = segmento + ('_' if i < len(segmentos)-1 else '')
+                    if linea and len(linea)+len(pieza) > 14:
+                        lineas.append(linea); linea = pieza
+                    else:linea += pieza
+                lineas.append(linea)
+                if len(lineas) > 1:
+                    run = parrafo.find('w:r', NS)
+                    run.find('w:t', NS).text = lineas[0]
+                    for linea in lineas[1:]:
+                        E.SubElement(run, q('br'))
+                        E.SubElement(run, q('t')).text = linea
+            celda.append(parrafo)
+    return tabla
+
+def bloques_mapeo(nombre, columnas):
+    grupos = [columnas[i:i+ATRIBUTOS_POR_BLOQUE]
+              for i in range(0, len(columnas), ATRIBUTOS_POR_BLOQUE)]
+    return [tabla_mapeo(nombre, grupo) for grupo in grupos]
+
+def titulo_mapeo(nombre):
+    titulo = paragraph(nombre, bold=True, size=22)
+    titulo.find('w:pPr/w:spacing', NS).set(q('after'), '60')
+    E.SubElement(titulo.find('w:pPr', NS), q('keepNext'))
+    return titulo
+
+def separador_mapeo():
+    espacio = paragraph('\u00a0', size=12)
+    espacio.find('w:pPr/w:spacing', NS).set(q('after'), '120')
+    return espacio
+
+def actualizar_mapeo_actual():
+    """Sustituye el mapeo detallado o actualiza el horizontal sin cambiar sus datos."""
+    path, root, body = doc_read()
+    inicio, fin = section_range(body, '7.2.1. Mapeo', '7.3. Diseño Físico')
+    seccion = list(body)[inicio:fin]
+    tablas = [x for x in seccion if x.tag == q('tbl')]
+    horizontal = (len(tablas) > len(TABLAS) or
+                  len(tablas[0].findall('w:tr', NS)) == 4 or
+                  len(tablas[0].find('w:tblGrid', NS)) != 5)
+    if horizontal:
+        grupos = {}
+        nombre_actual = None
+        for elemento in seccion:
+            if elemento.tag == q('p') and txt(elemento) in TABLAS:
+                nombre_actual = txt(elemento)
+            if elemento.tag != q('tbl'):continue
+            filas = elemento.findall('w:tr', NS)
+            primera = filas[0].find('w:tc/w:tcPr/w:gridSpan', NS)
+            tamano_bloque = 5 if primera is not None else 4
+            assert len(filas) % tamano_bloque == 0
+            for inicio_bloque in range(0, len(filas), tamano_bloque):
+                if tamano_bloque == 5:
+                    nombre = re.sub(r' \(parte \d+ de \d+\)$', '', txt(filas[inicio_bloque]))
+                    indice_marcas, indice_atributos = inicio_bloque+1, inicio_bloque+2
+                else:
+                    nombre = nombre_actual
+                    indice_marcas, indice_atributos = inicio_bloque, inicio_bloque+1
+                assert nombre in TABLAS, nombre
+                marcas = [txt(c).upper() for c in filas[indice_marcas].findall('w:tc', NS)]
+                atributos = [txt(c) for c in filas[indice_atributos].findall('w:tc', NS)]
+                assert len(marcas) == len(atributos)
+                grupos.setdefault(nombre, []).extend(zip(atributos, marcas))
+    else:
+        parrafos = [txt(x) for x in seccion if x.tag == q('p')]
+        nombres = [nombre for nombre in parrafos if nombre in TABLAS]
+        assert len(tablas) == len(nombres) == len(TABLAS)
+        grupos = {}
+        for nombre, tabla in zip(nombres, tablas):
+            filas = [[txt(c) for c in fila.findall('w:tc', NS)]
+                     for fila in tabla.findall('w:tr', NS)[1:]]
+            grupos[nombre] = [(fila[0], fila[2]) for fila in filas]
+    assert len(grupos) == len(TABLAS)
+    nuevos = [copy.deepcopy(seccion[0])]
+    total = bloques = 0
+    for nombre, columnas in grupos.items():
+        partes = bloques_mapeo(nombre, columnas)
+        nuevos.append(titulo_mapeo(nombre))
+        for parte in partes:nuevos.extend([parte, separador_mapeo()])
+        total += len(columnas)
+        bloques += len(partes)
+    assert total == 287, total
+    replace_range(body, inicio, fin, nuevos)
+    continuar_tras_mapeo(body)
+    OUT.mkdir(parents=True, exist_ok=True)
+    respaldo = OUT / ('respaldo_antes_mapeo_' + uuid.uuid4().hex + '.docx')
+    shutil.copy2(path, respaldo)
+    replace_zip(path, {'word/document.xml':E.tostring(root, xml_declaration=True,
+                                                       encoding='UTF-8', standalone=True)})
+    print(f'Mapeo actualizado: {len(grupos)} tablas, {total} atributos, '
+          f'{bloques} bloques. Respaldo: {respaldo}')
+
+def fila_diccionario(nombre, tipo_exacto, descripcion, clave, nulabilidad):
+    """Presenta metadatos existentes sin alterar el tipo ni la condición de la columna."""
+    tipo = tipo_exacto.lower().strip()
+    if tipo.startswith('character varying('):
+        dato, tamano = 'VARCHAR', tipo[tipo.index('(')+1:tipo.index(')')]
+    elif tipo.startswith('numeric('):
+        dato, tamano = 'NUMERIC', tipo[tipo.index('(')+1:tipo.index(')')]
+    elif tipo.startswith('timestamp('):
+        dato, tamano = 'TIMESTAMP', '—'
+    else:
+        dato = {'integer':'INT', 'bigint':'BIGINT', 'smallint':'SMALLINT'}.get(tipo, tipo.upper())
+        tamano = '—'
+    marcas = [x.strip() for x in clave.split(',') if x.strip() in ('PK', 'FK', 'UNIQUE')]
+    return [nombre, dato, descripcion, tamano,
+            'Sí' if nulabilidad == 'NULL' else 'No', ', '.join(marcas) or '—']
+
+def tabla_diccionario(filas):
+    """Tabla de seis columnas con ancho fijo menor que el área útil de 7.3."""
+    anchos = ANCHO_DICCIONARIO
+    tabla = E.Element(q('tbl')); propiedades = E.SubElement(tabla, q('tblPr'))
+    E.SubElement(propiedades, q('tblW'), {q('w'):str(sum(anchos)), q('type'):'dxa'})
+    E.SubElement(propiedades, q('tblInd'), {q('w'):'80', q('type'):'dxa'})
+    E.SubElement(propiedades, q('tblLayout'), {q('type'):'fixed'})
+    margenes = E.SubElement(propiedades, q('tblCellMar'))
+    for lado in ('top', 'bottom'):
+        E.SubElement(margenes, q(lado), {q('w'):'65', q('type'):'dxa'})
+    for lado in ('left', 'right'):
+        E.SubElement(margenes, q(lado), {q('w'):'75', q('type'):'dxa'})
+    bordes = E.SubElement(propiedades, q('tblBorders'))
+    for lado in ('top','left','bottom','right','insideH','insideV'):
+        E.SubElement(bordes, q(lado), {q('val'):'single', q('sz'):'4', q('color'):'B7C9D8'})
+    grilla = E.SubElement(tabla, q('tblGrid'))
+    for ancho in anchos:E.SubElement(grilla, q('gridCol'), {q('w'):str(ancho)})
+    encabezado = ['Atributo', 'Tipo de dato', 'Descripción', 'Tamaño', 'Nulo', 'Llave']
+    for indice, valores in enumerate([encabezado] + list(filas)):
+        fila = E.SubElement(tabla, q('tr'))
+        propiedades_fila = E.SubElement(fila, q('trPr'))
+        E.SubElement(propiedades_fila, q('cantSplit'))
+        if indice == 0:E.SubElement(propiedades_fila, q('tblHeader'))
+        for valor, ancho in zip(valores, anchos):
+            celda = E.SubElement(fila, q('tc'))
+            propiedades_celda = E.SubElement(celda, q('tcPr'))
+            E.SubElement(propiedades_celda, q('tcW'), {q('w'):str(ancho), q('type'):'dxa'})
+            if indice == 0:E.SubElement(propiedades_celda, q('shd'), {q('fill'):'16324F'})
+            parrafo = paragraph(str(valor), bold=indice == 0, size=18)
+            parrafo.find('w:pPr/w:spacing', NS).set(q('after'), '0')
+            if indice == 0:
+                E.SubElement(parrafo.find('w:pPr', NS), q('keepNext'))
+                color = E.SubElement(parrafo.find('w:r/w:rPr', NS), q('color'))
+                color.set(q('val'), 'FFFFFF')
+            celda.append(parrafo)
+    return tabla
+
+def actualizar_diccionario_actual():
+    """Rehace solamente 7.3.1; admite el mapeo antiguo y el horizontal."""
+    path, root, body = doc_read()
+    inicio_mapeo, fin_mapeo = section_range(body, '7.2.1. Mapeo', '7.3. Diseño Físico')
+    inicio, fin = section_range(body, '7.3.1. Diccionario', '7.3.2.')
+    mapeo = [x for x in list(body)[inicio_mapeo:fin_mapeo] if x.tag == q('tbl')]
+    seccion = list(body)[inicio:fin]
+    actuales = [x for x in seccion if x.tag == q('tbl')]
+    nombres = [txt(x) for x in seccion if x.tag == q('p')][1:]
+    assert len(actuales) == len(nombres) == len(TABLAS)
+    nuevos = [copy.deepcopy(seccion[0])]
+    total = 0
+    mapeo_antiguo = len(mapeo) == len(TABLAS) and txt(mapeo[0].find('w:tr', NS)).startswith('Columna')
+    for indice, (nombre, tabla_actual) in enumerate(zip(nombres, actuales)):
+        assert nombre in TABLAS, nombre
+        filas_actuales = [[txt(c) for c in fila.findall('w:tc', NS)]
+                          for fila in tabla_actual.findall('w:tr', NS)[1:]]
+        if mapeo_antiguo:
+            filas_mapeo = [[txt(c) for c in fila.findall('w:tc', NS)]
+                           for fila in mapeo[indice].findall('w:tr', NS)[1:]]
+            assert len(filas_mapeo) == len(filas_actuales), nombre
+            filas = []
+            for m, d in zip(filas_mapeo, filas_actuales):
+                assert m[0] == d[0], (nombre, m[0], d[0])
+                filas.append(fila_diccionario(m[0], m[1], d[2], m[2], m[3]))
+        else:
+            assert len(filas_actuales[0]) == 6, nombre
+            filas = filas_actuales
+        titulo = copy.deepcopy(next(x for x in seccion if x.tag == q('p') and txt(x) == nombre))
+        propiedades_titulo = titulo.find('w:pPr', NS)
+        if propiedades_titulo is None:propiedades_titulo = E.Element(q('pPr'));titulo.insert(0, propiedades_titulo)
+        if propiedades_titulo.find('w:keepNext', NS) is None:E.SubElement(propiedades_titulo, q('keepNext'))
+        nuevos.extend([titulo, tabla_diccionario(filas)])
+        total += len(filas)
+    assert total == 287, total
+    replace_range(body, inicio, fin, nuevos)
+    respaldo = OUT / ('respaldo_antes_diccionario_' + uuid.uuid4().hex + '.docx')
+    OUT.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(path, respaldo)
+    replace_zip(path, {'word/document.xml':E.tostring(root, xml_declaration=True,
+                                                       encoding='UTF-8', standalone=True)})
+    print(f'Diccionario actualizado: {len(actuales)} tablas, {total} atributos. Respaldo: {respaldo}')
+
 def section_range(body,start_text,end_text):
     items=list(body);starts=[i for i,p in enumerate(items) if txt(p).startswith(start_text)]
     assert starts,start_text
     a=starts[-1];b=next(i for i in range(a+1,len(items)) if txt(items[i]).startswith(end_text))
     return a,b
+
+def continuar_tras_mapeo(body):
+    """Inicia 7.3 en la misma página cuando queda espacio tras el mapeo."""
+    inicio_anterior, fin_anterior = section_range(body, '7.2.1. Mapeo', '7.3. Diseño Físico')
+    anterior = [p.find('w:pPr/w:sectPr', NS) for p in list(body)[inicio_anterior:fin_anterior]
+                if p.tag == q('p') and p.find('w:pPr/w:sectPr', NS) is not None]
+    assert len(anterior) == 1, len(anterior)
+    # Word guarda el tipo de inicio en la sección que viene después. El corte
+    # al final de 7.2 describe 7.2; se revierte el ajuste anterior si existe.
+    previo = anterior[0].find('w:type', NS)
+    if previo is not None and previo.get(q('val')) == 'continuous':anterior[0].remove(previo)
+    inicio, fin = section_range(body, '7.3. Diseño Físico', '7.4.')
+    cortes = [p.find('w:pPr/w:sectPr', NS) for p in list(body)[inicio:fin]
+              if p.tag == q('p') and p.find('w:pPr/w:sectPr', NS) is not None]
+    assert len(cortes) == 1, len(cortes)
+    tipo = cortes[0].find('w:type', NS)
+    if tipo is None:
+        tipo = E.Element(q('type'))
+        cortes[0].insert(0, tipo)
+    tipo.set(q('val'), 'continuous')
+
+def continuar_mapeo_actual():
+    path, root, body = doc_read()
+    continuar_tras_mapeo(body)
+    OUT.mkdir(parents=True, exist_ok=True)
+    respaldo = OUT / ('respaldo_antes_continuidad_' + uuid.uuid4().hex + '.docx')
+    shutil.copy2(path, respaldo)
+    replace_zip(path, {'word/document.xml':E.tostring(root, xml_declaration=True,
+                                                       encoding='UTF-8', standalone=True)})
+    print(f'El apartado 7.3 continúa después del mapeo. Respaldo: {respaldo}')
 
 def replace_range(body,start,end,nodes):
     old=list(body)[start:end]
@@ -147,13 +416,17 @@ def fijar_ancho_tabla(table,widths):
     for col,value in zip(cols,widths):col.set(q('w'),str(value))
     for row in table.findall('w:tr',NS):
         cells=row.findall('w:tc',NS)
-        assert len(cells)==len(widths),(len(cells),len(widths))
-        for cell,value in zip(cells,widths):
+        cursor=0
+        for cell in cells:
             cp=cell.find('w:tcPr',NS)
             if cp is None:cp=E.SubElement(cell,q('tcPr'))
+            span=cp.find('w:gridSpan',NS)
+            n=int(span.get(q('val'))) if span is not None else 1
+            value=sum(widths[cursor:cursor+n]);cursor+=n
             cw=cp.find('w:tcW',NS)
             if cw is None:cw=E.SubElement(cp,q('tcW'))
             cw.set(q('w'),str(value));cw.set(q('type'),'dxa')
+        assert cursor==len(widths),(cursor,len(widths))
 
 def ajustar_tablas_datos(body):
     """Acomoda solo el mapeo y el físico; conserva sus textos y el resto del DOCX."""
@@ -163,11 +436,17 @@ def ajustar_tablas_datos(body):
     i74=next(i for i in range(i73+1,len(items)) if txt(items[i]).startswith('7.4.'))
     mapping=[x for x in items[i72:i73] if x.tag==q('tbl')]
     physical=[x for x in items[i73:i74] if x.tag==q('tbl')]
-    assert len(mapping)==len(TABLAS) and len(physical)==len(TABLAS)+len(TRIGGERS),(len(mapping),len(physical))
-    for table in mapping:fijar_ancho_tabla(table,[2600,2700,1000,1500,2900])
+    assert len(mapping)>=len(TABLAS) and len(physical)==len(TABLAS)+len(TRIGGERS),(len(mapping),len(physical))
+    for table in mapping:
+        grid=table.find('w:tblGrid',NS)
+        anchos=[int(col.get(q('w'))) for col in grid.findall('w:gridCol',NS)]
+        if len(anchos)==5 and len(mapping)==len(TABLAS):anchos=[2600,2700,1000,1500,2900]
+        assert sum(anchos)<=ANCHO_MAXIMO_MAPEO
+        fijar_ancho_tabla(table,anchos)
     for table in physical:
         columns=len(table.find('w:tblGrid',NS))
         if columns==4:fijar_ancho_tabla(table,[2100,2200,3100,3300])
+        elif columns==6:fijar_ancho_tabla(table,ANCHO_DICCIONARIO)
         elif columns==2:fijar_ancho_tabla(table,[2500,8200])
         else:raise RuntimeError(f'Tabla física con {columns} columnas inesperadas')
     breaks=[x.find('.//w:sectPr',NS) for x in items[i73:i74]]
@@ -190,10 +469,9 @@ def phase1_word():
     path,root,body=doc_read();guard=protected(body)
     data=json.loads((OUT/'postgres_actual.json').read_text(encoding='utf-8'));types={(x['tabla'],x['columna']):x['tipo'] for x in data['tipos'] if x['esquema']=='public'}
     fks=foreign_keys(data);columns={table:[x for x in data['columnas'] if x['table_schema']=='public' and x['table_name']==table] for table in TABLAS}
-    mapping=[heading('7.2. Diseño Lógico',2),heading('7.2.1. Mapeo',3),paragraph('Se representan las 31 tablas del dominio y sus 287 columnas verificadas en PostgreSQL local. La tabla auxiliar laravel.migrations contiene tres columnas y se diferencia del dominio comercial. Las claves compuestas, nulabilidad y valores predeterminados se conservan; las relaciones no se rediseñan.')]
+    mapping=[heading('7.2. Diseño Lógico',2),heading('7.2.1. Mapeo',3)]
     dictionary=[heading('7.3.1. Diccionario de datos y finalidad de las columnas',3)]
     for table,cols in columns.items():
-        mapping.append(heading(table,4));mapping.append(paragraph(TABLAS[table]))
         mrows=[];drows=[]
         for c in cols:
             name=c['column_name']; related=[];marks=[];restr=[]
@@ -209,9 +487,11 @@ def phase1_word():
             nullable='NULL' if c['is_nullable']=='YES' else 'NOT NULL';default=c['column_default'] if c['column_default'] is not None else 'Sin DEFAULT'
             mrows.append([name,types[table,name],', '.join(dict.fromkeys(marks)) or '—',nullable,default])
             purpose=descripcion(table,name,'; '.join(related) if related else None)
-            drows.append([name,types[table,name],purpose,nullable+'; '+default+('; '+', '.join(restr) if restr else '')+('; referencia '+ '; '.join(related) if related else '')])
-        mapping.append(data_table(['Columna','Tipo exacto','Clave','Nulabilidad','Predeterminado'],mrows,[2600,2700,1000,1500,2900]))
-        dictionary.append(heading(table,4));dictionary.append(data_table(['Columna','Tipo','Descripción y finalidad en UNEXO','Restricciones / relación'],drows,[2100,2200,3100,3300]))
+            drows.append(fila_diccionario(name,types[table,name],purpose,', '.join(dict.fromkeys(marks)),nullable))
+        mapping.append(titulo_mapeo(table))
+        for bloque in bloques_mapeo(table,[(row[0],row[2]) for row in mrows]):
+            mapping.extend([bloque,separador_mapeo()])
+        dictionary.append(heading(table,4));dictionary.append(tabla_diccionario(drows))
     physical=[heading('7.3. Diseño Físico',2),paragraph('El esquema SQL documental es un volcado de solo estructura de public, verificado contra la conexión efectiva de Laravel en PostgreSQL 17.4. No incluye datos comerciales, propietarios ni credenciales. El archivo conserva su protección original para impedir aplicarlo sobre un esquema existente; no se ejecutó durante esta actualización.')]
     sql=(DOC/'fuentes/esquema.sql').read_text(encoding='utf-8')
     for table,definition in re.findall(r'CREATE TABLE public\.(\w+) \((.*?)^\);',sql,re.M|re.S):
@@ -235,6 +515,7 @@ def phase1_word():
         physical.extend(paragraph(line) for line in definition.splitlines() if line.strip())
     a,b=section_range(body,'7.2. Diseño Lógico','7.3. Diseño Físico');replace_range(body,a,b,mapping)
     a,b=section_range(body,'7.3. Diseño Físico','7.4.');replace_range(body,a,b,physical)
+    continuar_tras_mapeo(body)
     assert protected(body)==guard,'El capítulo IV cambió'
     ajustar_tablas_datos(body)
     replace_zip(path,{'word/document.xml':E.tostring(root,xml_declaration=True,encoding='UTF-8',standalone=True)})
@@ -245,4 +526,7 @@ if __name__=='__main__':
     elif sys.argv[1]=='bd':phase1_word()
     elif sys.argv[1]=='arquitectura':phase7()
     elif sys.argv[1]=='margenes':ajustar_margenes_actual()
+    elif sys.argv[1]=='diccionario':actualizar_diccionario_actual()
+    elif sys.argv[1]=='mapeo':actualizar_mapeo_actual()
+    elif sys.argv[1]=='continuidad-mapeo':continuar_mapeo_actual()
     else:raise ValueError(sys.argv[1])
