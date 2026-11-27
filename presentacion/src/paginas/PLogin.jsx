@@ -11,6 +11,13 @@ import logoNoche from '../assets/unexo-logo-noche.png'
 /** CU1: acceso con credenciales (RF1.1). Cada intento, aceptado o fallido, queda en la bitácora con la IP. */
 const LOGO = 'h-[clamp(56px,13vh,150px)] w-auto bajo:h-[clamp(44px,9vh,72px)]'
 
+/** Cuentas de prueba por rol, visibles para la evaluación del docente. */
+const DEMO = [
+  { rol: 'Administrador', correo: 'pruebatecnoweb123+adminp2@gmail.com', password: 'P2Admin-6w7DBaCyTl4Fhtt1HVY' },
+  { rol: 'Coordinador', correo: 'pruebatecnoweb123+coord@gmail.com', password: 'P2Coord-aWaiWoWEKSbvNk3kiqs' },
+  { rol: 'Vendedor', correo: 'pruebatecnoweb123+vend1@gmail.com', password: 'P2Vend-tH3PA2eGzilY3q61v8I' },
+]
+
 export default function PLogin() {
   const { query } = useAppRoute()
   const [form, setForm] = useState({ correo: '', password: '' })
@@ -60,6 +67,25 @@ export default function PLogin() {
           <Aviso tipo="error">{error}</Aviso>
           <Boton type="submit" className="btn-primario btn-grande w-full bajo:min-h-[46px]" cargando={enviando}>Ingresar</Boton>
         </form>
+        <section className="hoja grid w-full gap-3 px-6 py-4 bajo:py-3" aria-labelledby="demo-titulo">
+          <div className="grid gap-0.5">
+            <h2 id="demo-titulo" className="text-base">Cuentas de prueba</h2>
+            <p className="text-sm text-tinta-suave">Pulse «Usar» para llenar el formulario con la cuenta de ese rol.</p>
+          </div>
+          <ul className="grid divide-y divide-filete">
+            {DEMO.map((c) => (
+              <li key={c.rol} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                <div className="grid min-w-0 gap-0.5 text-sm">
+                  <strong className="font-[650] text-tinta">{c.rol}</strong>
+                  <span className="break-all text-tinta-suave select-all">{c.correo}</span>
+                  <span className="text-tinta-suave select-all">{c.password}</span>
+                </div>
+                <button type="button" className="btn btn-secundario shrink-0" aria-label={`Usar cuenta de ${c.rol.toLowerCase()}`}
+                  onClick={() => { setForm({ correo: c.correo, password: c.password }); setError(null) }}>Usar</button>
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
     </section>
   )
